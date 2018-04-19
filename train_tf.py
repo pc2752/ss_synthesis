@@ -41,7 +41,7 @@ def train(_):
 
         ap_loss = tf.reduce_sum(tf.abs(ap - target_placeholder[:,:,60:-2]))
 
-        f0_loss = tf.reduce_sum(tf.abs(f0- target_placeholder[:,:,-2:-1])*1.5) # Added the multiplicative factor, to bive it more importance, remove to go to old model.
+        f0_loss = tf.reduce_sum(tf.abs(f0 - target_placeholder[:,:,-2:-1])*3.0) # Added the multiplicative factor, to bive it more importance, remove to go to old model.
 
         # vuv_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels=, logits=vuv))
 

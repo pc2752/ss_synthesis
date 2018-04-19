@@ -28,10 +28,10 @@ feats_ext = '_synth_feats.npy'
 split = 0.9
 
 augment = True
-aug_prob = 0.3
+aug_prob = 0.4
 
 # Hyperparameters
-num_epochs = 400
+num_epochs = 1000
 batches_per_epoch_train = 500
 batches_per_epoch_val = 100
 batch_size = 120 
