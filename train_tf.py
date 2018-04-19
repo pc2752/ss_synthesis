@@ -16,7 +16,7 @@ import utils
 from reduce import mgc_to_mfsc
 
 def binary_cross(p,q):
-    return p * -tf.log(q) + (1 - p) * -tf.log(1 - q)
+    return -(p * tf.log(q + 1e-12) + (1 - p) * tf.log( 1 - q + 1e-12))
 
 def train(_):
     with tf.Graph().as_default():
@@ -43,7 +43,11 @@ def train(_):
 
         f0_loss = tf.reduce_sum(tf.abs(f0- target_placeholder[:,:,-2:-1])*1.5) # Added the multiplicative factor, to bive it more importance, remove to go to old model.
 
-        vuv_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels=target_placeholder[:,:,-1:], logits=vuv))
+        # vuv_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels=, logits=vuv))
+
+        vuv_loss = tf.reduce_mean(tf.reduce_sum(binary_cross(target_placeholder[:,:,-1:],vuv)))
+
+
 
 
         harm_summary = tf.summary.scalar('harm_loss', harm_loss)
