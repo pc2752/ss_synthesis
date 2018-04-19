@@ -41,14 +41,11 @@ def train(_):
 
         ap_loss = tf.reduce_sum(tf.abs(ap - target_placeholder[:,:,60:-2]))
 
-        f0_loss = tf.reduce_sum(tf.abs(f0 - target_placeholder[:,:,-2:-1])*3.0) # Added the multiplicative factor, to bive it more importance, remove to go to old model.
+        f0_loss = tf.reduce_sum(tf.square(f0 - target_placeholder[:,:,-2:-1])) # Added the multiplicative factor, to bive it more importance, remove to go to old model.
 
         # vuv_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels=, logits=vuv))
 
         vuv_loss = tf.reduce_mean(tf.reduce_sum(binary_cross(target_placeholder[:,:,-1:],vuv)))
-
-
-
 
         harm_summary = tf.summary.scalar('harm_loss', harm_loss)
 
@@ -57,7 +54,6 @@ def train(_):
         f0_summary = tf.summary.scalar('f0_loss', f0_loss)
 
         vuv_summary = tf.summary.scalar('vuv_loss', vuv_loss)
-
 
         global_step = tf.Variable(0, name='global_step', trainable=False)
 
@@ -90,7 +86,7 @@ def train(_):
         val_summary_writer = tf.summary.FileWriter(config.log_dir+'val/', sess.graph)
 
         
-        start_epoch = int(sess.run(tf.train.get_global_step())/config.batches_per_epoch_train)
+        start_epoch = int(sess.run(tf.train.get_global_step())/(config.batches_per_epoch_train*4))
 
         print("Start from: %d" % start_epoch)
         for epoch in xrange(start_epoch, config.num_epochs):
