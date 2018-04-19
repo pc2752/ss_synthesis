@@ -59,10 +59,10 @@ def bi_static_stacked_RNN(x, scope='RNN'):
 
         # output = tf.layers.dense(output, config.output_features, activation=tf.nn.relu) # Remove this to use cbhg
 
-        output = tf.layers.dense(output, 66, activation=tf.nn.relu) # Remove this to use cbhg
+        output = tf.layers.dense(output, 128, activation=tf.nn.relu) # Remove this to use cbhg
         harm = tf.layers.dense(output, 60, activation=tf.nn.relu)
         ap = tf.layers.dense(output, 4, activation=tf.nn.relu)
-        f0_vuv = tf.layers.dense(harm, 16, activation=tf.nn.relu) 
+        f0_vuv = tf.layers.dense(output, 16, activation=tf.nn.relu) 
         f0 = tf.layers.dense(f0_vuv, 1, activation=tf.nn.relu)
         vuv = tf.layers.dense(f0_vuv, 1, activation=tf.nn.sigmoid)
     return harm, ap, f0, vuv
