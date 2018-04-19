@@ -61,6 +61,8 @@ def numpy_to_h5py(in_dir=config.dir_npy, split = config.split):
 
     hdf5_file.create_dataset("voc_stft", voc_shape_trn, np.float32)
 
+    hdf5_file.create_dataset("back_stft", voc_shape_trn, np.float32)
+
     hdf5_file.create_dataset("mix_stft", mix_shape_trn, np.float32)
 
     hdf5_file.create_dataset("feats", feats_shape_trn, np.float32)
@@ -78,6 +80,10 @@ def numpy_to_h5py(in_dir=config.dir_npy, split = config.split):
 
         mix_stft = mix_stft.astype('float32')
 
+        back_stft = np.load(in_dir+f+'_back_stft.npy')
+
+        back_stft = back_stft.astype('float32')
+
         synth_feats = np.load(in_dir+f+'_synth_feats.npy')
 
         synth_feats = synth_feats.astype('float32')
@@ -85,6 +91,8 @@ def numpy_to_h5py(in_dir=config.dir_npy, split = config.split):
         hdf5_file["voc_stft"][i,...] = voc_stft
 
         hdf5_file["mix_stft"][i,...] = mix_stft
+
+        hdf5_file["back_stft"][i,...] = back_stft
 
         hdf5_file["feats"][i,...] = synth_feats
 
@@ -112,6 +120,8 @@ def numpy_to_h5py(in_dir=config.dir_npy, split = config.split):
 
     hdf5_file.create_dataset("mix_stft", mix_shape_trn, np.float32)
 
+    hdf5_file.create_dataset("back_stft", voc_shape_trn, np.float32)
+
     hdf5_file.create_dataset("feats", feats_shape_trn, np.float32)
 
 
@@ -131,9 +141,15 @@ def numpy_to_h5py(in_dir=config.dir_npy, split = config.split):
 
         synth_feats = synth_feats.astype('float32')
 
+        back_stft = np.load(in_dir+f+'_back_stft.npy')
+
+        back_stft = back_stft.astype('float32')
+
         hdf5_file["voc_stft"][i,...] = voc_stft
 
         hdf5_file["mix_stft"][i,...] = mix_stft
+
+        hdf5_file["back_stft"][i,...] = back_stft
 
         hdf5_file["feats"][i,...] = synth_feats
 
@@ -225,37 +241,69 @@ def get_batches(train_filename=config.h5py_file_train, in_mode=config.in_mode, b
         mix_stfts = []
         featss = []
 
-        for i in range(max_files_to_process):
-            file_index = np.random.randint(0,num_files)
-            if in_mode == 'voc':
-                voc = hdf5_file["voc_stft"][file_index]
-            elif in_mode == 'mix':
-                mix = hdf5_file["mix_stft"][file_index]
-            fea = hdf5_file["feats"][file_index]
-            for j in range(config.samples_per_file):
-                index=np.random.randint(0,5170-config.max_phr_len)
-                if in_mode == 'voc':
-                    voc_stfts.append(voc[index:index+config.max_phr_len])
-                elif in_mode == 'mix':    
-                    mix_stfts.append(mix[index:index+config.max_phr_len])
-                featss.append(fea[index:index+config.max_phr_len])
-        featss = normalize(featss, feat='feats', mode=config.norm_mode_out)
-        if in_mode == 'voc':
-            voc_stfts = normalize(voc_stfts, feat='voc_stft', mode=config.norm_mode_in)
-            yield np.array(voc_stfts), np.array(featss)
-        elif in_mode == 'mix':
-            mix_stfts = normalize(mix_stfts, feat='mix_stft', mode=config.norm_mode_in)
+        if config.augment:
+            
+            for i in range(max_files_to_process):
+                file_index_voc = np.random.randint(0,num_files)
+                voc = hdf5_file["voc_stft"][file_index_voc]
+                fea = hdf5_file["feats"][file_index_voc]
+                mix = hdf5_file["mix_stft"][file_index_voc]
+
+                for j in range(config.samples_per_file):
+                    augment = np.random.rand(1)<config.aug_prob
+                    index=np.random.randint(0,5170-config.max_phr_len)
+                    if augment:
+                        file_index_back = np.random.randint(0,num_files)
+                        back = hdf5_file["back_stft"][file_index_back][index:index+config.max_phr_len]
+                        mix_stfts.append(np.clip(voc[index:index+config.max_phr_len]+back, 0.0,1.0))
+                    else:
+                        mixer = normalize(mix[index:index+config.max_phr_len], feat='mix_stft', mode=config.norm_mode_in)
+                        mix_stfts.append(mixer)
+                    featss.append(fea[index:index+config.max_phr_len])
+            featss = normalize(featss, feat='feats', mode=config.norm_mode_out)
             yield np.array(mix_stfts), np.array(featss)
+                
+
+        else:
+
+            for i in range(max_files_to_process):
+                file_index = np.random.randint(0,num_files)
+                if in_mode == 'voc':
+                    voc = hdf5_file["voc_stft"][file_index]
+                elif in_mode == 'mix':
+                    mix = hdf5_file["mix_stft"][file_index]
+                fea = hdf5_file["feats"][file_index]
+                for j in range(config.samples_per_file):
+                    index=np.random.randint(0,5170-config.max_phr_len)
+                    if in_mode == 'voc':
+                        voc_stfts.append(voc[index:index+config.max_phr_len])
+                    elif in_mode == 'mix':    
+                        mix_stfts.append(mix[index:index+config.max_phr_len])
+                    featss.append(fea[index:index+config.max_phr_len])
+            featss = normalize(featss, feat='feats', mode=config.norm_mode_out)
+            if in_mode == 'voc':
+                voc_stfts = normalize(voc_stfts, feat='voc_stft', mode=config.norm_mode_in)
+                yield np.array(voc_stfts), np.array(featss)
+            elif in_mode == 'mix':
+                mix_stfts = normalize(mix_stfts, feat='mix_stft', mode=config.norm_mode_in)
+                yield np.array(mix_stfts), np.array(featss)
 
 
 def main():
-    get_stats(feat='feats')
+    # get_stats(feat='feats')
     # numpy_to_h5py()
     # vg = val_generator()
-    # gen = get_batches()
+    gen = get_batches()
 
-
-    # import pdb;pdb.set_trace()
+    while True:
+        mix, feats = next(gen)
+        plt.figure(1)
+        plt.subplot(211)
+        plt.imshow(np.log(mix.reshape(-1,513)).T, aspect='auto', origin='lower')
+        plt.subplot(212)
+        plt.imshow(feats.reshape(-1,66).T, aspect='auto', origin='lower')
+        plt.show()
+        import pdb;pdb.set_trace()
 
 
 if __name__ == '__main__':

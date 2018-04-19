@@ -32,8 +32,11 @@ def main():
 
         mixture = np.clip(audio[:,0]+audio[:,1],0.0,1.0)
 
+        backing = np.array(audio[:,0])
+
         voc_stft = abs(utils.stft(vocals))
         mix_stft = abs(utils.stft(mixture))
+        back_stft = abs(utils.stft(backing))
 
         assert voc_stft.shape==mix_stft.shape
 
@@ -46,6 +49,7 @@ def main():
 
         np.save(config.dir_npy+lf[:-4]+'_voc_stft',voc_stft)
         np.save(config.dir_npy+lf[:-4]+'_mix_stft',mix_stft)
+        np.save(config.dir_npy+lf[:-4]+'_back_stft',back_stft)
         np.save(config.dir_npy+lf[:-4]+'_synth_feats',out_feats)
 
 
