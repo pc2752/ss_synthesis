@@ -41,7 +41,7 @@ def train(_):
 
         ap_loss = tf.reduce_sum(tf.abs(ap - target_placeholder[:,:,60:-2]))
 
-        f0_loss = tf.reduce_sum(tf.abs(f0 - target_placeholder[:,:,-2:-1])*10.0) 
+        f0_loss = tf.reduce_sum(tf.abs(f0 - target_placeholder[:,:,-2:-1])*20.0) 
 
         # vuv_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels=, logits=vuv))
 
@@ -266,8 +266,8 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
             plt.subplot(212)
             plt.imshow(targs[:,60:-2].T, origin='lower', aspect='auto')
             plt.figure(3)
-            plt.plot(val_outer[:,-2], label = "Predicted Value")
-            plt.plot(targs[:,-2], label="Ground Truth")
+            plt.plot(val_outer[:,-2]*(1-targs[:,-1]), label = "Predicted Value")
+            plt.plot(targs[:,-2]*(1-targs[:,-1]), label="Ground Truth")
             plt.legend()
             plt.figure(4)
             plt.subplot(211)
@@ -276,7 +276,7 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
             plt.plot(targs[:,-1])
             plt.show()
         if save_file:
-            # val_outer[:,-2:] = targs[:,-2:]
+            val_outer[:,-2:] = targs[:,-2:]
 
             val_outer = np.ascontiguousarray(utils.denormalize(val_outer,'feats', mode=config.norm_mode_out))
             utils.feats_to_audio(val_outer,file_name[:-4]+'_synth')
@@ -309,6 +309,7 @@ if __name__ == '__main__':
                     synth_file(file_name,show_plots=True, save_file=True)
             else:
                 print("Synthesizing File %s, Not Showing Plots"% sys.argv[2])
+                synth_file(file_name,show_plots=False, save_file=True)
 
     elif sys.argv[1] == '-help' or sys.argv[1] == '--help' or sys.argv[1] == '--h' or sys.argv[1] == '-h':
         print("%s --train to train the model"%sys.argv[0])
