@@ -10,7 +10,7 @@ import numpy as np
 from six.moves import xrange  # pylint: disable=redefined-builtin
 
 import config
-from data_to_h5py import get_batches, val_generator
+from data_pipeline import data_gen
 import modules_tf as modules
 import utils
 from reduce import mgc_to_mfsc
@@ -96,7 +96,7 @@ def train(_):
 
         print("Start from: %d" % start_epoch)
         for epoch in xrange(start_epoch, config.num_epochs):
-            data_generator = get_batches()
+            data_generator = data_gen()
             start_time = time.time()
 
             epoch_loss_harm = 0
@@ -113,7 +113,7 @@ def train(_):
 
             batch_num = 0
             batch_num_val = 0
-            val_generator = get_batches(train_filename=config.h5py_file_val, batches_per_epoch=config.batches_per_epoch_val)
+            val_generator = data_gen(mode='val')
 
             with tf.variable_scope('Training'):
 

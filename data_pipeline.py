@@ -4,7 +4,7 @@ import time
 import h5py
 
 import config
-
+import utils
 def data_gen(mode = 'Train'):
 
 
@@ -93,6 +93,14 @@ def data_gen(mode = 'Train'):
             targets = np.array(targets)
             inputs = np.array(inputs)
 
+            inputs = np.clip(inputs,0.0,1.0)
+
+            targets = utils.normalize(targets, 'feats', mode=config.norm_mode_out)
+
+            assert inputs.max() <= 1.0
+
+            assert targets.max() <= 1.0
+
             yield inputs, targets
 
     else:
@@ -128,15 +136,75 @@ def data_gen(mode = 'Train'):
 
             targets = np.array(targets)
             inputs = np.array(inputs)
+
+            inputs = np.clip(inputs,0.0,1.0)
+
+            targets = utils.normalize(targets, 'feats', mode=config.norm_mode_out)
+
+            assert inputs.max() <= 1.0
+
+            assert targets.max() <= 1.0
+
             yield inputs, targets
 
         # import pdb;pdb.set_trace()
 
+def get_stats():
+    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._')]
+
+    back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and not x.startswith('._')]
+
+    max_feat = np.zeros(66)
+    min_feat = np.ones(66)*1000
+
+    max_voc = np.zeros(513)
+    min_voc = np.ones(513)*1000
+
+    max_mix = np.zeros(513)
+    min_mix = np.ones(513)*1000    
+
+    for voc_to_open in voc_list:
+
+        voc_file = h5py.File(config.voice_dir+voc_to_open, "r")
+
+        voc_stft = voc_file['voc_stft']
+
+        feats = voc_file['feats']
+
+        maxi_voc_stft = np.array(voc_stft).max(axis=0)
+
+        for i in range(len(maxi_voc_stft)):
+            if maxi_voc_stft[i]>max_voc[i]:
+                max_voc[i] = maxi_voc_stft[i]
+
+        mini_voc_stft = np.array(voc_stft).min(axis=0)
+
+        for i in range(len(mini_voc_stft)):
+            if mini_voc_stft[i]<min_voc[i]:
+                min_voc[i] = mini_voc_stft[i]
+
+        maxi_voc_feat = np.array(feats).max(axis=0)
+
+        for i in range(len(maxi_voc_feat)):
+            if maxi_voc_feat[i]>max_feat[i]:
+                max_feat[i] = maxi_voc_feat[i]
+
+        mini_voc_feat = np.array(feats).min(axis=0)
+
+        for i in range(len(mini_voc_feat)):
+            if mini_voc_feat[i]<min_feat[i]:
+                min_feat[i] = mini_voc_feat[i]        
+    
+    np.save(config.stat_dir+'feats_maximus',max_feat)
+    np.save(config.stat_dir+'feats_minimus',min_feat)
+    np.save(config.stat_dir+'voc_stft_maximus',max_voc)
+    np.save(config.stat_dir+'voc_stft_minimus',min_voc)
+
 
 
 def main():
-    # get_stats(feat='feats')
-    gen = data_gen(mode='val')
+    get_stats()
+    gen = data_gen()
     # vg = val_generator()
     # gen = get_batches()
 

@@ -32,11 +32,11 @@ augment = True
 aug_prob = 0.6
 
 # Hyperparameters
-num_epochs = 1000
+num_epochs = 5000
 batches_per_epoch_train = 500
 batches_per_epoch_val = 100
-batch_size = 120 
-samples_per_file = 30
+batch_size = 60 
+samples_per_file = 15
 max_phr_len = 40
 input_features = 513
 lstm_size = 128
