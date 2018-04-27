@@ -2,16 +2,17 @@ import numpy as np
 import tensorflow as tf
 
 wav_dir = '../datasets/iKala/Wavfile/'
+wav_dir_nus = '../datasets/nus-smc-corpus_48/'
+wav_dir_mus = '../datasets/musdb18/train/'
 
 
-
-data_dir = './data/'
+voice_dir = './voice/'
+backing_dir = './backing/'
 log_dir = './log/'
 data_log = './log/data_log.log'
 
 
 dir_npy = './data_npy/'
-tfr_file = './data_tfr/train.tfrecords'
 stat_dir = './stats/'
 h5py_file_train = './data_h5py/train.hdf5'
 h5py_file_val = './data_h5py/val.hdf5'
@@ -28,7 +29,7 @@ feats_ext = '_synth_feats.npy'
 split = 0.9
 
 augment = True
-aug_prob = 0.4
+aug_prob = 0.6
 
 # Hyperparameters
 num_epochs = 1000

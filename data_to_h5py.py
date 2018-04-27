@@ -262,7 +262,7 @@ def get_batches(train_filename=config.h5py_file_train, in_mode=config.in_mode, b
                     featss.append(fea[index:index+config.max_phr_len])
             featss = normalize(featss, feat='feats', mode=config.norm_mode_out)
             # Trying without vuv part
-            featss[:,:,-2] = featss[:,:,-2]*(1-featss[:,:,-1])
+            # featss[:,:,-2] = featss[:,:,-2]*(1-featss[:,:,-1])
             yield np.array(mix_stfts), np.array(featss)
                 
 

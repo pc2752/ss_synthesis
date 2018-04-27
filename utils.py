@@ -121,6 +121,16 @@ def file_to_stft(input_file):
 def input_to_feats(input_file, mode=config.comp_mode):
     audio,fs=sf.read(input_file)
     vocals=np.array(audio[:,1])
+    feats = stft_to_feats(vocals,fs)
+
+
+    # harm_in=mgc_to_sp(harmy, 1025, 0.45)
+    # ap_in=mgc_to_sp(apy, 1025, 0.45)
+
+
+    return feats
+
+def stft_to_feats(vocals, fs, mode=config.comp_mode):
     feats=pw.wav2world(vocals,fs,frame_period=5.80498866)
 
     ap = feats[2].reshape([feats[1].shape[0],feats[1].shape[1]]).astype(np.float32)

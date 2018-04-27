@@ -276,8 +276,7 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
             plt.plot(targs[:,-1])
             plt.show()
         if save_file:
-            val_outer[:,-2:] = targs[:,-2:]
-
+            # val_outer[:,-1:] = targs[:,-1:]
             val_outer = np.ascontiguousarray(utils.denormalize(val_outer,'feats', mode=config.norm_mode_out))
             utils.feats_to_audio(val_outer,file_name[:-4]+'_synth')
             print("File saved to %s" % config.val_dir+file_name[:-4]+'_synth.wav')
@@ -316,6 +315,8 @@ if __name__ == '__main__':
         print("%s --synth <filename> to synthesize file"%sys.argv[0])
         print("%s --synth <filename> -- plot to synthesize file and show plots"%sys.argv[0])
         print("%s --synth <filename> -- plot --ns to just show plots"%sys.argv[0])
+    else:
+        print("Unable to decipher inputs please use %s --help for help on how to use this function"%sys.argv[0])
   
 
 
