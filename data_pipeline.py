@@ -3,8 +3,13 @@ import os
 import time
 import h5py
 
+import matplotlib.pyplot as plt
+
 import config
 import utils
+
+
+
 def data_gen(mode = 'Train'):
 
 
@@ -46,6 +51,8 @@ def data_gen(mode = 'Train'):
 
                     voc_file = h5py.File(config.voice_dir+voc_to_open, "r")
 
+                    # print("Vocal file: %s" % voc_file)
+
                     voc_stft = voc_file['voc_stft']
 
                     feats = voc_file['feats']
@@ -56,13 +63,15 @@ def data_gen(mode = 'Train'):
 
                     back_file = h5py.File(config.backing_dir+back_to_open, "r")
 
+                    # print("Backing file: %s" % back_file)
+
                     back_stft = back_file['back_stft']
 
 
                     for j in range(config.samples_per_file):
                             voc_idx = np.random.randint(0,len(voc_stft)-config.max_phr_len)
                             bac_idx = np.random.randint(0,len(back_stft)-config.max_phr_len)
-                            mix_stft = voc_stft[voc_idx:voc_idx+config.max_phr_len,:] + back_stft[bac_idx:bac_idx+config.max_phr_len,:]
+                            mix_stft = voc_stft[voc_idx:voc_idx+config.max_phr_len,:] + back_stft[bac_idx:bac_idx+config.max_phr_len,:]*np.clip(np.random.rand(1),0.0,0.7)
                             targets.append(feats[voc_idx:voc_idx+config.max_phr_len,:])
                             inputs.append(mix_stft)
 
@@ -75,6 +84,8 @@ def data_gen(mode = 'Train'):
                     tr_file = train_list[file_index]
 
                     voc_file = h5py.File(config.voice_dir+tr_file, "r")
+
+                    # print("Vocal file: %s" % voc_file)
 
 
                     feats = voc_file['feats'] 
@@ -93,13 +104,13 @@ def data_gen(mode = 'Train'):
             targets = np.array(targets)
             inputs = np.array(inputs)
 
-            inputs = np.clip(inputs,0.0,1.0)
+            # inputs = np.clip(inputs,0.0,1.0)
 
             targets = utils.normalize(targets, 'feats', mode=config.norm_mode_out)
 
-            assert inputs.max() <= 1.0
+            # assert inputs.max() <= 1.0
 
-            assert targets.max() <= 1.0
+            # assert targets.max() <= 1.0
 
             yield inputs, targets
 
@@ -137,13 +148,13 @@ def data_gen(mode = 'Train'):
             targets = np.array(targets)
             inputs = np.array(inputs)
 
-            inputs = np.clip(inputs,0.0,1.0)
+            # inputs = np.clip(inputs,0.0,1.0)
 
             targets = utils.normalize(targets, 'feats', mode=config.norm_mode_out)
 
-            assert inputs.max() <= 1.0
+            # assert inputs.max() <= 1.0
 
-            assert targets.max() <= 1.0
+            # assert targets.max() <= 1.0
 
             yield inputs, targets
 
@@ -173,6 +184,9 @@ def get_stats():
 
         maxi_voc_stft = np.array(voc_stft).max(axis=0)
 
+        # if np.array(feats).min()<0:
+        #     import pdb;pdb.set_trace()
+
         for i in range(len(maxi_voc_stft)):
             if maxi_voc_stft[i]>max_voc[i]:
                 max_voc[i] = maxi_voc_stft[i]
@@ -193,7 +207,9 @@ def get_stats():
 
         for i in range(len(mini_voc_feat)):
             if mini_voc_feat[i]<min_feat[i]:
-                min_feat[i] = mini_voc_feat[i]        
+                min_feat[i] = mini_voc_feat[i]   
+
+    # import pdb;pdb.set_trace()                 
     
     np.save(config.stat_dir+'feats_maximus',max_feat)
     np.save(config.stat_dir+'feats_minimus',min_feat)
@@ -203,8 +219,12 @@ def get_stats():
 
 
 def main():
-    get_stats()
+    # get_stats()
     gen = data_gen()
+
+    inputs, targets = next(gen)
+
+    plt.imshow(np.log(inputs.reshape(-1,513).T),aspect='auto',origin='lower')
     # vg = val_generator()
     # gen = get_batches()
 

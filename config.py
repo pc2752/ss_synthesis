@@ -29,15 +29,15 @@ feats_ext = '_synth_feats.npy'
 split = 0.9
 
 augment = True
-aug_prob = 0.6
+aug_prob = 0.4
 
 # Hyperparameters
-num_epochs = 5000
+num_epochs = 2000
 batches_per_epoch_train = 500
 batches_per_epoch_val = 100
 batch_size = 60 
 samples_per_file = 15
-max_phr_len = 40
+max_phr_len = 30
 input_features = 513
 lstm_size = 128
 output_features = 66

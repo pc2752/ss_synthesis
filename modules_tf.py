@@ -59,13 +59,9 @@ def bi_static_stacked_RNN(x, scope='RNN'):
 
         # output = tf.layers.dense(output, config.output_features, activation=tf.nn.relu) # Remove this to use cbhg
 
-        output = tf.layers.dense(output, 128, activation=tf.nn.relu) # Remove this to use cbhg
-        harm = tf.layers.dense(output, 60, activation=tf.nn.relu)
-        ap = tf.layers.dense(output, 4, activation=tf.nn.relu)
-        f0 = tf.layers.dense(output, 64, activation=tf.nn.relu) 
-        f0 = tf.layers.dense(f0, 1, activation=tf.nn.relu)
-        vuv = tf.layers.dense(ap, 1, activation=tf.nn.sigmoid)
-    return harm, ap, f0, vuv
+        return output
+
+
 
 
 def bi_dynamic_RNN(x, input_lengths, scope='RNN'):
@@ -166,8 +162,16 @@ def cbhg(inputs, scope='cbhg', training=True):
             x = highwaynet(x, scope='highway_%d' % (i+1))
         x = bi_static_stacked_RNN(x)
         x = tf.layers.dense(x, config.output_features)
+
+        output = tf.layers.dense(x, 128, activation=tf.nn.relu) # Remove this to use cbhg
+        harm = tf.layers.dense(output, 60, activation=tf.nn.relu)
+        ap = tf.layers.dense(output, 4, activation=tf.nn.relu)
+        f0 = tf.layers.dense(output, 64, activation=tf.nn.relu) 
+        f0 = tf.layers.dense(f0, 1, activation=tf.nn.relu)
+        vuv = tf.layers.dense(ap, 1, activation=tf.nn.sigmoid)
+    return harm, ap, f0, vuv
         
-    return x
+    # return x
 
 
 

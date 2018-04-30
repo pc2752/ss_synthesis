@@ -27,7 +27,7 @@ def train(_):
         tf.summary.histogram('targets', target_placeholder)
 
 
-        harm, ap, f0, vuv = modules.bi_static_stacked_RNN(input_placeholder)
+        harm, ap, f0, vuv = modules.cbhg(input_placeholder)
 
         tf.summary.histogram('harm', harm)
 
@@ -114,6 +114,8 @@ def train(_):
             batch_num = 0
             batch_num_val = 0
             val_generator = data_gen(mode='val')
+
+            # val_generator = get_batches(train_filename=config.h5py_file_val, batches_per_epoch=config.batches_per_epoch_val)
 
             with tf.variable_scope('Training'):
 
@@ -204,7 +206,7 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
         
         input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.input_features),name='input_placeholder')
 
-        harm, ap, f0, vuv = modules.bi_static_stacked_RNN(input_placeholder)
+        harm, ap, f0, vuv = modules.cbhg(input_placeholder)
 
         saver = tf.train.Saver()
 
@@ -266,8 +268,8 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
             plt.subplot(212)
             plt.imshow(targs[:,60:-2].T, origin='lower', aspect='auto')
             plt.figure(3)
-            plt.plot(val_outer[:,-2]*(1-targs[:,-1]), label = "Predicted Value")
-            plt.plot(targs[:,-2]*(1-targs[:,-1]), label="Ground Truth")
+            plt.plot(val_outer[:,-2], label = "Predicted Value")
+            plt.plot(targs[:,-2], label="Ground Truth")
             plt.legend()
             plt.figure(4)
             plt.subplot(211)
@@ -276,7 +278,7 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
             plt.plot(targs[:,-1])
             plt.show()
         if save_file:
-            # val_outer[:,-1:] = targs[:,-1:]
+            val_outer[:,-2:] = targs[:,-2:]
             val_outer = np.ascontiguousarray(utils.denormalize(val_outer,'feats', mode=config.norm_mode_out))
             utils.feats_to_audio(val_outer,file_name[:-4]+'_synth')
             print("File saved to %s" % config.val_dir+file_name[:-4]+'_synth.wav')
