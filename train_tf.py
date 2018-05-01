@@ -8,6 +8,7 @@ import sys
 import time
 import numpy as np
 from six.moves import xrange  # pylint: disable=redefined-builtin
+import h5py
 
 import config
 from data_pipeline import data_gen
@@ -37,11 +38,11 @@ def train(_):
 
         tf.summary.histogram('vuv', vuv)
 
-        harm_loss = tf.reduce_sum(tf.abs(harm - target_placeholder[:,:,:60])*np.linspace(1.0,0.7,60))
+        harm_loss = tf.reduce_sum(tf.abs(harm - target_placeholder[:,:,:60])*np.linspace(1.0,0.7,60)*(1-target_placeholder[:,:,-1:]))
 
-        ap_loss = tf.reduce_sum(tf.abs(ap - target_placeholder[:,:,60:-2]))
+        ap_loss = tf.reduce_sum(tf.abs(ap - target_placeholder[:,:,60:-2])*(1-target_placeholder[:,:,-1:]))
 
-        f0_loss = tf.reduce_sum(tf.abs(f0 - target_placeholder[:,:,-2:-1])*20.0) 
+        f0_loss = tf.reduce_sum(tf.abs(f0 - target_placeholder[:,:,-2:-1])*20.0*(1-target_placeholder[:,:,-1:])) 
 
         # vuv_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels=, logits=vuv))
 
@@ -61,7 +62,7 @@ def train(_):
 
         global_step = tf.Variable(0, name='global_step', trainable=False)
 
-        optimizer = tf.train.AdamOptimizer()
+        optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
         train_function = optimizer.minimize(loss, global_step= global_step)
 
@@ -167,11 +168,11 @@ def train(_):
                     utils.progress(batch_num_val,config.batches_per_epoch_val, suffix = 'validiation done')
                     batch_num_val+=1
 
-                epoch_loss_harm_val = epoch_loss_harm_val/(config.batches_per_epoch_train *config.batch_size)
-                epoch_loss_ap_val = epoch_loss_ap_val/(config.batches_per_epoch_train *config.batch_size)
-                epoch_loss_f0_val = epoch_loss_f0_val/(config.batches_per_epoch_train *config.batch_size)
-                epoch_loss_vuv_val = epoch_loss_vuv_val/(config.batches_per_epoch_train *config.batch_size)
-                epoch_total_loss_val = epoch_total_loss_val/(config.batches_per_epoch_train *config.batch_size)
+                epoch_loss_harm_val = epoch_loss_harm_val/(config.batches_per_epoch_val *config.batch_size)
+                epoch_loss_ap_val = epoch_loss_ap_val/(config.batches_per_epoch_val *config.batch_size)
+                epoch_loss_f0_val = epoch_loss_f0_val/(config.batches_per_epoch_val *config.batch_size)
+                epoch_loss_vuv_val = epoch_loss_vuv_val/(config.batches_per_epoch_val *config.batch_size)
+                epoch_total_loss_val = epoch_total_loss_val/(config.batches_per_epoch_val *config.batch_size)
 
                 summary_str = sess.run(summary, feed_dict={input_placeholder: voc,target_placeholder: feat})
                 val_summary_writer.add_summary(summary_str, epoch)
@@ -202,11 +203,20 @@ def train(_):
 
 
 def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=True):
+    stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
+
+    max_feat = np.array(stat_file["feats_maximus"])
+    min_feat = np.array(stat_file["feats_minimus"])
+    max_voc = np.array(stat_file["voc_stft_maximus"])
+    min_voc = np.array(stat_file["voc_stft_minimus"])
+    max_back = np.array(stat_file["back_stft_maximus"])
+    min_back = np.array(stat_file["back_stft_minimus"])
+    max_mix = np.array(max_voc)+np.array(max_back)
     with tf.Graph().as_default():
         
         input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.input_features),name='input_placeholder')
 
-        harm, ap, f0, vuv = modules.cbhg(input_placeholder)
+        harm, ap, f0, vuv  = modules.cbhg(input_placeholder)
 
         saver = tf.train.Saver()
 
@@ -230,7 +240,8 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
         targs = utils.input_to_feats(os.path.join(file_path,file_name))
 
         in_batches, nchunks_in = utils.generate_overlapadd(mix_stft)
-        in_batches = utils.normalize(in_batches, 'mix_stft', mode=config.norm_mode_in)
+        in_batches = in_batches/max_mix
+        # in_batches = utils.normalize(in_batches, 'mix_stft', mode=config.norm_mode_in)
         val_outer = []
 
         for in_batch in in_batches:
@@ -247,7 +258,8 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
         #Test purposes only
         
 
-        targs = utils.normalize(targs, 'feats', mode=config.norm_mode_out)
+        # targs = utils.normalize(targs, 'feats', mode=config.norm_mode_out)
+        targs = (targs-min_feat)/(max_feat-min_feat)
 
         
 
@@ -278,8 +290,9 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
             plt.plot(targs[:,-1])
             plt.show()
         if save_file:
-            val_outer[:,-2:] = targs[:,-2:]
-            val_outer = np.ascontiguousarray(utils.denormalize(val_outer,'feats', mode=config.norm_mode_out))
+            # val_outer[:,-1:] = targs[:,-1:]
+            val_outer = np.ascontiguousarray(val_outer*(max_feat-min_feat)+min_feat)
+            # val_outer = np.ascontiguousarray(utils.denormalize(val_outer,'feats', mode=config.norm_mode_out))
             utils.feats_to_audio(val_outer,file_name[:-4]+'_synth')
             print("File saved to %s" % config.val_dir+file_name[:-4]+'_synth.wav')
 

@@ -24,6 +24,7 @@ def main():
 
     for lf in wav_files:
         
+        # lf = "Actions - One Minute Smile.stem.mp4"
         # print(lf)
         audio,fs = stempeg.read_stems(os.path.join(config.wav_dir_mus,lf), stem_id=[0,1,2,3,4])
 
@@ -36,6 +37,12 @@ def main():
         acc = audio[3]
 
         vocals = audio[4]
+
+        # out_feats = utils.stft_to_feats((vocals[:,0]+vocals[:,1])/2,fs)
+
+        # utils.feats_to_audio(out_feats,lf,fs=fs)
+
+        # import pdb;pdb.set_trace()
 
         backing = np.clip(drums+bass+acc, 0.0,1.0)
 

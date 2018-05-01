@@ -200,6 +200,7 @@ def get_stats(file_list=[config.h5py_file_train, config.h5py_file_val], feat = '
     # import pdb;pdb.set_trace()
     maximus = feats.max(axis=0)
     minimus = feats.min(axis=0)
+    import pdb;pdb.set_trace()
     np.save(config.stat_dir+feat+'_means',means)
     np.save(config.stat_dir+feat+'_stds',stds)
     np.save(config.stat_dir+feat+'_maximus',maximus)
@@ -292,7 +293,7 @@ def get_batches(train_filename=config.h5py_file_train, in_mode=config.in_mode, b
 
 
 def main():
-    # get_stats(feat='feats')
+    get_stats(feat='feats')
     # numpy_to_h5py()
     # vg = val_generator()
     gen = get_batches()

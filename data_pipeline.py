@@ -24,6 +24,17 @@ def data_gen(mode = 'Train'):
 
     val_list = mix_list[int(len(mix_list)*config.split):]
 
+    stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
+
+    max_feat = np.array(stat_file["feats_maximus"])
+    min_feat = np.array(stat_file["feats_minimus"])
+    max_voc = np.array(stat_file["voc_stft_maximus"])
+    min_voc = np.array(stat_file["voc_stft_minimus"])
+    max_back = np.array(stat_file["back_stft_maximus"])
+    min_back = np.array(stat_file["back_stft_minimus"])
+    max_mix = np.array(max_voc)+np.array(max_back)
+    stat_file.close()
+    # min_mix = 
 
 
     max_files_to_process = int(config.batch_size/config.samples_per_file)
@@ -104,9 +115,12 @@ def data_gen(mode = 'Train'):
             targets = np.array(targets)
             inputs = np.array(inputs)
 
+            targets = (targets-min_feat)/(max_feat-min_feat)
+            inputs = inputs/max_mix
+
             # inputs = np.clip(inputs,0.0,1.0)
 
-            targets = utils.normalize(targets, 'feats', mode=config.norm_mode_out)
+            
 
             # assert inputs.max() <= 1.0
 
@@ -150,7 +164,9 @@ def data_gen(mode = 'Train'):
 
             # inputs = np.clip(inputs,0.0,1.0)
 
-            targets = utils.normalize(targets, 'feats', mode=config.norm_mode_out)
+            # targets = utils.normalize(targets, 'feats', mode=config.norm_mode_out)
+            targets = (targets-min_feat)/(max_feat-min_feat)
+            inputs = inputs/max_mix
 
             # assert inputs.max() <= 1.0
 
@@ -209,27 +225,69 @@ def get_stats():
             if mini_voc_feat[i]<min_feat[i]:
                 min_feat[i] = mini_voc_feat[i]   
 
-    # import pdb;pdb.set_trace()                 
-    
-    np.save(config.stat_dir+'feats_maximus',max_feat)
-    np.save(config.stat_dir+'feats_minimus',min_feat)
-    np.save(config.stat_dir+'voc_stft_maximus',max_voc)
-    np.save(config.stat_dir+'voc_stft_minimus',min_voc)
+    for voc_to_open in back_list:
 
+        voc_file = h5py.File(config.backing_dir+voc_to_open, "r")
+
+        voc_stft = voc_file["back_stft"]
+
+        maxi_voc_stft = np.array(voc_stft).max(axis=0)
+
+        # if np.array(feats).min()<0:
+        #     import pdb;pdb.set_trace()
+
+        for i in range(len(maxi_voc_stft)):
+            if maxi_voc_stft[i]>max_mix[i]:
+                max_mix[i] = maxi_voc_stft[i]
+
+        mini_voc_stft = np.array(voc_stft).min(axis=0)
+
+        for i in range(len(mini_voc_stft)):
+            if mini_voc_stft[i]<min_mix[i]:
+                min_mix[i] = mini_voc_stft[i]
+
+    hdf5_file = h5py.File(config.stat_dir+'stats.hdf5', mode='w')
+
+    hdf5_file.create_dataset("feats_maximus", [66], np.float32) 
+    hdf5_file.create_dataset("feats_minimus", [66], np.float32)   
+    hdf5_file.create_dataset("voc_stft_maximus", [513], np.float32) 
+    hdf5_file.create_dataset("voc_stft_minimus", [513], np.float32)   
+    hdf5_file.create_dataset("back_stft_maximus", [513], np.float32) 
+    hdf5_file.create_dataset("back_stft_minimus", [513], np.float32)   
+
+    hdf5_file["feats_maximus"][:] = max_feat
+    hdf5_file["feats_minimus"][:] = min_feat
+    hdf5_file["voc_stft_maximus"][:] = max_voc
+    hdf5_file["voc_stft_minimus"][:] = min_voc
+    hdf5_file["back_stft_maximus"][:] = max_mix
+    hdf5_file["back_stft_minimus"][:] = min_mix
+
+    # import pdb;pdb.set_trace()
+
+    hdf5_file.close()
 
 
 def main():
     # get_stats()
     gen = data_gen()
+    while True :
+        inputs, targets = next(gen)
 
-    inputs, targets = next(gen)
+        plt.subplot(411)
+        plt.imshow(np.log(1+inputs.reshape(-1,513).T),aspect='auto',origin='lower')
+        plt.subplot(412)
+        plt.imshow(targets.reshape(-1,66)[:,:64].T,aspect='auto',origin='lower')
+        plt.subplot(413)
+        plt.plot(targets.reshape(-1,66)[:,-2])
+        plt.subplot(414)
+        plt.plot(targets.reshape(-1,66)[:,-1])
 
-    plt.imshow(np.log(inputs.reshape(-1,513).T),aspect='auto',origin='lower')
-    # vg = val_generator()
-    # gen = get_batches()
+        plt.show()
+        # vg = val_generator()
+        # gen = get_batches()
 
 
-    import pdb;pdb.set_trace()
+        import pdb;pdb.set_trace()
 
 
 if __name__ == '__main__':
