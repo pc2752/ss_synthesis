@@ -160,7 +160,7 @@ def cbhg(inputs, scope='cbhg', training=True):
 
         for i in range(config.highway_layers):
             x = highwaynet(x, scope='highway_%d' % (i+1))
-        # x = bi_static_stacked_RNN(x)
+        x = bi_static_stacked_RNN(x)
         x = tf.layers.dense(x, config.output_features)
 
         output = tf.layers.dense(x, 128, activation=tf.nn.relu) # Remove this to use cbhg

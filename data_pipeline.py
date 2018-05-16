@@ -9,14 +9,25 @@ import config
 import utils
 
 
+def gen_train_val():
+    mix_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('ikala')]
+
+    train_list = mix_list[:int(len(mix_list)*config.split)]
+
+    val_list = mix_list[int(len(mix_list)*config.split):]
+
+    utils.list_to_file(val_list,config.log_dir+'train_val.txt')
+
+
+
 
 def data_gen(mode = 'Train'):
 
 
 
-    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._')]
+    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir')]
 
-    back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and not x.startswith('._')]
+    back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir')]
 
     mix_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('ikala')]
 
@@ -82,7 +93,7 @@ def data_gen(mode = 'Train'):
                     for j in range(config.samples_per_file):
                             voc_idx = np.random.randint(0,len(voc_stft)-config.max_phr_len)
                             bac_idx = np.random.randint(0,len(back_stft)-config.max_phr_len)
-                            mix_stft = voc_stft[voc_idx:voc_idx+config.max_phr_len,:] + back_stft[bac_idx:bac_idx+config.max_phr_len,:]*np.clip(np.random.rand(1),0.0,0.7)
+                            mix_stft = voc_stft[voc_idx:voc_idx+config.max_phr_len,:] + back_stft[bac_idx:bac_idx+config.max_phr_len,:]*np.clip(np.random.rand(1),0.0,0.9)
                             targets.append(feats[voc_idx:voc_idx+config.max_phr_len,:])
                             inputs.append(mix_stft)
 
@@ -268,26 +279,27 @@ def get_stats():
 
 
 def main():
+    gen_train_val()
     # get_stats()
-    gen = data_gen()
-    while True :
-        inputs, targets = next(gen)
+    # gen = data_gen()
+    # while True :
+    #     inputs, targets = next(gen)
 
-        plt.subplot(411)
-        plt.imshow(np.log(1+inputs.reshape(-1,513).T),aspect='auto',origin='lower')
-        plt.subplot(412)
-        plt.imshow(targets.reshape(-1,66)[:,:64].T,aspect='auto',origin='lower')
-        plt.subplot(413)
-        plt.plot(targets.reshape(-1,66)[:,-2])
-        plt.subplot(414)
-        plt.plot(targets.reshape(-1,66)[:,-1])
+    #     plt.subplot(411)
+    #     plt.imshow(np.log(1+inputs.reshape(-1,513).T),aspect='auto',origin='lower')
+    #     plt.subplot(412)
+    #     plt.imshow(targets.reshape(-1,66)[:,:64].T,aspect='auto',origin='lower')
+    #     plt.subplot(413)
+    #     plt.plot(targets.reshape(-1,66)[:,-2])
+    #     plt.subplot(414)
+    #     plt.plot(targets.reshape(-1,66)[:,-1])
 
-        plt.show()
-        # vg = val_generator()
-        # gen = get_batches()
+    #     plt.show()
+    #     # vg = val_generator()
+    #     # gen = get_batches()
 
 
-        import pdb;pdb.set_trace()
+    #     import pdb;pdb.set_trace()
 
 
 if __name__ == '__main__':

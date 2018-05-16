@@ -27,7 +27,7 @@ def main():
 
         vocals = np.array(audio[:,1])
 
-        mixture = np.clip(audio[:,0]+audio[:,1],0.0,1.0)
+        mixture = (audio[:,0]+audio[:,1])*0.7
 
         backing = np.array(audio[:,0])
 

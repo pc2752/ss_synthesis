@@ -9,6 +9,7 @@ import pyworld as pw
 import matplotlib.pyplot as plt
 from reduce import sp_to_mfsc, mfsc_to_sp, ap_to_wbap,wbap_to_ap, get_warped_freqs, sp_to_mgc, mgc_to_sp, mgc_to_mfsc, mfsc_to_mgc
 from vocoder import extract_sp_world, extract_ap_world, gen_wave_world
+from acoufe import pitch
 
 import config
 
@@ -114,13 +115,19 @@ def nan_helper(y):
 
 def file_to_stft(input_file):
     audio,fs=sf.read(input_file)
-    mixture=np.clip(audio[:,0]+audio[:,1],0.0,1.0)
+    if len(audio.shape)==2:
+        mixture=np.clip(audio[:,0]+audio[:,1],0.0,1.0)
+    else:
+        mixture = audio
     mix_stft=abs(stft(mixture))
     return mix_stft
 
 def input_to_feats(input_file, mode=config.comp_mode):
     audio,fs=sf.read(input_file)
-    vocals=np.array(audio[:,1])
+    if len(audio.shape)==2:
+        vocals=np.array(audio[:,1])
+    else:
+        vocals = audio
     feats = stft_to_feats(vocals,fs)
 
 
@@ -136,8 +143,9 @@ def stft_to_feats(vocals, fs, mode=config.comp_mode):
     ap = feats[2].reshape([feats[1].shape[0],feats[1].shape[1]]).astype(np.float32)
     ap = 10.*np.log10(ap**2)
     harm=10*np.log10(feats[1].reshape([feats[2].shape[0],feats[2].shape[1]]))
+    f0 = pitch.extract_f0_sac(vocals, fs, 0.00580498866)
 
-    y=69+12*np.log2(feats[0]/440)
+    y=69+12*np.log2(f0/440)
     nans, x= nan_helper(y)
     naners=np.isinf(y)
     y[nans]= np.interp(x(nans), x(~nans), y[~nans])
@@ -153,6 +161,8 @@ def stft_to_feats(vocals, fs, mode=config.comp_mode):
         harmy=sp_to_mgc(harm,60,0.45)
         apy=sp_to_mgc(ap,4,0.45)
 
+    # import pdb;pdb.set_trace()
+
 
     out_feats=np.concatenate((harmy,apy,y.reshape((-1,2))),axis=1) 
 
@@ -161,6 +171,28 @@ def stft_to_feats(vocals, fs, mode=config.comp_mode):
 
 
     return out_feats
+
+def write_ori_ikala(input_file, filename):
+    audio,fs = sf.read(input_file)
+    mixture = (audio[:,0]+audio[:,1])*0.7
+    vocals = np.array(audio[:,1])
+    sf.write(config.val_dir+filename+'_mixture.wav',mixture,fs)
+    sf.write(config.val_dir+filename+'_ori_vocals.wav',vocals,fs)
+
+def file_to_sac(input_file):
+    audio,fs = sf.read(input_file)
+    vocals = np.array(audio[:,1])
+    f0 = pitch.extract_f0_sac(vocals, config.fs, 0.00580498866)
+    y=69+12*np.log2(f0/440)
+    nans, x= nan_helper(y)
+    naners=np.isinf(y)
+    y[nans]= np.interp(x(nans), x(~nans), y[~nans])
+    # y=[float(x-(min_note-1))/float(max_note-(min_note-1)) for x in y]
+    y=np.array(y).reshape([len(y),1])
+    guy=np.array(naners).reshape([len(y),1])
+    y=np.concatenate((y,guy),axis=-1)
+    return y
+
 
 
 def feats_to_audio(in_feats,filename, fs=config.fs,  mode=config.comp_mode):
@@ -187,7 +219,7 @@ def feats_to_audio(in_feats,filename, fs=config.fs,  mode=config.comp_mode):
     harm = 10**(harm/10)
     ap = 10**(ap/20)
 
-    y=pw.synthesize(f0.astype('double'),harm.astype('double'),ap.astype('double'),fs,5.80498866)
+    y=pw.synthesize(f0.astype('double'),harm.astype('double'),ap.astype('double'),fs,config.hoptime)
     sf.write(config.val_dir+filename+'.wav',y,fs)
     # return harm, ap, f0
 
@@ -226,13 +258,7 @@ def overlapadd(fbatch,nchunks,overlap=int(config.max_phr_len/2)):
     input_size=fbatch.shape[-1]
     time_context=fbatch.shape[-2]
     batch_size=fbatch.shape[1]
-
-
-    #window = np.sin((np.pi*(np.arange(2*overlap+1)))/(2.0*overlap))
     window = np.linspace(0., 1.0, num=overlap)
-    window = np.concatenate((window,window[::-1]))
-    #time_context = net.network.find('hid2', 'hh').size
-    # input_size = net.layers[0].size  #input_size is the number of spectral bins in the fft
     window = np.repeat(np.expand_dims(window, axis=1),input_size,axis=1)
     
 
@@ -276,6 +302,12 @@ def normalize(inputs, feat, mode=config.norm_mode_in):
     return outputs
 
 
+def list_to_file(in_list,filename):
+    filer=open(filename,'w')
+    for jj in in_list:
+        filer.write(str(jj)+'\n')
+    filer.close()
+
 def denormalize(inputs, feat, mode=config.norm_mode_in):
     if mode == "max_min":
         maximus = np.load(config.stat_dir+feat+'_maximus.npy')
@@ -292,13 +324,7 @@ def denormalize(inputs, feat, mode=config.norm_mode_in):
 def main():
     out_feats = input_to_feats(config.wav_dir+'10161_chorus.wav')
     feats_to_audio(out_feats, 'test')
-    # test(harmy, 10*np.log10(harm))
 
-    # test_sample = np.random.rand(5170,66)
-
-    # fbatch,i = generate_overlapadd(test_sample)
-
-    # sampled = overlapadd(fbatch,i)
 
     import pdb;pdb.set_trace()
 

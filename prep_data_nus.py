@@ -18,6 +18,8 @@ def main():
     # maximus=np.zeros(66)
     # minimus=np.ones(66)*1000
     singers = next(os.walk(config.wav_dir_nus))[1]
+    singers = [x for x in singers if x not in["VKOW","SAMF","MPUR","JLEE","KENN"]]
+    # import pdb;pdb.set_trace()
     
 
     for singer in singers:
@@ -43,8 +45,6 @@ def main():
 
             out_feats = utils.stft_to_feats(vocals,fs)
 
-
-            import pdb;pdb.set_trace()
 
             if not out_feats.shape[0]==voc_stft.shape[0] :
                 if out_feats.shape[0]<voc_stft.shape[0]:

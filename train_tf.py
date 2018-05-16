@@ -16,6 +16,7 @@ import modules_tf as modules
 import utils
 from reduce import mgc_to_mfsc
 
+
 def binary_cross(p,q):
     return -(p * tf.log(q + 1e-12) + (1 - p) * tf.log( 1 - q + 1e-12))
 
@@ -139,11 +140,11 @@ def train(_):
 
 
                 
-                epoch_loss_harm = epoch_loss_harm/(config.batches_per_epoch_train *config.batch_size)
-                epoch_loss_ap = epoch_loss_ap/(config.batches_per_epoch_train *config.batch_size)
-                epoch_loss_f0 = epoch_loss_f0/(config.batches_per_epoch_train *config.batch_size)
-                epoch_loss_vuv = epoch_loss_vuv/(config.batches_per_epoch_train *config.batch_size)
-                epoch_total_loss = epoch_total_loss/(config.batches_per_epoch_train *config.batch_size)
+                epoch_loss_harm = epoch_loss_harm/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len*60)
+                epoch_loss_ap = epoch_loss_ap/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len*4)
+                epoch_loss_f0 = epoch_loss_f0/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len)
+                epoch_loss_vuv = epoch_loss_vuv/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len)
+                epoch_total_loss = epoch_total_loss/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len*66)
 
                 summary_str = sess.run(summary, feed_dict={input_placeholder: voc,target_placeholder: feat})
                 train_summary_writer.add_summary(summary_str, epoch)
@@ -168,11 +169,11 @@ def train(_):
                     utils.progress(batch_num_val,config.batches_per_epoch_val, suffix = 'validiation done')
                     batch_num_val+=1
 
-                epoch_loss_harm_val = epoch_loss_harm_val/(config.batches_per_epoch_val *config.batch_size)
-                epoch_loss_ap_val = epoch_loss_ap_val/(config.batches_per_epoch_val *config.batch_size)
-                epoch_loss_f0_val = epoch_loss_f0_val/(config.batches_per_epoch_val *config.batch_size)
-                epoch_loss_vuv_val = epoch_loss_vuv_val/(config.batches_per_epoch_val *config.batch_size)
-                epoch_total_loss_val = epoch_total_loss_val/(config.batches_per_epoch_val *config.batch_size)
+                epoch_loss_harm_val = epoch_loss_harm_val/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len*60)
+                epoch_loss_ap_val = epoch_loss_ap_val/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len*4)
+                epoch_loss_f0_val = epoch_loss_f0_val/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len)
+                epoch_loss_vuv_val = epoch_loss_vuv_val/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len)
+                epoch_total_loss_val = epoch_total_loss_val/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len*66)
 
                 summary_str = sess.run(summary, feed_dict={input_placeholder: voc,target_placeholder: feat})
                 val_summary_writer.add_summary(summary_str, epoch)
@@ -203,6 +204,14 @@ def train(_):
 
 
 def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=True):
+    if file_name.startswith('ikala'):
+        file_name = file_name[6:]
+        file_path = confg.wav_dir
+        utils.write_ori_ikala(os.path.join(file_path,file_name),file_name)
+    elif file_name.startswith('mir'):
+        file_name = file_name[4:]
+        file_path = config.wav_dir_mir
+        utils.write_ori_ikala(os.path.join(file_path,file_name),file_name)
     stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
 
     max_feat = np.array(stat_file["feats_maximus"])
@@ -212,6 +221,7 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
     max_back = np.array(stat_file["back_stft_maximus"])
     min_back = np.array(stat_file["back_stft_minimus"])
     max_mix = np.array(max_voc)+np.array(max_back)
+
     with tf.Graph().as_default():
         
         input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.input_features),name='input_placeholder')
@@ -232,12 +242,12 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
             print("Using the model in %s"%ckpt.model_checkpoint_path)
             saver.restore(sess, ckpt.model_checkpoint_path)
 
-
-        # summary_writer = tf.summary.FileWriter(config.log_dir, sess.graph)
-
         mix_stft = utils.file_to_stft(os.path.join(file_path,file_name))
 
         targs = utils.input_to_feats(os.path.join(file_path,file_name))
+
+        # f0_sac = utils.file_to_sac(os.path.join(file_path,file_name))
+        # f0_sac = (f0_sac-min_feat[-2])/(max_feat[-2]-min_feat[-2])
 
         in_batches, nchunks_in = utils.generate_overlapadd(mix_stft)
         in_batches = in_batches/max_mix
@@ -261,6 +271,7 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
         # targs = utils.normalize(targs, 'feats', mode=config.norm_mode_out)
         targs = (targs-min_feat)/(max_feat-min_feat)
 
+
         
 
         if show_plots:
@@ -270,32 +281,55 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
             ins = val_outer[:,:60]
             outs = targs[:,:60]
             plt.figure(1)
-            plt.subplot(211)
+            ax1 = plt.subplot(211)
             plt.imshow(ins.T, origin='lower', aspect='auto')
-            plt.subplot(212)
+            ax1.set_title("Predicted Harm ", fontsize = 10)
+            ax2 = plt.subplot(212)
             plt.imshow(outs.T, origin='lower', aspect='auto')
+            ax2.set_title("Ground Truth Harm ", fontsize = 10)
             plt.figure(2)
-            plt.subplot(211)
+            ax1 = plt.subplot(211)
             plt.imshow(val_outer[:,60:-2].T, origin='lower', aspect='auto')
-            plt.subplot(212)
+            ax1.set_title("Predicted Aperiodic Part", fontsize = 10)
+            ax2 = plt.subplot(212)
             plt.imshow(targs[:,60:-2].T, origin='lower', aspect='auto')
+            ax2.set_title("Ground Truth Aperiodic Part", fontsize = 10)
             plt.figure(3)
-            plt.plot(val_outer[:,-2], label = "Predicted Value")
-            plt.plot(targs[:,-2], label="Ground Truth")
+            uu = val_outer[:,-2]*(1-targs[:,-1])
+            uu[uu == 0] = np.nan
+            plt.plot(uu, label = "Predicted Value")
+            uu = targs[:,-2]*(1-targs[:,-1])
+            uu[uu == 0] = np.nan
+            plt.plot(uu, label="Ground Truth")
+            # uu = f0_sac[:,0]*(1-f0_sac[:,1])
+            # uu[uu == 0] = np.nan
+            # plt.plot(uu, label="Sac f0")
             plt.legend()
             plt.figure(4)
-            plt.subplot(211)
+            ax1 = plt.subplot(211)
             plt.plot(val_outer[:,-1])
-            plt.subplot(212)
+            ax1.set_title("Predicted Voiced/Unvoiced", fontsize = 10)
+            ax2 = plt.subplot(212)
             plt.plot(targs[:,-1])
+            ax2.set_title("Ground Truth Voiced/Unvoiced", fontsize = 10)
             plt.show()
         if save_file:
-            # val_outer[:,-1:] = targs[:,-1:]
+            
             val_outer = np.ascontiguousarray(val_outer*(max_feat-min_feat)+min_feat)
-            # val_outer = np.ascontiguousarray(utils.denormalize(val_outer,'feats', mode=config.norm_mode_out))
-            utils.feats_to_audio(val_outer,file_name[:-4]+'_synth')
-            print("File saved to %s" % config.val_dir+file_name[:-4]+'_synth.wav')
+            targs = np.ascontiguousarray(targs*(max_feat-min_feat)+min_feat)
 
+            # val_outer = np.ascontiguousarray(utils.denormalize(val_outer,'feats', mode=config.norm_mode_out))
+            # try:
+            #     utils.feats_to_audio(val_outer,file_name[:-4]+'_synth_pred_f0')
+            #     print("File saved to %s" % config.val_dir+file_name[:-4]+'_synth_pred_f0.wav')
+            # except:
+            #     print("Couldn't synthesize with predicted f0")
+            try:
+                val_outer[:,-2:] = targs[:,-2:]
+                utils.feats_to_audio(val_outer,file_name[:-4]+'_synth_ori_f0')
+                print("File saved to %s" % config.val_dir+file_name[:-4]+'_synth_ori_f0.wav')
+            except:
+                print("Couldn't synthesize with original f0")
                 
 
 

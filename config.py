@@ -4,11 +4,13 @@ import tensorflow as tf
 wav_dir = '../datasets/iKala/Wavfile/'
 wav_dir_nus = '../datasets/nus-smc-corpus_48/'
 wav_dir_mus = '../datasets/musdb18/train/'
+wav_dir_mir = '../datasets/MIR1k/'
 
 
 voice_dir = './voice/'
 backing_dir = './backing/'
-log_dir = './log/'
+# log_dir = './log/'
+log_dir = './log_mfsc_6_best_so_far/'
 data_log = './log/data_log.log'
 
 
@@ -29,7 +31,7 @@ feats_ext = '_synth_feats.npy'
 split = 0.9
 
 augment = True
-aug_prob = 0.4
+aug_prob = 0.5
 
 # Hyperparameters
 num_epochs = 2000
@@ -51,6 +53,7 @@ dropout_rate = 0.0
 projection_size = 3
 fs = 44100
 comp_mode = 'mfsc'
+hoptime = 5.80498866
 
 print_every = 1
 save_every = 5
