@@ -137,7 +137,7 @@ def train(_):
                         past = feat[:,:-1,:]+(np.random.rand(config.batch_size,config.max_phr_len,config.output_features)*config.noise)
 
                         _, step_loss_harm, step_loss_ap, step_loss_f0, step_loss_vuv, step_total_loss = sess.run([train_function, harm_loss, ap_loss, f0_loss, vuv_loss, loss], 
-                            feed_dict={input_placeholder_2: past,input_placeholder: voc[:,:-1,:],target_placeholder: feat[:,1:,:]})
+                            feed_dict={input_placeholder_2: past,input_placeholder: voc[:,1:,:],target_placeholder: feat[:,1:,:]})
                     else : 
                         outputs = np.zeros((config.batch_size,1,66))
                         step_loss_harm = 0
@@ -209,7 +209,7 @@ def train(_):
                 epoch_loss_vuv_val = epoch_loss_vuv_val/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len)
                 epoch_total_loss_val = epoch_total_loss_val/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len*66)
 
-                summary_str = sess.run(summary, feed_dict={input_placeholder_2: feat[:,:-1,:],input_placeholder: voc[:,:-1,:],target_placeholder: feat[:,1:,:]})
+                summary_str = sess.run(summary, feed_dict={input_placeholder_2: feat[:,:-1,:],input_placeholder: voc[:,1:,:],target_placeholder: feat[:,1:,:]})
                 val_summary_writer.add_summary(summary_str, epoch)
                 # summary_writer.add_summary(summary_str_val, epoch)
                 val_summary_writer.flush()
