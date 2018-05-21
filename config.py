@@ -61,6 +61,7 @@ noise = 0.4
 
 wavenet_layers = 5
 rec_field = 2**wavenet_layers
+wavenet_filters = 66
 
 print_every = 1
 save_every = 5

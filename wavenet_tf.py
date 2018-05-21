@@ -219,14 +219,14 @@ def train(_):
             if (epoch+1) % config.print_every == 0:
                 # Print status to stdout.
                 print('epoch %d: Harm Training Loss = %.10f (%.3f sec)' % (epoch+1, epoch_loss_harm, duration))
-                print('epoch %d: Ap Training Loss = %.10f (%.3f sec)' % (epoch+1, epoch_loss_ap, duration))
-                print('epoch %d: F0 Training Loss = %.10f (%.3f sec)' % (epoch+1, epoch_loss_f0, duration))
-                print('epoch %d: VUV Training Loss = %.10f (%.3f sec)' % (epoch+1, epoch_loss_vuv, duration))
+                print('        : Ap Training Loss = %.10f ' % (epoch_loss_ap))
+                print('        : F0 Training Loss = %.10f ' % (epoch_loss_f0))
+                print('        : VUV Training Loss = %.10f ' % (epoch_loss_vuv))
 
-                print('epoch %d: Harm Validation Loss = %.10f (%.3f sec)' % (epoch+1, epoch_loss_harm_val, duration))
-                print('epoch %d: Ap Validation Loss = %.10f (%.3f sec)' % (epoch+1, epoch_loss_ap_val, duration))
-                print('epoch %d: F0 Validation Loss = %.10f (%.3f sec)' % (epoch+1, epoch_loss_f0_val, duration))
-                print('epoch %d: VUV Validation Loss = %.10f (%.3f sec)' % (epoch+1, epoch_loss_vuv_val, duration))
+                print('        : Harm Validation Loss = %.10f ' % (epoch_loss_harm_val))
+                print('        : Ap Validation Loss = %.10f ' % (epoch_loss_ap_val))
+                print('        : F0 Validation Loss = %.10f ' % (epoch_loss_f0_val))
+                print('        : VUV Validation Loss = %.10f ' % (epoch_loss_vuv_val))
 
                 # Update the events file.
 
@@ -300,8 +300,15 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
                 inputs = inputs.reshape((1,1,513))
             else:
                 inputs = np.append(inputs,in_batch.reshape((1,1,513)),axis=1)
+            if inputs.shape[1]>config.max_phr_len:
+                inpy = inputs[:,-config.max_phr_len:,:]
+                outpy = outputs[:,-config.max_phr_len:,:]
+            else:
+                inpy = inputs
+                outpy = outputs
+                
             # import pdb;pdb.set_trace()
-            op,vu = sess.run([output,vuv], feed_dict={input_placeholder: inputs, input_placeholder_2: outputs})
+            op,vu = sess.run([output,vuv], feed_dict={input_placeholder: inpy, input_placeholder_2: outpy})
             op = np.concatenate((op,vu),axis=-1)
             outputs = np.append(outputs,op[:,-1:,:],axis =1)
 

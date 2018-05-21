@@ -176,13 +176,13 @@ def cbhg(inputs, scope='cbhg', training=True):
 def wavenet_block(inputs, conditioning, dilation_rate = 2):
     # inputs = tf.reshape(inputs, [config.batch_size, config.max_phr_len, config.input_features])
     in_padded = tf.pad(inputs, [[0,0],[dilation_rate,0],[0,0]],"CONSTANT")
-    in_sig = tf.layers.conv1d(in_padded, 5, 2, dilation_rate = dilation_rate, padding = 'valid')
-    con_sig = tf.layers.conv1d(conditioning,5,1)
+    in_sig = tf.layers.conv1d(in_padded, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')
+    con_sig = tf.layers.conv1d(conditioning,config.wavenet_filters,1)
 
     sig = tf.sigmoid(in_sig+con_sig)
 
-    in_tanh = tf.layers.conv1d(in_padded, 5, 2, dilation_rate = dilation_rate, padding = 'valid')
-    con_tanh = tf.layers.conv1d(conditioning,5,1)
+    in_tanh = tf.layers.conv1d(in_padded, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')
+    con_tanh = tf.layers.conv1d(conditioning,config.wavenet_filters,1)
 
     tanh = tf.tanh(in_tanh+con_tanh)
 

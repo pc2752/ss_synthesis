@@ -183,19 +183,15 @@ def train(_):
             duration = time.time() - start_time
 
             if (epoch+1) % config.print_every == 0:
-                # Print status to stdout.
                 print('epoch %d: Harm Training Loss = %.10f (%.3f sec)' % (epoch+1, epoch_loss_harm, duration))
-                print('epoch %d: Ap Training Loss = %.10f (%.3f sec)' % (epoch+1, epoch_loss_ap, duration))
-                print('epoch %d: F0 Training Loss = %.10f (%.3f sec)' % (epoch+1, epoch_loss_f0, duration))
-                print('epoch %d: VUV Training Loss = %.10f (%.3f sec)' % (epoch+1, epoch_loss_vuv, duration))
+                print('        : Ap Training Loss = %.10f ' % (epoch_loss_ap))
+                print('        : F0 Training Loss = %.10f ' % (epoch_loss_f0))
+                print('        : VUV Training Loss = %.10f ' % (epoch_loss_vuv))
 
-                print('epoch %d: Harm Validation Loss = %.10f (%.3f sec)' % (epoch+1, epoch_loss_harm_val, duration))
-                print('epoch %d: Ap Validation Loss = %.10f (%.3f sec)' % (epoch+1, epoch_loss_ap_val, duration))
-                print('epoch %d: F0 Validation Loss = %.10f (%.3f sec)' % (epoch+1, epoch_loss_f0_val, duration))
-                print('epoch %d: VUV Validation Loss = %.10f (%.3f sec)' % (epoch+1, epoch_loss_vuv_val, duration))
-
-                # Update the events file.
-
+                print('        : Harm Validation Loss = %.10f ' % (epoch_loss_harm_val))
+                print('        : Ap Validation Loss = %.10f ' % (epoch_loss_ap_val))
+                print('        : F0 Validation Loss = %.10f ' % (epoch_loss_f0_val))
+                print('        : VUV Validation Loss = %.10f ' % (epoch_loss_vuv_val))
 
 
             if (epoch + 1) % config.save_every == 0 or (epoch + 1) == config.num_epochs:
