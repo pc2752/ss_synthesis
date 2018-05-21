@@ -173,19 +173,65 @@ def cbhg(inputs, scope='cbhg', training=True):
         
     # return x
 
+def wavenet_block(inputs, conditioning, dilation_rate = 2):
+    # inputs = tf.reshape(inputs, [config.batch_size, config.max_phr_len, config.input_features])
+    in_padded = tf.pad(inputs, [[0,0],[dilation_rate,0],[0,0]],"CONSTANT")
+    in_sig = tf.layers.conv1d(in_padded, 5, 2, dilation_rate = dilation_rate, padding = 'valid')
+    con_sig = tf.layers.conv1d(conditioning,5,1)
+
+    sig = tf.sigmoid(in_sig+con_sig)
+
+    in_tanh = tf.layers.conv1d(in_padded, 5, 2, dilation_rate = dilation_rate, padding = 'valid')
+    con_tanh = tf.layers.conv1d(conditioning,5,1)
+
+    tanh = tf.tanh(in_tanh+con_tanh)
+
+    outputs = tf.multiply(sig,tanh)
+
+    skip = tf.layers.conv1d(outputs,1,1)
+
+    residual = skip + inputs
+
+    return skip, residual
 
 
+def wavenet(inputs, conditioning, num_block = config.wavenet_layers):
+    receptive_field = 2**num_block
+
+    first_conv = tf.layers.conv1d(inputs, 66, 1)
+    skips = []
+    skip, residual = wavenet_block(inputs, conditioning, dilation_rate=1)
+    output = skip
+    for i in range(num_block):
+        skip, residual = wavenet_block(residual, conditioning, dilation_rate=2**(i+1))
+        skips.append(skip)
+    for skip in skips:
+        output+=skip
+    output = output+first_conv
+
+    output = tf.nn.relu(output)
+
+    output = tf.layers.conv1d(output,66,1)
+
+    output = tf.nn.relu(output)
+
+    output = tf.layers.conv1d(output,66,1)
+
+    output = tf.nn.relu(output)
+
+    vuv = tf.sigmoid(output[:,:,-1:])
+    return output[:,:,:-1],vuv
 
 
 def main():    
     vec = tf.placeholder("float", [config.batch_size, config.max_phr_len, config.input_features])
     tec = np.random.rand(config.batch_size, config.max_phr_len, config.input_features) #  batch_size, time_steps, features
     seqlen = tf.placeholder(tf.int32, [config.batch_size])
-    outs = bi_static_stacked_RNN(vec)
+    outs = wavenet(vec,vec)
     sess = tf.Session()
     init = tf.global_variables_initializer()
     sess.run(init)
-    haha = sess.run(outs, feed_dict={vec: tec, seqlen: np.random.rand(config.batch_size)})
+    output = sess.run(outs, feed_dict={vec: tec, seqlen: np.random.rand(config.batch_size)})
     # writer = tf.summary.FileWriter('.')
     # writer.add_graph(tf.get_default_graph())
     # writer.add_summary(summary, global_step=1)

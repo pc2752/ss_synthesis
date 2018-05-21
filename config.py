@@ -9,8 +9,8 @@ wav_dir_mir = '../datasets/MIR1k/'
 
 voice_dir = './voice/'
 backing_dir = './backing/'
-# log_dir = './log/'
-log_dir = './log_mfsc_6_best_so_far/'
+log_dir = './log/'
+# log_dir = './log_mfsc_6_best_so_far/'
 data_log = './log/data_log.log'
 
 
@@ -33,13 +33,15 @@ split = 0.9
 augment = True
 aug_prob = 0.5
 
+teacher_prob = 0.65
+
 # Hyperparameters
 num_epochs = 2000
 batches_per_epoch_train = 500
 batches_per_epoch_val = 100
-batch_size = 60 
-samples_per_file = 15
-max_phr_len = 50
+batch_size = 15 
+samples_per_file = 5
+max_phr_len = 60
 input_features = 513
 lstm_size = 128
 output_features = 66
@@ -54,6 +56,11 @@ projection_size = 3
 fs = 44100
 comp_mode = 'mfsc'
 hoptime = 5.80498866
+
+noise = 0.4
+
+wavenet_layers = 5
+rec_field = 2**wavenet_layers
 
 print_every = 1
 save_every = 5

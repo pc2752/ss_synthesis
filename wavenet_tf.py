@@ -11,7 +11,7 @@ from six.moves import xrange  # pylint: disable=redefined-builtin
 import h5py
 
 import config
-from data_pipeline import data_gen
+from data_pipeline_wavenet import data_gen
 import modules_tf as modules
 import utils
 from reduce import mgc_to_mfsc
@@ -23,13 +23,20 @@ def binary_cross(p,q):
 def train(_):
     with tf.Graph().as_default():
         
-        input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.input_features),name='input_placeholder')
+        input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,None,config.input_features),name='input_placeholder')
+        tf.summary.histogram('conditioning', input_placeholder)
+        input_placeholder_2 = tf.placeholder(tf.float32, shape=(config.batch_size,None,config.output_features),name='input_placeholder')
         tf.summary.histogram('inputs', input_placeholder)
-        target_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.output_features),name='target_placeholder')
+        target_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,None,config.output_features),name='target_placeholder')
         tf.summary.histogram('targets', target_placeholder)
 
 
-        harm, ap, f0, vuv = modules.cbhg(input_placeholder)
+        output,vuv = modules.wavenet(input_placeholder_2,input_placeholder)
+
+        harm = output[:,:,:60]
+        ap = output[:,:,60:64]
+        f0 = output[:,:,-1:]
+
 
         tf.summary.histogram('harm', harm)
 
@@ -123,7 +130,34 @@ def train(_):
 
                 for voc, feat in data_generator:
 
-                    _, step_loss_harm, step_loss_ap, step_loss_f0, step_loss_vuv, step_total_loss = sess.run([train_function, harm_loss, ap_loss, f0_loss, vuv_loss, loss], feed_dict={input_placeholder: voc,target_placeholder: feat})
+                    teacher_learn = np.random.rand(1)<config.teacher_prob
+
+                    if teacher_learn:
+
+                        past = feat[:,:-1,:]+(np.random.rand(config.batch_size,config.max_phr_len,config.output_features)*config.noise)
+
+                        _, step_loss_harm, step_loss_ap, step_loss_f0, step_loss_vuv, step_total_loss = sess.run([train_function, harm_loss, ap_loss, f0_loss, vuv_loss, loss], 
+                            feed_dict={input_placeholder_2: past,input_placeholder: voc[:,:-1,:],target_placeholder: feat[:,1:,:]})
+                    else : 
+                        outputs = np.zeros((config.batch_size,1,66))
+                        step_loss_harm = 0
+                        step_loss_ap = 0
+                        step_loss_f0 = 0 
+                        step_loss_vuv = 0
+                        step_total_loss = 0
+                        for index in range(config.max_phr_len):
+                            inputs = voc[:,:index+1,:]
+                            # import pdb;pdb.set_trace()
+                            feed_dict={input_placeholder: inputs, input_placeholder_2: outputs, target_placeholder: feat[:,:index+1,:]}
+                            _,ab ,bc ,cd ,de ,ef, op,vu  = sess.run([train_function, harm_loss, ap_loss, f0_loss, vuv_loss, loss, output,vuv],feed_dict=feed_dict)
+                            step_loss_harm+=ab
+                            step_loss_ap+=bc
+                            step_loss_f0+=cd
+                            step_loss_vuv+=de
+                            step_total_loss+=ef
+                            op = np.concatenate((op,vu),axis=-1)
+                            outputs = np.append(outputs,op[:,-1:,:],axis =1)
+
 
                     # _, step_loss_harm = sess.run([train_harm, harm_loss], feed_dict={input_placeholder: voc,target_placeholder: feat})
                     # _, step_loss_ap = sess.run([train_ap, ap_loss], feed_dict={input_placeholder: voc,target_placeholder: feat})
@@ -146,7 +180,7 @@ def train(_):
                 epoch_loss_vuv = epoch_loss_vuv/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len)
                 epoch_total_loss = epoch_total_loss/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len*66)
 
-                summary_str = sess.run(summary, feed_dict={input_placeholder: voc,target_placeholder: feat})
+                summary_str = sess.run(summary, feed_dict={input_placeholder_2: feat[:,:-1,:],input_placeholder: voc[:,:-1,:],target_placeholder: feat[:,1:,:]})
                 train_summary_writer.add_summary(summary_str, epoch)
                 # summary_writer.add_summary(summary_str_val, epoch)
                 train_summary_writer.flush()
@@ -154,11 +188,11 @@ def train(_):
             with tf.variable_scope('Validation'):
 
                 for voc, feat in val_generator:
-                    step_loss_harm_val = sess.run(harm_loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
-                    step_loss_ap_val = sess.run(ap_loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
-                    step_loss_f0_val = sess.run(f0_loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
-                    step_loss_vuv_val = sess.run(vuv_loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
-                    step_total_loss_val = sess.run(loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
+                    step_loss_harm_val = sess.run(harm_loss, feed_dict={input_placeholder_2: feat[:,:-1,:],input_placeholder: voc[:,:-1,:],target_placeholder: feat[:,1:,:]})
+                    step_loss_ap_val = sess.run(ap_loss, feed_dict={input_placeholder_2: feat[:,:-1,:],input_placeholder: voc[:,:-1,:],target_placeholder: feat[:,1:,:]})
+                    step_loss_f0_val = sess.run(f0_loss, feed_dict={input_placeholder_2: feat[:,:-1,:],input_placeholder: voc[:,:-1,:],target_placeholder: feat[:,1:,:]})
+                    step_loss_vuv_val = sess.run(vuv_loss, feed_dict={input_placeholder_2: feat[:,:-1,:],input_placeholder: voc[:,:-1,:],target_placeholder: feat[:,1:,:]})
+                    step_total_loss_val = sess.run(loss, feed_dict={input_placeholder_2: feat[:,:-1,:],input_placeholder: voc[:,:-1,:],target_placeholder: feat[:,1:,:]})
 
                     epoch_loss_harm_val+=step_loss_harm_val
                     epoch_loss_ap_val+=step_loss_ap_val
@@ -175,7 +209,7 @@ def train(_):
                 epoch_loss_vuv_val = epoch_loss_vuv_val/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len)
                 epoch_total_loss_val = epoch_total_loss_val/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len*66)
 
-                summary_str = sess.run(summary, feed_dict={input_placeholder: voc,target_placeholder: feat})
+                summary_str = sess.run(summary, feed_dict={input_placeholder_2: feat[:,:-1,:],input_placeholder: voc[:,:-1,:],target_placeholder: feat[:,1:,:]})
                 val_summary_writer.add_summary(summary_str, epoch)
                 # summary_writer.add_summary(summary_str_val, epoch)
                 val_summary_writer.flush()
@@ -224,9 +258,16 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
 
     with tf.Graph().as_default():
         
-        input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.input_features),name='input_placeholder')
+        input_placeholder = tf.placeholder(tf.float32, shape=(None,None,config.input_features),name='input_placeholder')
+        tf.summary.histogram('conditioning', input_placeholder)
+        input_placeholder_2 = tf.placeholder(tf.float32, shape=(None,None,config.output_features),name='input_placeholder')
+        tf.summary.histogram('inputs', input_placeholder)
+        target_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.output_features),name='target_placeholder')
+        tf.summary.histogram('targets', target_placeholder)
 
-        harm, ap, f0, vuv  = modules.cbhg(input_placeholder)
+
+        output,vuv = modules.wavenet(input_placeholder_2,input_placeholder)
+
 
         saver = tf.train.Saver()
 
@@ -244,23 +285,29 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
 
         mix_stft = utils.file_to_stft(os.path.join(file_path,file_name))
 
+        mix_stft = mix_stft/max_mix
+
         targs = utils.input_to_feats(os.path.join(file_path,file_name))
 
-        # f0_sac = utils.file_to_sac(os.path.join(file_path,file_name))
-        # f0_sac = (f0_sac-min_feat[-2])/(max_feat[-2]-min_feat[-2])
+        outputs = np.zeros((1,1,66))
 
-        in_batches, nchunks_in = utils.generate_overlapadd(mix_stft)
-        in_batches = in_batches/max_mix
-        # in_batches = utils.normalize(in_batches, 'mix_stft', mode=config.norm_mode_in)
-        val_outer = []
+        i = 0
 
-        for in_batch in in_batches:
-            val_harm, val_ap, val_f0, val_vuv = sess.run([harm, ap, f0, vuv], feed_dict={input_placeholder: in_batch})
-            val_outs = np.concatenate((val_harm, val_ap, val_f0, val_vuv), axis=-1)
-            val_outer.append(val_outs)
 
-        val_outer = np.array(val_outer)
-        val_outer = utils.overlapadd(val_outer, nchunks_in)    
+        for in_batch in mix_stft:
+            if i ==0:
+                inputs = in_batch
+                inputs = inputs.reshape((1,1,513))
+            else:
+                inputs = np.append(inputs,in_batch.reshape((1,1,513)),axis=1)
+            # import pdb;pdb.set_trace()
+            op,vu = sess.run([output,vuv], feed_dict={input_placeholder: inputs, input_placeholder_2: outputs})
+            op = np.concatenate((op,vu),axis=-1)
+            outputs = np.append(outputs,op[:,-1:,:],axis =1)
+
+            i+=1
+
+        val_outer = outputs[0]   
         val_outer[:,-1] = np.round(val_outer[:,-1])
         val_outer = val_outer[:targs.shape[0],:]
         val_outer = np.clip(val_outer,0.0,1.0)

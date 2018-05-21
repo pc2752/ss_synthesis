@@ -258,7 +258,13 @@ def overlapadd(fbatch,nchunks,overlap=int(config.max_phr_len/2)):
     input_size=fbatch.shape[-1]
     time_context=fbatch.shape[-2]
     batch_size=fbatch.shape[1]
+
+
+    #window = np.sin((np.pi*(np.arange(2*overlap+1)))/(2.0*overlap))
     window = np.linspace(0., 1.0, num=overlap)
+    window = np.concatenate((window,window[::-1]))
+    #time_context = net.network.find('hid2', 'hh').size
+    # input_size = net.layers[0].size  #input_size is the number of spectral bins in the fft
     window = np.repeat(np.expand_dims(window, axis=1),input_size,axis=1)
     
 
@@ -324,7 +330,13 @@ def denormalize(inputs, feat, mode=config.norm_mode_in):
 def main():
     out_feats = input_to_feats(config.wav_dir+'10161_chorus.wav')
     feats_to_audio(out_feats, 'test')
+    # test(harmy, 10*np.log10(harm))
 
+    # test_sample = np.random.rand(5170,66)
+
+    # fbatch,i = generate_overlapadd(test_sample)
+
+    # sampled = overlapadd(fbatch,i)
 
     import pdb;pdb.set_trace()
 
