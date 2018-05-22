@@ -176,15 +176,22 @@ def cbhg(inputs, scope='cbhg', training=True):
 def wavenet_block(inputs, conditioning, dilation_rate = 2):
     # inputs = tf.reshape(inputs, [config.batch_size, config.max_phr_len, config.input_features])
     in_padded = tf.pad(inputs, [[0,0],[dilation_rate,0],[0,0]],"CONSTANT")
+    con_pad_forward = tf.pad(conditioning, [[0,0],[dilation_rate,0],[0,0]],"CONSTANT")
+    con_pad_backward = tf.pad(conditioning, [[0,0],[0,dilation_rate],[0,0]],"CONSTANT")
     in_sig = tf.layers.conv1d(in_padded, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')
-    con_sig = tf.layers.conv1d(conditioning,config.wavenet_filters,1)
+    con_sig_forward = tf.layers.conv1d(con_pad_forward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')
+    con_sig_backward = tf.layers.conv1d(con_pad_backward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')
+    # con_sig = tf.layers.conv1d(conditioning,config.wavenet_filters,1)
 
-    sig = tf.sigmoid(in_sig+con_sig)
+    sig = tf.sigmoid(in_sig+con_sig_forward[:,:in_sig.shape[1],:]+con_sig_backward[:,:in_sig.shape[1],:])
 
     in_tanh = tf.layers.conv1d(in_padded, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')
-    con_tanh = tf.layers.conv1d(conditioning,config.wavenet_filters,1)
+    con_tanh_forward = tf.layers.conv1d(con_pad_forward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')
+    con_tanh_backward = tf.layers.conv1d(con_pad_backward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')    
+    # con_tanh = tf.layers.conv1d(conditioning,config.wavenet_filters,1)
 
-    tanh = tf.tanh(in_tanh+con_tanh)
+    tanh = tf.tanh(in_tanh+con_tanh_forward[:,:in_tanh.shape[1],:]+con_tanh_backward[:,:in_tanh.shape[1],:])
+
 
     outputs = tf.multiply(sig,tanh)
 
@@ -224,10 +231,10 @@ def wavenet(inputs, conditioning, num_block = config.wavenet_layers):
 
 
 def main():    
-    vec = tf.placeholder("float", [config.batch_size, config.max_phr_len, config.input_features])
-    tec = np.random.rand(config.batch_size, config.max_phr_len, config.input_features) #  batch_size, time_steps, features
+    vec = tf.placeholder("float", [config.batch_size, None, config.input_features])
+    tec = np.random.rand(config.batch_size, None, config.input_features) #  batch_size, time_steps, features
     seqlen = tf.placeholder(tf.int32, [config.batch_size])
-    outs = wavenet(vec,vec)
+    outs = wavenet(vec[:,4:10,:],vec)
     sess = tf.Session()
     init = tf.global_variables_initializer()
     sess.run(init)

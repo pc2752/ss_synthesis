@@ -28,12 +28,22 @@ voc_ext = '_voc_stft.npy'
 feats_ext = '_synth_feats.npy'
 
 
+def get_teacher_prob(epoch):
+    if epoch < 500:
+        return 0.95
+    elif epoch < 1000:
+        return 0.75
+    else:
+        return 0.55
+
+
+
 split = 0.9
 
 augment = True
 aug_prob = 0.5
 
-teacher_prob = 0.65
+
 
 # Hyperparameters
 num_epochs = 2000
@@ -47,7 +57,7 @@ lstm_size = 128
 output_features = 66
 highway_layers = 4
 highway_units = 128
-init_lr = 0.0001
+init_lr = 0.001
 num_conv_layers = 8
 conv_filters = 128
 conv_activation = tf.nn.relu
@@ -57,7 +67,7 @@ fs = 44100
 comp_mode = 'mfsc'
 hoptime = 5.80498866
 
-noise = 0.4
+noise = 0.05
 
 wavenet_layers = 5
 rec_field = 2**wavenet_layers

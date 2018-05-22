@@ -23,11 +23,11 @@ def binary_cross(p,q):
 def train(_):
     with tf.Graph().as_default():
         
-        input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,None,config.input_features),name='input_placeholder')
+        input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.input_features),name='input_placeholder')
         tf.summary.histogram('conditioning', input_placeholder)
-        input_placeholder_2 = tf.placeholder(tf.float32, shape=(config.batch_size,None,config.output_features),name='input_placeholder')
+        input_placeholder_2 = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.output_features),name='input_placeholder')
         tf.summary.histogram('inputs', input_placeholder)
-        target_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,None,config.output_features),name='target_placeholder')
+        target_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.output_features),name='target_placeholder')
         tf.summary.histogram('targets', target_placeholder)
 
 
@@ -105,6 +105,7 @@ def train(_):
 
         print("Start from: %d" % start_epoch)
         for epoch in xrange(start_epoch, config.num_epochs):
+            teacher_prob = config.get_teacher_prob(epoch)
             data_generator = data_gen()
             start_time = time.time()
 
@@ -130,7 +131,7 @@ def train(_):
 
                 for voc, feat in data_generator:
 
-                    teacher_learn = np.random.rand(1)<config.teacher_prob
+                    teacher_learn = np.random.rand(1)<teacher_prob
 
                     if teacher_learn:
 
@@ -139,16 +140,15 @@ def train(_):
                         _, step_loss_harm, step_loss_ap, step_loss_f0, step_loss_vuv, step_total_loss = sess.run([train_function, harm_loss, ap_loss, f0_loss, vuv_loss, loss], 
                             feed_dict={input_placeholder_2: past,input_placeholder: voc[:,1:,:],target_placeholder: feat[:,1:,:]})
                     else : 
-                        outputs = np.zeros((config.batch_size,1,66))
+                        outputs = np.zeros((config.batch_size,config.max_phr_len,config.output_features))
                         step_loss_harm = 0
                         step_loss_ap = 0
                         step_loss_f0 = 0 
                         step_loss_vuv = 0
                         step_total_loss = 0
                         for index in range(config.max_phr_len):
-                            inputs = voc[:,:index+1,:]
                             # import pdb;pdb.set_trace()
-                            feed_dict={input_placeholder: inputs, input_placeholder_2: outputs, target_placeholder: feat[:,:index+1,:]}
+                            feed_dict={input_placeholder: voc[:,1:,:], input_placeholder_2: outputs, target_placeholder: feat[:,1:,:]}
                             _,ab ,bc ,cd ,de ,ef, op,vu  = sess.run([train_function, harm_loss, ap_loss, f0_loss, vuv_loss, loss, output,vuv],feed_dict=feed_dict)
                             step_loss_harm+=ab
                             step_loss_ap+=bc
@@ -156,7 +156,7 @@ def train(_):
                             step_loss_vuv+=de
                             step_total_loss+=ef
                             op = np.concatenate((op,vu),axis=-1)
-                            outputs = np.append(outputs,op[:,-1:,:],axis =1)
+                            outputs [:,:index,:] = op[:,:index,:]
 
 
                     # _, step_loss_harm = sess.run([train_harm, harm_loss], feed_dict={input_placeholder: voc,target_placeholder: feat})
@@ -258,12 +258,10 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
 
     with tf.Graph().as_default():
         
-        input_placeholder = tf.placeholder(tf.float32, shape=(None,None,config.input_features),name='input_placeholder')
+        input_placeholder = tf.placeholder(tf.float32, shape=(1,config.max_phr_len,config.input_features),name='input_placeholder')
         tf.summary.histogram('conditioning', input_placeholder)
-        input_placeholder_2 = tf.placeholder(tf.float32, shape=(None,None,config.output_features),name='input_placeholder')
+        input_placeholder_2 = tf.placeholder(tf.float32, shape=(1,config.max_phr_len,config.output_features),name='input_placeholder')
         tf.summary.histogram('inputs', input_placeholder)
-        target_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.output_features),name='target_placeholder')
-        tf.summary.histogram('targets', target_placeholder)
 
 
         output,vuv = modules.wavenet(input_placeholder_2,input_placeholder)
@@ -287,34 +285,40 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
 
         mix_stft = mix_stft/max_mix
 
+        lent = len(mix_stft)
+
+        mix_stft_in = np.pad(mix_stft,[(0,config.max_phr_len),(0,0)],'constant')
+
+        # import pdb;pdb.set_trace()
+
         targs = utils.input_to_feats(os.path.join(file_path,file_name))
 
-        outputs = np.zeros((1,1,66))
+        outputs = np.zeros((1,config.max_phr_len,config.output_features))
+
+        opus = []
 
         i = 0
 
 
-        for in_batch in mix_stft:
-            if i ==0:
-                inputs = in_batch
-                inputs = inputs.reshape((1,1,513))
-            else:
-                inputs = np.append(inputs,in_batch.reshape((1,1,513)),axis=1)
-            if inputs.shape[1]>config.max_phr_len:
-                inpy = inputs[:,-config.max_phr_len:,:]
+        for index in range(lent):
+            inputs = mix_stft_in[index:index+config.max_phr_len,:]
+
+            if outputs.shape[1]>config.max_phr_len:
+                inpy = inputs.reshape(1,config.max_phr_len,-1)
                 outpy = outputs[:,-config.max_phr_len:,:]
             else:
-                inpy = inputs
+                inpy = inputs.reshape(1,config.max_phr_len,-1)
                 outpy = outputs
                 
             # import pdb;pdb.set_trace()
             op,vu = sess.run([output,vuv], feed_dict={input_placeholder: inpy, input_placeholder_2: outpy})
             op = np.concatenate((op,vu),axis=-1)
-            outputs = np.append(outputs,op[:,-1:,:],axis =1)
+            if index>config.max_phr_len:
+                outputs = np.append(outputs,op[:,-1:,:],axis =1)
+            else:
+                outputs[:,:index,:] = op[:,:index,:]
 
-            i+=1
-
-        val_outer = outputs[0]   
+        val_outer = outputs[0]  
         val_outer[:,-1] = np.round(val_outer[:,-1])
         val_outer = val_outer[:targs.shape[0],:]
         val_outer = np.clip(val_outer,0.0,1.0)
