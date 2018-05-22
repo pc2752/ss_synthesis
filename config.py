@@ -69,7 +69,7 @@ hoptime = 5.80498866
 
 noise = 0.05
 
-wavenet_layers = 5
+wavenet_layers = 6
 rec_field = 2**wavenet_layers
 wavenet_filters = 66
 
