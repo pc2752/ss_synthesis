@@ -238,6 +238,7 @@ def train(_):
 
 
 def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=True):
+    debug = False
     if file_name.startswith('ikala'):
         file_name = file_name[6:]
         file_path = config.wav_dir
@@ -313,6 +314,17 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
             # import pdb;pdb.set_trace()
             op,vu = sess.run([output,vuv], feed_dict={input_placeholder: inpy, input_placeholder_2: outpy})
             op = np.concatenate((op,vu),axis=-1)
+            if debug:
+                plt.figure(1)
+                plt.subplot(311)
+                plt.imshow(np.log(inputs.T),aspect='auto',origin='lower')
+                plt.subplot(312)
+                plt.imshow(targs[index:index+config.max_phr_len,:].T,aspect='auto',origin='lower')
+                plt.subplot(313)
+                plt.imshow(outpy.reshape(config.max_phr_len,-1).T,aspect='auto',origin='lower')
+                plt.show()
+                import pdb;pdb.set_trace()
+
             if index>config.max_phr_len:
                 outputs = np.append(outputs,op[:,-1:,:],axis =1)
             else:
