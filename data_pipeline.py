@@ -10,13 +10,15 @@ import utils
 
 
 def gen_train_val():
-    mix_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('ikala')]
+    mix_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('ikala') or x.endswith('.hdf5') and x.startswith('med') ]
 
     train_list = mix_list[:int(len(mix_list)*config.split)]
 
     val_list = mix_list[int(len(mix_list)*config.split):]
 
-    utils.list_to_file(val_list,config.log_dir+'train_val.txt')
+    utils.list_to_file(val_list,config.log_dir+'val_files.txt')
+
+    utils.list_to_file(train_list,config.log_dir+'train_files.txt')
 
 
 
@@ -27,9 +29,9 @@ def data_gen(mode = 'Train'):
 
     voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir')]
 
-    back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir')]
+    back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('med')]
 
-    mix_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('ikala')]
+    mix_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('ikala') or x.endswith('.hdf5') and x.startswith('med') ]
 
     train_list = mix_list[:int(len(mix_list)*config.split)]
 
@@ -188,9 +190,9 @@ def data_gen(mode = 'Train'):
         # import pdb;pdb.set_trace()
 
 def get_stats():
-    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._')]
+    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir')]
 
-    back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and not x.startswith('._')]
+    back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('med')]
 
     max_feat = np.zeros(66)
     min_feat = np.ones(66)*1000

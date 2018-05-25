@@ -143,7 +143,7 @@ def cbhg(inputs, scope='cbhg', training=True):
             dropout = 0.0
         # tf.summary.histogram('inputs', inputs)
         prenet_out = tf.layers.dropout(tf.layers.dense(inputs, config.lstm_size*2), rate=dropout)
-        prenet_out = tf.layers.dropout(tf.layers.dense(inputs, config.lstm_size), rate=dropout)
+        prenet_out = tf.layers.dropout(tf.layers.dense(prenet_out, config.lstm_size), rate=dropout)
         # tf.summary.histogram('prenet_output', prenet_out)
 
         # Conv Bank
@@ -171,6 +171,123 @@ def cbhg(inputs, scope='cbhg', training=True):
         vuv = tf.layers.dense(ap, 1, activation=tf.nn.sigmoid)
     return harm, ap, f0, vuv
         
+
+
+def nr_wavenet_block(conditioning, dilation_rate = 2):
+    # inputs = tf.reshape(inputs, [config.batch_size, config.max_phr_len, config.input_features])
+
+    con_pad_forward = tf.pad(conditioning, [[0,0],[dilation_rate,0],[0,0]],"CONSTANT")
+    con_pad_backward = tf.pad(conditioning, [[0,0],[0,dilation_rate],[0,0]],"CONSTANT")
+    con_sig_forward = tf.layers.conv1d(con_pad_forward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')
+    con_sig_backward = tf.layers.conv1d(con_pad_backward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')
+    # con_sig = tf.layers.conv1d(conditioning,config.wavenet_filters,1)
+
+    sig = tf.sigmoid(con_sig_forward+con_sig_backward)
+
+
+    con_tanh_forward = tf.layers.conv1d(con_pad_forward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')
+    con_tanh_backward = tf.layers.conv1d(con_pad_backward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')    
+    # con_tanh = tf.layers.conv1d(conditioning,config.wavenet_filters,1)
+
+    tanh = tf.tanh(con_tanh_forward+con_tanh_backward)
+
+
+    outputs = tf.multiply(sig,tanh)
+
+    skip = tf.layers.conv1d(outputs,config.wavenet_filters,1)
+
+    residual = skip + conditioning
+
+    return skip, residual
+
+
+def nr_wavenet(inputs, num_block = config.wavenet_layers):
+
+    prenet_out = tf.layers.dense(inputs, config.lstm_size*2)
+    prenet_out = tf.layers.dense(prenet_out, config.lstm_size)
+
+    receptive_field = 2**num_block
+
+    first_conv = tf.layers.conv1d(prenet_out, config.wavenet_filters, 1)
+    skips = []
+    skip, residual = nr_wavenet_block(first_conv, dilation_rate=1)
+    output = skip
+    for i in range(num_block):
+        skip, residual = nr_wavenet_block(residual, dilation_rate=2**(i+1))
+        skips.append(skip)
+    for skip in skips:
+        output+=skip
+    output = output+first_conv
+
+    output = tf.nn.relu(output)
+
+    output = tf.layers.conv1d(output,config.wavenet_filters,1)
+
+    output = tf.nn.relu(output)
+
+    output = tf.layers.conv1d(output,config.wavenet_filters,1)
+
+    output = tf.nn.relu(output)
+
+    harm = tf.layers.dense(output, 60, activation=tf.nn.relu)
+    ap = tf.layers.dense(output, 4, activation=tf.nn.relu)
+    f0 = tf.layers.dense(output, 64, activation=tf.nn.relu) 
+    f0 = tf.layers.dense(f0, 1, activation=tf.nn.relu)
+    vuv = tf.layers.dense(ap, 1, activation=tf.nn.sigmoid)
+
+    return harm, ap, f0, vuv
+
+def psuedo_r_wavenet(inputs, num_block = config.wavenet_layers):
+
+    prenet_out = tf.layers.dense(inputs, config.lstm_size*2)
+    prenet_out = tf.layers.dense(prenet_out, config.lstm_size)
+
+    receptive_field = 2**num_block
+
+    first_conv = tf.layers.conv1d(prenet_out, config.wavenet_filters, 1)
+    skips = []
+    skip, residual = nr_wavenet_block(first_conv, dilation_rate=1)
+    output = skip
+    for i in range(num_block):
+        skip, residual = nr_wavenet_block(residual, dilation_rate=2**(i+1))
+        skips.append(skip)
+    for skip in skips:
+        output+=skip
+    output = output+first_conv
+
+    output = tf.nn.relu(output)
+
+    output = tf.layers.conv1d(output,config.wavenet_filters,1)
+
+    output = tf.nn.relu(output)
+
+    output = tf.layers.conv1d(output,config.wavenet_filters,1)
+
+    output = tf.nn.relu(output)
+
+    harm_1 = tf.layers.dense(output, 60, activation=tf.nn.relu)
+    ap = tf.layers.dense(output, 4, activation=tf.nn.relu)
+    f0 = tf.layers.dense(output, 64, activation=tf.nn.relu) 
+    f0 = tf.layers.dense(f0, 1, activation=tf.nn.relu)
+    vuv = tf.layers.dense(ap, 1, activation=tf.nn.sigmoid)
+
+    first_conv_2 = tf.layers.conv1d(harm_1, config.wavenet_filters, 1)
+
+    skips_2 = []
+    skip, residual = nr_wavenet_block(first_conv_2, dilation_rate=1)
+    output_2 = skip
+    for i in range(num_block):
+        skip, residual = nr_wavenet_block(residual, dilation_rate=2**(i+1))
+        skips_2.append(skip)
+    for skip in skips_2:
+        output_2+=skip 
+    output_2 = output_2+first_conv_2
+
+    output_2 = tf.nn.relu(output_2)
+
+    harm = tf.layers.dense(output_2, 60)
+
+    return harm_1,harm, ap, f0, vuv
     # return x
 
 def wavenet_block(inputs, conditioning, dilation_rate = 2):
@@ -231,10 +348,10 @@ def wavenet(inputs, conditioning, num_block = config.wavenet_layers):
 
 
 def main():    
-    vec = tf.placeholder("float", [config.batch_size, None, config.input_features])
-    tec = np.random.rand(config.batch_size, None, config.input_features) #  batch_size, time_steps, features
+    vec = tf.placeholder("float", [config.batch_size, config.max_phr_len, config.input_features])
+    tec = np.random.rand(config.batch_size, config.max_phr_len, config.input_features) #  batch_size, time_steps, features
     seqlen = tf.placeholder(tf.int32, [config.batch_size])
-    outs = wavenet(vec[:,4:10,:],vec)
+    outs = nr_wavenet(vec)
     sess = tf.Session()
     init = tf.global_variables_initializer()
     sess.run(init)

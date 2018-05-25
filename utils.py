@@ -113,21 +113,24 @@ def nan_helper(y):
 
     return np.isinf(y), lambda z: z.nonzero()[0]
 
-def file_to_stft(input_file):
+def file_to_stft(input_file, mode =0):
     audio,fs=sf.read(input_file)
-    if len(audio.shape)==2:
-        mixture=np.clip(audio[:,0]+audio[:,1],0.0,1.0)
-    else:
+    if mode == 0 :
+        mixture = (audio[:,0]+audio[:,1])*0.7
+    elif mode ==1:
         mixture = audio
+    elif mode ==2:
+        mixture = audio[:,0]
     mix_stft=abs(stft(mixture))
     return mix_stft
 
-def input_to_feats(input_file, mode=config.comp_mode):
+def input_to_feats(input_file, mode=0):
     audio,fs=sf.read(input_file)
-    if len(audio.shape)==2:
+    if mode == 0 or mode ==2:
         vocals=np.array(audio[:,1])
-    else:
+    elif mode ==1:
         vocals = audio
+
     feats = stft_to_feats(vocals,fs)
 
 
@@ -179,6 +182,13 @@ def write_ori_ikala(input_file, filename):
     sf.write(config.val_dir+filename+'_mixture.wav',mixture,fs)
     sf.write(config.val_dir+filename+'_ori_vocals.wav',vocals,fs)
 
+def write_ori_med(input_file, filename):
+    audio,fs = sf.read(input_file)
+    mixture = np.array(audio[:,0])
+    vocals = np.array(audio[:,1])
+    sf.write(config.val_dir+filename+'_mixture.wav',mixture,fs)
+    sf.write(config.val_dir+filename+'_ori_vocals.wav',vocals,fs)
+
 def file_to_sac(input_file):
     audio,fs = sf.read(input_file)
     vocals = np.array(audio[:,1])
@@ -193,7 +203,12 @@ def file_to_sac(input_file):
     y=np.concatenate((y,guy),axis=-1)
     return y
 
-
+def f0_to_hertz(f0):
+    f0 = f0-69
+    f0 = f0/12
+    f0 = 2**f0
+    f0 = f0*440
+    return f0
 
 def feats_to_audio(in_feats,filename, fs=config.fs,  mode=config.comp_mode):
     harm = in_feats[:,:60]
@@ -221,6 +236,33 @@ def feats_to_audio(in_feats,filename, fs=config.fs,  mode=config.comp_mode):
 
     y=pw.synthesize(f0.astype('double'),harm.astype('double'),ap.astype('double'),fs,config.hoptime)
     sf.write(config.val_dir+filename+'.wav',y,fs)
+
+def feats_to_audio_test(in_feats,filename, fs=config.fs,  mode=config.comp_mode):
+    harm = in_feats[:,:60]
+    ap = in_feats[:,60:-2]
+    f0 = in_feats[:,-2:]
+    f0[:,0] = f0[:,0]-69
+    f0[:,0] = f0[:,0]/12
+    f0[:,0] = 2**f0[:,0]
+    f0[:,0] = f0[:,0]*440
+
+
+    f0 = f0[:,0]*(1-f0[:,1])
+
+
+    if mode == 'mfsc':
+        harm = mfsc_to_mgc(harm)
+        ap = mfsc_to_mgc(ap)
+
+
+    harm = mgc_to_sp(harm, 1025, 0.45)
+    ap = mgc_to_sp(ap, 1025, 0.45)
+
+    harm = 10**(harm/10)
+    ap = 10**(ap/20)
+
+    y=pw.synthesize(f0.astype('double'),harm.astype('double'),ap.astype('double'),fs,config.hoptime)
+    sf.write('./medley_resynth_test/'+filename+'.wav',y,fs)
     # return harm, ap, f0
 
 def test(ori, re):

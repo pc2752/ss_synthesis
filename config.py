@@ -5,6 +5,7 @@ wav_dir = '../datasets/iKala/Wavfile/'
 wav_dir_nus = '../datasets/nus-smc-corpus_48/'
 wav_dir_mus = '../datasets/musdb18/train/'
 wav_dir_mir = '../datasets/MIR1k/'
+wav_dir_med = '../datasets/medleydB/'
 
 
 voice_dir = './voice/'
@@ -41,17 +42,17 @@ def get_teacher_prob(epoch):
 split = 0.9
 
 augment = True
-aug_prob = 0.5
+aug_prob = 0.35
 
 
 
 # Hyperparameters
-num_epochs = 10000
+num_epochs = 3000
 batches_per_epoch_train = 500
 batches_per_epoch_val = 100
-batch_size = 1 
-samples_per_file = 1
-max_phr_len = 200
+batch_size = 30 
+samples_per_file = 5
+max_phr_len = 120
 input_features = 513
 lstm_size = 128
 output_features = 66
