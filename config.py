@@ -52,7 +52,7 @@ batches_per_epoch_train = 500
 batches_per_epoch_val = 100
 batch_size = 30 
 samples_per_file = 5
-max_phr_len = 120
+max_phr_len = 64
 input_features = 513
 lstm_size = 128
 output_features = 66
@@ -70,7 +70,7 @@ hoptime = 5.80498866
 
 noise = 0.05
 
-wavenet_layers = 6
+wavenet_layers = 5
 rec_field = 2**wavenet_layers
 wavenet_filters = 66
 

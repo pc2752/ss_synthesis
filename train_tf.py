@@ -73,9 +73,11 @@ def train(_):
 
         # import pdb;pdb.set_trace()
 
-        d_optimizer = tf.train.GradientDescentOptimizer(learning_rate=config.gan_lr).minimize(D_loss, var_list=d_params)
-        g_optimizer = tf.train.GradientDescentOptimizer(learning_rate=config.gan_lr).minimize(G_loss, var_list=g_params)
-
+        # d_optimizer = tf.train.GradientDescentOptimizer(learning_rate=config.gan_lr).minimize(D_loss, var_list=d_params)
+        # g_optimizer = tf.train.GradientDescentOptimizer(learning_rate=config.gan_lr).minimize(G_loss, var_list=g_params)
+        
+        d_optimizer = tf.train.AdamOptimizer(learning_rate=config.gan_lr).minimize(D_loss, var_list=d_params)
+        g_optimizer = tf.train.AdamOptimizer(learning_rate=config.gan_lr).minimize(G_loss, var_list=g_params)
 
         initial_loss = tf.reduce_sum(tf.abs(op - target_placeholder[:,:,:60])*np.linspace(1.0,0.7,60)*(1-target_placeholder[:,:,-1:]))
 
@@ -323,10 +325,19 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
         
         input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.input_features),name='input_placeholder')
 
-        harm_1,harm, ap, f0, vuv = modules.psuedo_r_wavenet(input_placeholder)
-        harmy = harm_1+harm
 
-        gen_op = modules.GAN_generator(harmy)
+        with tf.variable_scope('First_Model') as scope:
+            harm_1,harm, ap, f0, vuv = modules.psuedo_r_wavenet(input_placeholder)
+
+            harmy = harm_1+harm
+
+
+        with tf.variable_scope('Generator') as scope: 
+            gen_op = modules.GAN_generator(harmy)
+        # with tf.variable_scope('Discriminator') as scope: 
+        #     D_real = modules.GAN_discriminator(target_placeholder[:,:,:60],input_placeholder)
+        #     scope.reuse_variables()
+        #     D_fake = modules.GAN_discriminator(gen_op,input_placeholder)
 
 
         saver = tf.train.Saver()
@@ -363,7 +374,10 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
 
         for in_batch in in_batches:
             harm1,val_harm, val_ap, val_f0, val_vuv = sess.run([harm_1,harm, ap, f0, vuv], feed_dict={input_placeholder: in_batch})
-            val_gen = sess.run(gen_op, feed_dict={input_placeholder: in_batch})
+            val_op = sess.run(gen_op, feed_dict={input_placeholder: in_batch})
+            
+            gan_op.append(val_op)
+
             first_pred.append(harm1)
             cleaner.append(val_harm)
             val_harm = val_harm+harm1
@@ -382,8 +396,11 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
 
         cleaner = np.array(cleaner)
         cleaner = utils.overlapadd(cleaner, nchunks_in) 
-        # import pdb;pdb.set_trace()
-        # targs = utils.normalize(targs, 'feats', mode=config.norm_mode_out)
+
+        gan_op = np.array(gan_op)
+        gan_op = utils.overlapadd(gan_op, nchunks_in) 
+
+
         targs = (targs-min_feat)/(max_feat-min_feat)
 
         # first_pred = (first_pred-min_feat[:60])/(max_feat[:60]-min_feat[:60])
@@ -411,6 +428,20 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
             ax2 = plt.subplot(412)
             plt.imshow(cleaner.T, origin='lower', aspect='auto')
             ax2.set_title("Residual Added ", fontsize = 10)
+
+
+
+            plt.figure(5)
+            ax1 = plt.subplot(311)
+            plt.imshow(ins.T, origin='lower', aspect='auto')
+            ax1.set_title("Predicted Harm ", fontsize = 10)
+            ax2 = plt.subplot(313)
+            plt.imshow(outs.T, origin='lower', aspect='auto')
+            ax2.set_title("Ground Truth Harm ", fontsize = 10)
+            ax1 = plt.subplot(312)
+            plt.imshow(gan_op.T, origin='lower', aspect='auto')
+            ax1.set_title("GAN output ", fontsize = 10)
+
 
 
             plt.figure(2)

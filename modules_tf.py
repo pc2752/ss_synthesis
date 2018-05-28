@@ -347,7 +347,7 @@ def wavenet(inputs, conditioning, num_block = config.wavenet_layers):
     return output[:,:,:-1],vuv
 
 
-def GAN_generator(inputs):
+def GAN_generator(inputs, num_block = config.wavenet_layers):
     # inputs = tf.reshape(inputs, [config.batch_size, config.max_phr_len, config.input_features,1])
     # inputs = tf.layers.conv2d(inputs, config.wavenet_filters, 5,  padding = 'same', name = "G_1")
     # # inputs = tf.layers.conv2d(inputs, config.wavenet_filters, 5,  padding = 'same', name = "G_2")
@@ -359,10 +359,24 @@ def GAN_generator(inputs):
 
     inputs = tf.layers.dense(inputs, config.lstm_size, name = "G_1")
     inputs = tf.layers.dense(inputs, 60, name = "G_2")
-    inputs = tf.nn.relu(inputs)
+    first_conv_2 = tf.layers.conv1d(inputs, config.wavenet_filters, 1)
+
+    skips_2 = []
+    skip, residual = nr_wavenet_block(first_conv_2, dilation_rate=1)
+    output_2 = skip
+    for i in range(num_block):
+        skip, residual = nr_wavenet_block(residual, dilation_rate=2**(i+1))
+        skips_2.append(skip)
+    for skip in skips_2:
+        output_2+=skip 
+    output_2 = output_2+first_conv_2
+
+    output_2 = tf.nn.relu(output_2)
+
+    harm = tf.nn.relu(tf.layers.dense(output_2, 60))
     # import pdb;pdb.set_trace()
     # inputs = tf.reshape(inputs,[config.batch_size, config.max_phr_len, config.input_features] )
-    return inputs
+    return harm
     # import pdb;pdb.set_trace()
 
 
