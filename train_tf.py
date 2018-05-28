@@ -63,7 +63,7 @@ def train(_):
 
 
         G_loss_GAN = -tf.reduce_mean(tf.log(D_fake + 1e-12)) 
-        G_loss_diff = tf.reduce_sum(tf.abs(gen_op+harmy - target_placeholder[:,:,:60])*np.linspace(1.0,0.7,60)*(1-target_placeholder[:,:,-1:]))
+        G_loss_diff = tf.reduce_sum(tf.abs(gen_op+harmy - target_placeholder[:,:,:60])*(1-target_placeholder[:,:,-1:]))
         G_loss = G_loss_GAN+G_loss_diff
 
         G_summary_GAN = tf.summary.scalar('Generator_Loss_GAN', G_loss_GAN)
@@ -77,10 +77,11 @@ def train(_):
 
         # import pdb;pdb.set_trace()
 
-        d_optimizer = tf.train.GradientDescentOptimizer(learning_rate=config.gan_lr).minimize(D_loss, var_list=d_params)
+        d_optimizer_grad = tf.train.GradientDescentOptimizer(learning_rate=config.gan_lr).minimize(D_loss, var_list=d_params)
         # g_optimizer = tf.train.GradientDescentOptimizer(learning_rate=config.gan_lr).minimize(G_loss, var_list=g_params)
 
-        # d_optimizer = tf.train.AdamOptimizer(learning_rate=config.gan_lr).minimize(D_loss, var_list=d_params)
+        d_optimizer = tf.train.AdamOptimizer(learning_rate=config.gan_lr).minimize(D_loss, var_list=d_params)
+        g_optimizer_diff = tf.train.AdamOptimizer(learning_rate=config.gan_lr).minimize(G_loss_diff, var_list=g_params)
         g_optimizer = tf.train.AdamOptimizer(learning_rate=config.gan_lr).minimize(G_loss, var_list=g_params)
 
         initial_loss = tf.reduce_sum(tf.abs(op - target_placeholder[:,:,:60])*np.linspace(1.0,0.7,60)*(1-target_placeholder[:,:,-1:]))
@@ -186,8 +187,16 @@ def train(_):
 
                     _, step_initial_loss, step_loss_harm, step_loss_ap, step_loss_f0, step_loss_vuv, step_total_loss = sess.run([train_function, 
                         initial_loss,harm_loss, ap_loss, f0_loss, vuv_loss, loss], feed_dict={input_placeholder: voc,target_placeholder: feat})
-                    _, step_gen_loss_GAN, step_gen_loss_diff = sess.run([g_optimizer, G_loss_GAN, G_loss_diff], feed_dict={input_placeholder: voc,target_placeholder: feat})
-                    _, step_dis_loss_real, step_dis_loss_fake = sess.run([d_optimizer, D_loss_real,D_loss_fake], feed_dict={input_placeholder: voc,target_placeholder: feat})
+                    
+                    if epoch > 75:
+                        _, step_dis_loss_real, step_dis_loss_fake = sess.run([d_optimizer, D_loss_real,D_loss_fake], feed_dict={input_placeholder: voc,target_placeholder: feat})
+                        _, step_gen_loss_GAN, step_gen_loss_diff = sess.run([g_optimizer, G_loss_GAN, G_loss_diff], feed_dict={input_placeholder: voc,target_placeholder: feat})
+                    else :
+                        _, step_dis_loss_real, step_dis_loss_fake = sess.run([d_optimizer_grad, D_loss_real,D_loss_fake], feed_dict={input_placeholder: voc,target_placeholder: feat})
+                        _, step_gen_loss_diff = sess.run([g_optimizer_diff, G_loss_diff], feed_dict={input_placeholder: voc,target_placeholder: feat})
+                        step_gen_loss_GAN = 0
+
+
 
 
                     # _, step_loss_harm = sess.run([train_harm, harm_loss], feed_dict={input_placeholder: voc,target_placeholder: feat})
