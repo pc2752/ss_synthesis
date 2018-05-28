@@ -46,7 +46,7 @@ def train(_):
         with tf.variable_scope('Generator') as scope: 
             gen_op = modules.GAN_generator(harmy)
         with tf.variable_scope('Discriminator') as scope: 
-            D_real = modules.GAN_discriminator(target_placeholder,input_placeholder)
+            D_real = modules.GAN_discriminator(target_placeholder[:,:,:60],input_placeholder)
             scope.reuse_variables()
             D_fake = modules.GAN_discriminator(gen_op,input_placeholder)
 
@@ -60,15 +60,18 @@ def train(_):
 
         G_loss_GAN = -tf.reduce_mean(tf.log(D_fake+0.0001)) 
         G_loss_diff = tf.reduce_sum(tf.abs(gen_op - target_placeholder[:,:,:60])*np.linspace(1.0,0.7,60)*(1-target_placeholder[:,:,-1:]))
-        G_loss = G_summary_GAN+G_loss_diff
+        G_loss = G_loss_GAN+G_loss_diff
 
         G_summary_GAN = tf.summary.scalar('Generator_Loss_GAN', G_loss_GAN)
         G_summary_diff = tf.summary.scalar('Generator_Loss_diff', G_loss_diff)
 
 
         vars = tf.trainable_variables()
-        d_params = [v for v in vars if v.name.startswith('D/')]
-        g_params = [v for v in vars if v.name.startswith('G/')]
+        
+        d_params = [v for v in vars if v.name.startswith('Discriminator/D')]
+        g_params = [v for v in vars if v.name.startswith('Generator/G')]
+
+        # import pdb;pdb.set_trace()
 
         d_optimizer = tf.train.GradientDescentOptimizer(learning_rate=config.gan_lr).minimize(D_loss, var_list=d_params)
         g_optimizer = tf.train.GradientDescentOptimizer(learning_rate=config.gan_lr).minimize(G_loss, var_list=g_params)
@@ -209,7 +212,7 @@ def train(_):
                 epoch_total_loss = epoch_total_loss/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len*66)
 
                 epoch_loss_generator_GAN = epoch_loss_generator_GAN/(config.batches_per_epoch_train *config.batch_size)
-                epoch_loss_generator_diff = epoch_loss_generator_diff/(config.batches_per_epoch_train *config.batch_size)
+                epoch_loss_generator_diff = epoch_loss_generator_diff/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len*60)
                 epoch_loss_discriminator = epoch_loss_discriminator/(config.batches_per_epoch_train *config.batch_size)
                 
 
@@ -237,6 +240,10 @@ def train(_):
                     epoch_loss_vuv_val+=step_loss_vuv_val
                     epoch_total_loss_val+=step_total_loss_val
 
+                    val_epoch_loss_generator_GAN += step_gen_loss_GAN
+                    val_epoch_loss_generator_diff += step_gen_loss_diff
+                    val_epoch_loss_discriminator += step_dis_loss
+
                     utils.progress(batch_num_val,config.batches_per_epoch_val, suffix = 'validiation done')
                     batch_num_val+=1
 
@@ -246,6 +253,10 @@ def train(_):
                 epoch_loss_f0_val = epoch_loss_f0_val/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len)
                 epoch_loss_vuv_val = epoch_loss_vuv_val/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len)
                 epoch_total_loss_val = epoch_total_loss_val/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len*66)
+
+                val_epoch_loss_generator_GAN = val_epoch_loss_generator_GAN/(config.batches_per_epoch_train *config.batch_size)
+                val_epoch_loss_generator_diff = val_epoch_loss_generator_diff/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len*60)
+                val_epoch_loss_discriminator = val_epoch_loss_discriminator/(config.batches_per_epoch_train *config.batch_size)
 
                 summary_str = sess.run(summary, feed_dict={input_placeholder: voc,target_placeholder: feat})
                 val_summary_writer.add_summary(summary_str, epoch)
@@ -261,11 +272,19 @@ def train(_):
                 print('        : VUV Training Loss = %.10f ' % (epoch_loss_vuv))
                 print('        : Initial Training Loss = %.10f ' % (epoch_initial_loss))
 
+                print('        : Gen GAN Training Loss = %.10f ' % (epoch_loss_generator_GAN))
+                print('        : Gen diff Training Loss = %.10f ' % (epoch_loss_generator_diff))
+                print('        : Discriminator Training Loss = %.10f ' % (epoch_loss_discriminator))
+
                 print('        : Harm Validation Loss = %.10f ' % (epoch_loss_harm_val))
                 print('        : Ap Validation Loss = %.10f ' % (epoch_loss_ap_val))
                 print('        : F0 Validation Loss = %.10f ' % (epoch_loss_f0_val))
                 print('        : VUV Validation Loss = %.10f ' % (epoch_loss_vuv_val))
                 print('        : Initial Validation Loss = %.10f ' % (epoch_initial_loss_val))
+
+                print('        : Gen GAN Validation Loss = %.10f ' % (val_epoch_loss_generator_GAN))
+                print('        : Gen diff Validation Loss = %.10f ' % (val_epoch_loss_generator_diff))
+                print('        : Discriminator Validation Loss = %.10f ' % (val_epoch_loss_discriminator))
 
 
             if (epoch + 1) % config.save_every == 0 or (epoch + 1) == config.num_epochs:
@@ -305,6 +324,10 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
         input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.input_features),name='input_placeholder')
 
         harm_1,harm, ap, f0, vuv = modules.psuedo_r_wavenet(input_placeholder)
+        harmy = harm_1+harm
+
+        gen_op = modules.GAN_generator(harmy)
+
 
         saver = tf.train.Saver()
 
@@ -336,8 +359,11 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
 
         cleaner = []
 
+        gan_op =[]
+
         for in_batch in in_batches:
             harm1,val_harm, val_ap, val_f0, val_vuv = sess.run([harm_1,harm, ap, f0, vuv], feed_dict={input_placeholder: in_batch})
+            val_gen = sess.run(gen_op, feed_dict={input_placeholder: in_batch})
             first_pred.append(harm1)
             cleaner.append(val_harm)
             val_harm = val_harm+harm1

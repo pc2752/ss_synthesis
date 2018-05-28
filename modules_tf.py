@@ -358,7 +358,7 @@ def GAN_generator(inputs):
     # inputs = tf.layers.conv2d(inputs, 1, 5,  padding = 'same', name = "G_6")
 
     inputs = tf.layers.dense(inputs, config.lstm_size, name = "G_1")
-    inputs = tf.layers.dense(inputs, 66, name = "G_2")
+    inputs = tf.layers.dense(inputs, 60, name = "G_2")
     inputs = tf.nn.relu(inputs)
     # import pdb;pdb.set_trace()
     # inputs = tf.reshape(inputs,[config.batch_size, config.max_phr_len, config.input_features] )
