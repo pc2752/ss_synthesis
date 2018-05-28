@@ -80,7 +80,7 @@ def train(_):
         d_optimizer_grad = tf.train.GradientDescentOptimizer(learning_rate=config.gan_lr).minimize(D_loss, var_list=d_params)
         # g_optimizer = tf.train.GradientDescentOptimizer(learning_rate=config.gan_lr).minimize(G_loss, var_list=g_params)
 
-        d_optimizer = tf.train.AdamOptimizer(learning_rate=config.gan_lr).minimize(D_loss, var_list=d_params)
+        d_optimizer = tf.train.GradientDescentOptimizer(learning_rate=config.gan_lr).minimize(D_loss, var_list=d_params)
         g_optimizer_diff = tf.train.AdamOptimizer(learning_rate=config.gan_lr).minimize(G_loss_diff, var_list=g_params)
         g_optimizer = tf.train.AdamOptimizer(learning_rate=config.gan_lr).minimize(G_loss, var_list=g_params)
 
@@ -90,7 +90,7 @@ def train(_):
 
         ap_loss = tf.reduce_sum(tf.abs(ap - target_placeholder[:,:,60:-2])*(1-target_placeholder[:,:,-1:]))
 
-        f0_loss = tf.reduce_sum(tf.abs(f0 - target_placeholder[:,:,-2:-1])*20.0*(1-target_placeholder[:,:,-1:])) 
+        f0_loss = tf.reduce_sum(tf.abs(f0 - target_placeholder[:,:,-2:-1])*(1-target_placeholder[:,:,-1:])) 
 
         # vuv_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels=, logits=vuv))
 

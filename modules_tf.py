@@ -383,8 +383,8 @@ def GAN_generator(inputs, num_block = config.wavenet_layers):
 def GAN_discriminator(inputs, conditioning):
     ops = tf.concat([inputs, conditioning], 2)
     ops = tf.layers.dense(ops, config.lstm_size, name = "D_1")
-    ops = tf.layers.dense(ops, 30, name = "D_2")
-    ops = tf.layers.dense(ops, 1, name = "D_3")
+    # ops = tf.layers.dense(ops, 30, name = "D_2")
+    # ops = tf.layers.dense(ops, 15, name = "D_3")
 
     ops = tf.layers.conv1d(ops, config.wavenet_filters, 2, padding = 'valid', name = "D_c1")
     ops = tf.layers.conv1d(ops, config.wavenet_filters, 4, padding = 'valid', name = "D_c2")
