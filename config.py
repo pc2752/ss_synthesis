@@ -77,6 +77,6 @@ wavenet_filters = 66
 print_every = 1
 save_every = 5
 
-gan_lr = 0.0001
+gan_lr = 0.001
 
 dtype = tf.float32

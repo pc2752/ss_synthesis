@@ -373,7 +373,7 @@ def GAN_generator(inputs, num_block = config.wavenet_layers):
 
     output_2 = tf.nn.relu(output_2)
 
-    harm = tf.nn.relu(tf.layers.dense(output_2, 60))
+    harm = tf.layers.dense(output_2, 60)
     # import pdb;pdb.set_trace()
     # inputs = tf.reshape(inputs,[config.batch_size, config.max_phr_len, config.input_features] )
     return harm
@@ -385,6 +385,17 @@ def GAN_discriminator(inputs, conditioning):
     ops = tf.layers.dense(ops, config.lstm_size, name = "D_1")
     ops = tf.layers.dense(ops, 30, name = "D_2")
     ops = tf.layers.dense(ops, 1, name = "D_3")
+
+    ops = tf.layers.conv1d(ops, config.wavenet_filters, 2, padding = 'valid', name = "D_c1")
+    ops = tf.layers.conv1d(ops, config.wavenet_filters, 4, padding = 'valid', name = "D_c2")
+    ops = tf.layers.conv1d(ops, config.wavenet_filters, 8, padding = 'valid', name = "D_c3")
+    ops = tf.layers.conv1d(ops, config.wavenet_filters, 16, padding = 'valid', name = "D_c4")
+    ops = tf.layers.conv1d(ops, config.wavenet_filters, 32, padding = 'valid', name = "D_c5")
+    # ops = tf.layers.conv1d(ops, config.wavenet_filters, 25, padding = 'valid')
+
+    # import pdb;pdb.set_trace()
+
+
     ops = tf.reshape(ops, [config.batch_size,-1])
     ops = tf.layers.dense(ops, 1, name = "D_4")
     ops = tf.nn.sigmoid(ops)
