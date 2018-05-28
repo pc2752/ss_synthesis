@@ -347,11 +347,42 @@ def wavenet(inputs, conditioning, num_block = config.wavenet_layers):
     return output[:,:,:-1],vuv
 
 
+def GAN_generator(inputs):
+    # inputs = tf.reshape(inputs, [config.batch_size, config.max_phr_len, config.input_features,1])
+    # inputs = tf.layers.conv2d(inputs, config.wavenet_filters, 5,  padding = 'same', name = "G_1")
+    # # inputs = tf.layers.conv2d(inputs, config.wavenet_filters, 5,  padding = 'same', name = "G_2")
+    # # inputs = tf.layers.conv2d(inputs, config.wavenet_filters, 5,  padding = 'same', name = "G_3")
+    # # inputs = tf.layers.conv2d(inputs, config.wavenet_filters, 5,  padding = 'same', name = "G_4")
+    # # inputs = tf.layers.conv2d(inputs, config.wavenet_filters, 5,  padding = 'same', name = "G_5")
+
+    # inputs = tf.layers.conv2d(inputs, 1, 5,  padding = 'same', name = "G_6")
+
+    inputs = tf.layers.dense(inputs, config.lstm_size, name = "G_1")
+    inputs = tf.layers.dense(inputs, 66, name = "G_2")
+    inputs = tf.nn.relu(inputs)
+    # import pdb;pdb.set_trace()
+    # inputs = tf.reshape(inputs,[config.batch_size, config.max_phr_len, config.input_features] )
+    return inputs
+    # import pdb;pdb.set_trace()
+
+
+def GAN_discriminator(inputs, conditioning):
+    ops = tf.concat([inputs, conditioning], 2)
+    ops = tf.layers.dense(ops, config.lstm_size, name = "D_1")
+    ops = tf.layers.dense(ops, 30, name = "D_2")
+    ops = tf.layers.dense(ops, 1, name = "D_3")
+    ops = tf.reshape(ops, [config.batch_size,-1])
+    ops = tf.layers.dense(ops, 1, name = "D_4")
+    ops = tf.nn.sigmoid(ops)
+    return ops
+
+
+
 def main():    
     vec = tf.placeholder("float", [config.batch_size, config.max_phr_len, config.input_features])
     tec = np.random.rand(config.batch_size, config.max_phr_len, config.input_features) #  batch_size, time_steps, features
     seqlen = tf.placeholder(tf.int32, [config.batch_size])
-    outs = nr_wavenet(vec)
+    outs = GAN_discriminator(vec,vec)
     sess = tf.Session()
     init = tf.global_variables_initializer()
     sess.run(init)

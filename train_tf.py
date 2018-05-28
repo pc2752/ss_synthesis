@@ -28,20 +28,51 @@ def train(_):
         target_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.output_features),name='target_placeholder')
         tf.summary.histogram('targets', target_placeholder)
 
+        with tf.variable_scope('First_Model') as scope:
+            op,harm, ap, f0, vuv = modules.psuedo_r_wavenet(input_placeholder)
 
-        op,harm, ap, f0, vuv = modules.psuedo_r_wavenet(input_placeholder)
+            harmy = harm+op
 
-        harmy = harm+op
+            tf.summary.histogram('initial_output', op)
 
-        tf.summary.histogram('initial_output', op)
+            tf.summary.histogram('harm', harm)
 
-        tf.summary.histogram('harm', harm)
+            tf.summary.histogram('ap', ap)
 
-        tf.summary.histogram('ap', ap)
+            tf.summary.histogram('f0', f0)
 
-        tf.summary.histogram('f0', f0)
+            tf.summary.histogram('vuv', vuv)
 
-        tf.summary.histogram('vuv', vuv)
+        with tf.variable_scope('Generator') as scope: 
+            gen_op = modules.GAN_generator(harmy)
+        with tf.variable_scope('Discriminator') as scope: 
+            D_real = modules.GAN_discriminator(target_placeholder,input_placeholder)
+            scope.reuse_variables()
+            D_fake = modules.GAN_discriminator(gen_op,input_placeholder)
+
+        # Comment out these lines to train without GAN
+
+        D_loss = -tf.reduce_mean(tf.log(D_real+0.0001) + tf.log(1. - D_fake+0.0001))
+
+        D_summary = tf.summary.scalar('Discriminator_Loss', D_loss)
+
+
+
+        G_loss_GAN = -tf.reduce_mean(tf.log(D_fake+0.0001)) 
+        G_loss_diff = tf.reduce_sum(tf.abs(gen_op - target_placeholder[:,:,:60])*np.linspace(1.0,0.7,60)*(1-target_placeholder[:,:,-1:]))
+        G_loss = G_summary_GAN+G_loss_diff
+
+        G_summary_GAN = tf.summary.scalar('Generator_Loss_GAN', G_loss_GAN)
+        G_summary_diff = tf.summary.scalar('Generator_Loss_diff', G_loss_diff)
+
+
+        vars = tf.trainable_variables()
+        d_params = [v for v in vars if v.name.startswith('D/')]
+        g_params = [v for v in vars if v.name.startswith('G/')]
+
+        d_optimizer = tf.train.GradientDescentOptimizer(learning_rate=config.gan_lr).minimize(D_loss, var_list=d_params)
+        g_optimizer = tf.train.GradientDescentOptimizer(learning_rate=config.gan_lr).minimize(G_loss, var_list=g_params)
+
 
         initial_loss = tf.reduce_sum(tf.abs(op - target_placeholder[:,:,:60])*np.linspace(1.0,0.7,60)*(1-target_placeholder[:,:,-1:]))
 
@@ -123,6 +154,15 @@ def train(_):
             epoch_total_loss_val = 0
             epoch_initial_loss_val = 0
 
+            #GAN
+            epoch_loss_generator_GAN = 0
+            epoch_loss_generator_diff = 0
+            epoch_loss_discriminator = 0
+
+            val_epoch_loss_generator_GAN = 0
+            val_epoch_loss_generator_diff = 0
+            val_epoch_loss_discriminator = 0
+
             batch_num = 0
             batch_num_val = 0
             val_generator = data_gen(mode='val')
@@ -133,7 +173,11 @@ def train(_):
 
                 for voc, feat in data_generator:
 
-                    _, step_initial_loss, step_loss_harm, step_loss_ap, step_loss_f0, step_loss_vuv, step_total_loss = sess.run([train_function, initial_loss,harm_loss, ap_loss, f0_loss, vuv_loss, loss], feed_dict={input_placeholder: voc,target_placeholder: feat})
+                    _, step_initial_loss, step_loss_harm, step_loss_ap, step_loss_f0, step_loss_vuv, step_total_loss = sess.run([train_function, 
+                        initial_loss,harm_loss, ap_loss, f0_loss, vuv_loss, loss], feed_dict={input_placeholder: voc,target_placeholder: feat})
+                    _, step_gen_loss_GAN, step_gen_loss_diff = sess.run([g_optimizer, G_loss_GAN, G_loss_diff], feed_dict={input_placeholder: voc,target_placeholder: feat})
+                    _, step_dis_loss = sess.run([d_optimizer, D_loss], feed_dict={input_placeholder: voc,target_placeholder: feat})
+
 
                     # _, step_loss_harm = sess.run([train_harm, harm_loss], feed_dict={input_placeholder: voc,target_placeholder: feat})
                     # _, step_loss_ap = sess.run([train_ap, ap_loss], feed_dict={input_placeholder: voc,target_placeholder: feat})
@@ -146,6 +190,13 @@ def train(_):
                     epoch_loss_f0+=step_loss_f0
                     epoch_loss_vuv+=step_loss_vuv
                     epoch_total_loss+=step_total_loss
+
+                    epoch_loss_generator_GAN+=step_gen_loss_GAN
+                    epoch_loss_generator_diff+=step_gen_loss_diff
+                    epoch_loss_discriminator+=step_dis_loss
+
+
+
                     utils.progress(batch_num,config.batches_per_epoch_train, suffix = 'training done')
                     batch_num+=1
 
@@ -156,6 +207,11 @@ def train(_):
                 epoch_loss_f0 = epoch_loss_f0/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len)
                 epoch_loss_vuv = epoch_loss_vuv/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len)
                 epoch_total_loss = epoch_total_loss/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len*66)
+
+                epoch_loss_generator_GAN = epoch_loss_generator_GAN/(config.batches_per_epoch_train *config.batch_size)
+                epoch_loss_generator_diff = epoch_loss_generator_diff/(config.batches_per_epoch_train *config.batch_size)
+                epoch_loss_discriminator = epoch_loss_discriminator/(config.batches_per_epoch_train *config.batch_size)
+                
 
                 summary_str = sess.run(summary, feed_dict={input_placeholder: voc,target_placeholder: feat})
                 train_summary_writer.add_summary(summary_str, epoch)
@@ -171,6 +227,8 @@ def train(_):
                     step_loss_f0_val = sess.run(f0_loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
                     step_loss_vuv_val = sess.run(vuv_loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
                     step_total_loss_val = sess.run(loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
+                    step_gen_loss_GAN, step_gen_loss_diff = sess.run([G_loss_GAN, G_loss_diff], feed_dict={input_placeholder: voc,target_placeholder: feat})
+                    step_dis_loss = sess.run(D_loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
 
                     epoch_initial_loss_val+=step_initial_loss_val
                     epoch_loss_harm_val+=step_loss_harm_val
@@ -274,8 +332,14 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
         # in_batches = utils.normalize(in_batches, 'mix_stft', mode=config.norm_mode_in)
         val_outer = []
 
+        first_pred = []
+
+        cleaner = []
+
         for in_batch in in_batches:
             harm1,val_harm, val_ap, val_f0, val_vuv = sess.run([harm_1,harm, ap, f0, vuv], feed_dict={input_placeholder: in_batch})
+            first_pred.append(harm1)
+            cleaner.append(val_harm)
             val_harm = val_harm+harm1
             val_outs = np.concatenate((val_harm, val_ap, val_f0, val_vuv), axis=-1)
             val_outer.append(val_outs)
@@ -287,10 +351,17 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
         val_outer = np.clip(val_outer,0.0,1.0)
 
         #Test purposes only
-        
+        first_pred = np.array(first_pred)
+        first_pred = utils.overlapadd(first_pred, nchunks_in) 
 
+        cleaner = np.array(cleaner)
+        cleaner = utils.overlapadd(cleaner, nchunks_in) 
+        # import pdb;pdb.set_trace()
         # targs = utils.normalize(targs, 'feats', mode=config.norm_mode_out)
         targs = (targs-min_feat)/(max_feat-min_feat)
+
+        # first_pred = (first_pred-min_feat[:60])/(max_feat[:60]-min_feat[:60])
+        # cleaner = (cleaner-min_feat[:60])/(max_feat[:60]-min_feat[:60])
 
 
         
@@ -302,12 +373,20 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
             ins = val_outer[:,:60]
             outs = targs[:,:60]
             plt.figure(1)
-            ax1 = plt.subplot(211)
+            ax1 = plt.subplot(411)
             plt.imshow(ins.T, origin='lower', aspect='auto')
             ax1.set_title("Predicted Harm ", fontsize = 10)
-            ax2 = plt.subplot(212)
+            ax2 = plt.subplot(414)
             plt.imshow(outs.T, origin='lower', aspect='auto')
             ax2.set_title("Ground Truth Harm ", fontsize = 10)
+            ax1 = plt.subplot(413)
+            plt.imshow(first_pred.T, origin='lower', aspect='auto')
+            ax1.set_title("Initial Prediction ", fontsize = 10)
+            ax2 = plt.subplot(412)
+            plt.imshow(cleaner.T, origin='lower', aspect='auto')
+            ax2.set_title("Residual Added ", fontsize = 10)
+
+
             plt.figure(2)
             ax1 = plt.subplot(211)
             plt.imshow(val_outer[:,60:-2].T, origin='lower', aspect='auto')
