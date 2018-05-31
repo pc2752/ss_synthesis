@@ -43,50 +43,54 @@ def train(_):
 
             tf.summary.histogram('vuv', vuv)
 
-        with tf.variable_scope('Generator') as scope: 
-            gen_op = modules.GAN_generator(harmy)
-        with tf.variable_scope('Discriminator') as scope: 
-            D_real = modules.GAN_discriminator(target_placeholder[:,:,:60],input_placeholder)
-            scope.reuse_variables()
-            D_fake = modules.GAN_discriminator(gen_op+harmy,input_placeholder)
+        if config.use_gan:
 
-        # Comment out these lines to train without GAN
+            with tf.variable_scope('Generator') as scope: 
+                gen_op = modules.GAN_generator(harmy)
+            with tf.variable_scope('Discriminator') as scope: 
+                D_real = modules.GAN_discriminator(target_placeholder[:,:,:60],input_placeholder)
+                scope.reuse_variables()
+                D_fake = modules.GAN_discriminator(gen_op+harmy,input_placeholder)
 
-        D_loss_real = -tf.reduce_mean(tf.log(D_real + 1e-12))
-        D_loss_fake = -tf.reduce_mean(tf.log(1. - (D_fake + 1e-12)))
+            # Comment out these lines to train without GAN
 
-        D_loss = D_loss_real+D_loss_fake
+            D_loss_real = -tf.reduce_mean(tf.log(D_real + 1e-12))
+            D_loss_fake = -tf.reduce_mean(tf.log(1. - (D_fake + 1e-12)))
 
-        D_summary_real = tf.summary.scalar('Discriminator_Loss_Real', D_loss_real)
-        D_summary_fake = tf.summary.scalar('Discriminator_Loss_Fake', D_loss_fake)
+            D_loss = D_loss_real+D_loss_fake
 
-
-
-        G_loss_GAN = -tf.reduce_mean(tf.log(D_fake + 1e-12)) 
-        G_loss_diff = tf.reduce_sum(tf.abs(gen_op+harmy - target_placeholder[:,:,:60])*(1-target_placeholder[:,:,-1:]))
-        G_loss = G_loss_GAN+G_loss_diff
-
-        G_summary_GAN = tf.summary.scalar('Generator_Loss_GAN', G_loss_GAN)
-        G_summary_diff = tf.summary.scalar('Generator_Loss_diff', G_loss_diff)
+            D_summary_real = tf.summary.scalar('Discriminator_Loss_Real', D_loss_real)
+            D_summary_fake = tf.summary.scalar('Discriminator_Loss_Fake', D_loss_fake)
 
 
-        vars = tf.trainable_variables()
-        
-        d_params = [v for v in vars if v.name.startswith('Discriminator/D')]
-        g_params = [v for v in vars if v.name.startswith('Generator/G')]
 
-        # import pdb;pdb.set_trace()
+            G_loss_GAN = -tf.reduce_mean(tf.log(D_fake + 1e-12)) 
+            G_loss_diff = tf.reduce_sum(tf.abs(gen_op+harmy - target_placeholder[:,:,:60])*(1-target_placeholder[:,:,-1:]))*0.5
+            G_loss = G_loss_GAN+G_loss_diff
 
-        d_optimizer_grad = tf.train.GradientDescentOptimizer(learning_rate=config.gan_lr).minimize(D_loss, var_list=d_params)
-        # g_optimizer = tf.train.GradientDescentOptimizer(learning_rate=config.gan_lr).minimize(G_loss, var_list=g_params)
+            G_summary_GAN = tf.summary.scalar('Generator_Loss_GAN', G_loss_GAN)
+            G_summary_diff = tf.summary.scalar('Generator_Loss_diff', G_loss_diff)
 
-        d_optimizer = tf.train.GradientDescentOptimizer(learning_rate=config.gan_lr).minimize(D_loss, var_list=d_params)
-        g_optimizer_diff = tf.train.AdamOptimizer(learning_rate=config.gan_lr).minimize(G_loss_diff, var_list=g_params)
-        g_optimizer = tf.train.AdamOptimizer(learning_rate=config.gan_lr).minimize(G_loss, var_list=g_params)
+
+            vars = tf.trainable_variables()
+
+            # import pdb;pdb.set_trace()
+            
+            d_params = [v for v in vars if v.name.startswith('Discriminator/D')]
+            g_params = [v for v in vars if v.name.startswith('Generator/G')]
+
+            # import pdb;pdb.set_trace()
+
+            # d_optimizer_grad = tf.train.GradientDescentOptimizer(learning_rate=config.gan_lr).minimize(D_loss, var_list=d_params)
+            # g_optimizer = tf.train.GradientDescentOptimizer(learning_rate=config.gan_lr).minimize(G_loss, var_list=g_params)
+
+            d_optimizer = tf.train.GradientDescentOptimizer(learning_rate=config.gan_lr).minimize(D_loss, var_list=d_params)
+            # g_optimizer_diff = tf.train.AdamOptimizer(learning_rate=config.gan_lr).minimize(G_loss_diff, var_list=g_params)
+            g_optimizer = tf.train.AdamOptimizer(learning_rate=config.gan_lr).minimize(G_loss, var_list=g_params)
 
         initial_loss = tf.reduce_sum(tf.abs(op - target_placeholder[:,:,:60])*np.linspace(1.0,0.7,60)*(1-target_placeholder[:,:,-1:]))
 
-        harm_loss = tf.reduce_sum(tf.abs(harmy - target_placeholder[:,:,:60])*np.linspace(1.0,0.7,60)*(1-target_placeholder[:,:,-1:]))
+        harm_loss = tf.reduce_sum(tf.abs(harmy - target_placeholder[:,:,:60])*(1-target_placeholder[:,:,-1:]))
 
         ap_loss = tf.reduce_sum(tf.abs(ap - target_placeholder[:,:,60:-2])*(1-target_placeholder[:,:,-1:]))
 
@@ -96,7 +100,7 @@ def train(_):
 
         vuv_loss = tf.reduce_mean(tf.reduce_sum(binary_cross(target_placeholder[:,:,-1:],vuv)))
 
-        loss = harm_loss + ap_loss + f0_loss + vuv_loss +initial_loss
+        loss = harm_loss + ap_loss + vuv_loss +initial_loss
 
         initial_summary = tf.summary.scalar('initial_loss', initial_loss)
 
@@ -114,7 +118,11 @@ def train(_):
 
         optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
+        optimizer_f0 = tf.train.AdamOptimizer(learning_rate = config.init_lr)
+
         train_function = optimizer.minimize(loss, global_step= global_step)
+
+        train_f0 = optimizer.minimize(f0_loss, global_step= global_step)
 
         # train_harm = optimizer.minimize(harm_loss, global_step= global_step)
 
@@ -164,16 +172,16 @@ def train(_):
             epoch_total_loss_val = 0
             epoch_initial_loss_val = 0
 
-            #GAN
-            epoch_loss_generator_GAN = 0
-            epoch_loss_generator_diff = 0
-            epoch_loss_discriminator_real = 0
-            epoch_loss_discriminator_fake = 0
+            if config.use_gan:
+                epoch_loss_generator_GAN = 0
+                epoch_loss_generator_diff = 0
+                epoch_loss_discriminator_real = 0
+                epoch_loss_discriminator_fake = 0
 
-            val_epoch_loss_generator_GAN = 0
-            val_epoch_loss_generator_diff = 0
-            val_epoch_loss_discriminator_real = 0
-            val_epoch_loss_discriminator_fake = 0
+                val_epoch_loss_generator_GAN = 0
+                val_epoch_loss_generator_diff = 0
+                val_epoch_loss_discriminator_real = 0
+                val_epoch_loss_discriminator_fake = 0
 
             batch_num = 0
             batch_num_val = 0
@@ -185,16 +193,17 @@ def train(_):
 
                 for voc, feat in data_generator:
 
-                    _, step_initial_loss, step_loss_harm, step_loss_ap, step_loss_f0, step_loss_vuv, step_total_loss = sess.run([train_function, 
-                        initial_loss,harm_loss, ap_loss, f0_loss, vuv_loss, loss], feed_dict={input_placeholder: voc,target_placeholder: feat})
+                    _, step_initial_loss, step_loss_harm, step_loss_ap,  step_loss_vuv, step_total_loss = sess.run([train_function, 
+                        initial_loss,harm_loss, ap_loss, vuv_loss, loss], feed_dict={input_placeholder: voc,target_placeholder: feat})
+                    _, step_loss_f0 = sess.run([train_f0, f0_loss], feed_dict={input_placeholder: voc,target_placeholder: feat})
                     
-                    if epoch > 75:
+                    if config.use_gan:
                         _, step_dis_loss_real, step_dis_loss_fake = sess.run([d_optimizer, D_loss_real,D_loss_fake], feed_dict={input_placeholder: voc,target_placeholder: feat})
                         _, step_gen_loss_GAN, step_gen_loss_diff = sess.run([g_optimizer, G_loss_GAN, G_loss_diff], feed_dict={input_placeholder: voc,target_placeholder: feat})
-                    else :
-                        _, step_dis_loss_real, step_dis_loss_fake = sess.run([d_optimizer_grad, D_loss_real,D_loss_fake], feed_dict={input_placeholder: voc,target_placeholder: feat})
-                        _, step_gen_loss_diff = sess.run([g_optimizer_diff, G_loss_diff], feed_dict={input_placeholder: voc,target_placeholder: feat})
-                        step_gen_loss_GAN = 0
+                    # else :
+                    #     _, step_dis_loss_real, step_dis_loss_fake = sess.run([d_optimizer_grad, D_loss_real,D_loss_fake], feed_dict={input_placeholder: voc,target_placeholder: feat})
+                    #     _, step_gen_loss_diff = sess.run([g_optimizer_diff, G_loss_diff], feed_dict={input_placeholder: voc,target_placeholder: feat})
+                    #     step_gen_loss_GAN = 0
 
 
 
@@ -211,10 +220,12 @@ def train(_):
                     epoch_loss_vuv+=step_loss_vuv
                     epoch_total_loss+=step_total_loss
 
-                    epoch_loss_generator_GAN+=step_gen_loss_GAN
-                    epoch_loss_generator_diff+=step_gen_loss_diff
-                    epoch_loss_discriminator_real+=step_dis_loss_real
-                    epoch_loss_discriminator_fake+=step_dis_loss_fake
+                    if config.use_gan:
+
+                        epoch_loss_generator_GAN+=step_gen_loss_GAN
+                        epoch_loss_generator_diff+=step_gen_loss_diff
+                        epoch_loss_discriminator_real+=step_dis_loss_real
+                        epoch_loss_discriminator_fake+=step_dis_loss_fake
 
 
 
@@ -229,10 +240,12 @@ def train(_):
                 epoch_loss_vuv = epoch_loss_vuv/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len)
                 epoch_total_loss = epoch_total_loss/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len*66)
 
-                epoch_loss_generator_GAN = epoch_loss_generator_GAN/(config.batches_per_epoch_train *config.batch_size)
-                epoch_loss_generator_diff = epoch_loss_generator_diff/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len*60)
-                epoch_loss_discriminator_real = epoch_loss_discriminator_real/(config.batches_per_epoch_train *config.batch_size)
-                epoch_loss_discriminator_fake = epoch_loss_discriminator_fake/(config.batches_per_epoch_train *config.batch_size)
+                if config.use_gan:
+
+                    epoch_loss_generator_GAN = epoch_loss_generator_GAN/(config.batches_per_epoch_train *config.batch_size)
+                    epoch_loss_generator_diff = epoch_loss_generator_diff/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len*60)
+                    epoch_loss_discriminator_real = epoch_loss_discriminator_real/(config.batches_per_epoch_train *config.batch_size)
+                    epoch_loss_discriminator_fake = epoch_loss_discriminator_fake/(config.batches_per_epoch_train *config.batch_size)
                 
 
                 summary_str = sess.run(summary, feed_dict={input_placeholder: voc,target_placeholder: feat})
@@ -249,8 +262,9 @@ def train(_):
                     step_loss_f0_val = sess.run(f0_loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
                     step_loss_vuv_val = sess.run(vuv_loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
                     step_total_loss_val = sess.run(loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
-                    step_gen_loss_GAN, step_gen_loss_diff = sess.run([G_loss_GAN, G_loss_diff], feed_dict={input_placeholder: voc,target_placeholder: feat})
-                    step_dis_loss_real,step_dis_loss_fake = sess.run([D_loss_real,D_loss_fake], feed_dict={input_placeholder: voc,target_placeholder: feat})
+                    if config.use_gan:
+                        step_gen_loss_GAN, step_gen_loss_diff = sess.run([G_loss_GAN, G_loss_diff], feed_dict={input_placeholder: voc,target_placeholder: feat})
+                        step_dis_loss_real,step_dis_loss_fake = sess.run([D_loss_real,D_loss_fake], feed_dict={input_placeholder: voc,target_placeholder: feat})
 
                     epoch_initial_loss_val+=step_initial_loss_val
                     epoch_loss_harm_val+=step_loss_harm_val
@@ -259,10 +273,12 @@ def train(_):
                     epoch_loss_vuv_val+=step_loss_vuv_val
                     epoch_total_loss_val+=step_total_loss_val
 
-                    val_epoch_loss_generator_GAN += step_gen_loss_GAN
-                    val_epoch_loss_generator_diff += step_gen_loss_diff
-                    val_epoch_loss_discriminator_real += step_dis_loss_real
-                    val_epoch_loss_discriminator_fake += step_dis_loss_fake
+                    if config.use_gan:
+
+                        val_epoch_loss_generator_GAN += step_gen_loss_GAN
+                        val_epoch_loss_generator_diff += step_gen_loss_diff
+                        val_epoch_loss_discriminator_real += step_dis_loss_real
+                        val_epoch_loss_discriminator_fake += step_dis_loss_fake
 
                     utils.progress(batch_num_val,config.batches_per_epoch_val, suffix = 'validiation done')
                     batch_num_val+=1
@@ -274,10 +290,12 @@ def train(_):
                 epoch_loss_vuv_val = epoch_loss_vuv_val/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len)
                 epoch_total_loss_val = epoch_total_loss_val/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len*66)
 
-                val_epoch_loss_generator_GAN = val_epoch_loss_generator_GAN/(config.batches_per_epoch_train *config.batch_size)
-                val_epoch_loss_generator_diff = val_epoch_loss_generator_diff/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len*60)
-                val_epoch_loss_discriminator_real = val_epoch_loss_discriminator_real/(config.batches_per_epoch_train *config.batch_size)
-                val_epoch_loss_discriminator_fake = val_epoch_loss_discriminator_fake/(config.batches_per_epoch_train *config.batch_size)
+                if config.use_gan:
+
+                    val_epoch_loss_generator_GAN = val_epoch_loss_generator_GAN/(config.batches_per_epoch_val *config.batch_size)
+                    val_epoch_loss_generator_diff = val_epoch_loss_generator_diff/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len*60)
+                    val_epoch_loss_discriminator_real = val_epoch_loss_discriminator_real/(config.batches_per_epoch_val *config.batch_size)
+                    val_epoch_loss_discriminator_fake = val_epoch_loss_discriminator_fake/(config.batches_per_epoch_val *config.batch_size)
 
                 summary_str = sess.run(summary, feed_dict={input_placeholder: voc,target_placeholder: feat})
                 val_summary_writer.add_summary(summary_str, epoch)
@@ -293,10 +311,12 @@ def train(_):
                 print('        : VUV Training Loss = %.10f ' % (epoch_loss_vuv))
                 print('        : Initial Training Loss = %.10f ' % (epoch_initial_loss))
 
-                print('        : Gen GAN Training Loss = %.10f ' % (epoch_loss_generator_GAN))
-                print('        : Gen diff Training Loss = %.10f ' % (epoch_loss_generator_diff))
-                print('        : Discriminator Training Loss Real = %.10f ' % (epoch_loss_discriminator_real))
-                print('        : Discriminator Training Loss Fake = %.10f ' % (epoch_loss_discriminator_fake))
+                if config.use_gan:
+
+                    print('        : Gen GAN Training Loss = %.10f ' % (epoch_loss_generator_GAN))
+                    print('        : Gen diff Training Loss = %.10f ' % (epoch_loss_generator_diff))
+                    print('        : Discriminator Training Loss Real = %.10f ' % (epoch_loss_discriminator_real))
+                    print('        : Discriminator Training Loss Fake = %.10f ' % (epoch_loss_discriminator_fake))
 
                 print('        : Harm Validation Loss = %.10f ' % (epoch_loss_harm_val))
                 print('        : Ap Validation Loss = %.10f ' % (epoch_loss_ap_val))
@@ -304,10 +324,12 @@ def train(_):
                 print('        : VUV Validation Loss = %.10f ' % (epoch_loss_vuv_val))
                 print('        : Initial Validation Loss = %.10f ' % (epoch_initial_loss_val))
 
-                print('        : Gen GAN Validation Loss = %.10f ' % (val_epoch_loss_generator_GAN))
-                print('        : Gen diff Validation Loss = %.10f ' % (val_epoch_loss_generator_diff))
-                print('        : Discriminator Validation Loss Real = %.10f ' % (val_epoch_loss_discriminator_real))
-                print('        : Discriminator Validation Loss Fake = %.10f ' % (val_epoch_loss_discriminator_fake))
+                if config.use_gan:
+
+                    print('        : Gen GAN Validation Loss = %.10f ' % (val_epoch_loss_generator_GAN))
+                    print('        : Gen diff Validation Loss = %.10f ' % (val_epoch_loss_generator_diff))
+                    print('        : Discriminator Validation Loss Real = %.10f ' % (val_epoch_loss_discriminator_real))
+                    print('        : Discriminator Validation Loss Fake = %.10f ' % (val_epoch_loss_discriminator_fake))
 
 
             if (epoch + 1) % config.save_every == 0 or (epoch + 1) == config.num_epochs:
@@ -352,9 +374,9 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
 
             harmy = harm_1+harm
 
-
-        with tf.variable_scope('Generator') as scope: 
-            gen_op = modules.GAN_generator(harmy)
+        if config.use_gan:
+            with tf.variable_scope('Generator') as scope: 
+                gen_op = modules.GAN_generator(harmy)
         # with tf.variable_scope('Discriminator') as scope: 
         #     D_real = modules.GAN_discriminator(target_placeholder[:,:,:60],input_placeholder)
         #     scope.reuse_variables()
@@ -395,9 +417,10 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
 
         for in_batch in in_batches:
             harm1,val_harm, val_ap, val_f0, val_vuv = sess.run([harm_1,harm, ap, f0, vuv], feed_dict={input_placeholder: in_batch})
-            val_op = sess.run(gen_op, feed_dict={input_placeholder: in_batch})
-            
-            gan_op.append(val_op)
+            if config.use_gan:
+                val_op = sess.run(gen_op, feed_dict={input_placeholder: in_batch})
+                
+                gan_op.append(val_op)
 
             first_pred.append(harm1)
             cleaner.append(val_harm)
@@ -418,8 +441,9 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
         cleaner = np.array(cleaner)
         cleaner = utils.overlapadd(cleaner, nchunks_in) 
 
-        gan_op = np.array(gan_op)
-        gan_op = utils.overlapadd(gan_op, nchunks_in) 
+        if config.use_gan:
+            gan_op = np.array(gan_op)
+            gan_op = utils.overlapadd(gan_op, nchunks_in) 
 
 
         targs = (targs-min_feat)/(max_feat-min_feat)
@@ -450,21 +474,20 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
             plt.imshow(cleaner.T, origin='lower', aspect='auto')
             ax2.set_title("Residual Added ", fontsize = 10)
 
-
-
-            plt.figure(5)
-            ax1 = plt.subplot(411)
-            plt.imshow(ins.T, origin='lower', aspect='auto')
-            ax1.set_title("Predicted Harm ", fontsize = 10)
-            ax2 = plt.subplot(414)
-            plt.imshow(outs.T, origin='lower', aspect='auto')
-            ax2.set_title("Ground Truth Harm ", fontsize = 10)
-            ax1 = plt.subplot(412)
-            plt.imshow(gan_op.T, origin='lower', aspect='auto')
-            ax1.set_title("GAN output ", fontsize = 10)
-            ax1 = plt.subplot(413)
-            plt.imshow((gan_op[:ins.shape[0],:]+ins).T, origin='lower', aspect='auto')
-            ax1.set_title("GAN output ", fontsize = 10)
+            if config.use_gan:
+                plt.figure(5)
+                ax1 = plt.subplot(411)
+                plt.imshow(ins.T, origin='lower', aspect='auto')
+                ax1.set_title("Predicted Harm ", fontsize = 10)
+                ax2 = plt.subplot(414)
+                plt.imshow(outs.T, origin='lower', aspect='auto')
+                ax2.set_title("Ground Truth Harm ", fontsize = 10)
+                ax1 = plt.subplot(412)
+                plt.imshow(gan_op.T, origin='lower', aspect='auto')
+                ax1.set_title("GAN output ", fontsize = 10)
+                ax1 = plt.subplot(413)
+                plt.imshow((gan_op[:ins.shape[0],:]+ins).T, origin='lower', aspect='auto')
+                ax1.set_title("GAN output ", fontsize = 10)
 
 
 

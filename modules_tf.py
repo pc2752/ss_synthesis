@@ -324,7 +324,7 @@ def wavenet(inputs, conditioning, num_block = config.wavenet_layers):
 
     first_conv = tf.layers.conv1d(inputs, 66, 1)
     skips = []
-    skip, residual = wavenet_block(inputs, conditioning, dilation_rate=1)
+    skip, residual = wavenet_block(first_conv, conditioning, dilation_rate=1)
     output = skip
     for i in range(num_block):
         skip, residual = wavenet_block(residual, conditioning, dilation_rate=2**(i+1))
@@ -343,7 +343,11 @@ def wavenet(inputs, conditioning, num_block = config.wavenet_layers):
 
     output = tf.nn.relu(output)
 
-    vuv = tf.sigmoid(output[:,:,-1:])
+    harm_1 = tf.layers.dense(output, 60, activation=tf.nn.relu)
+    ap = tf.layers.dense(output, 4, activation=tf.nn.relu)
+    f0 = tf.layers.dense(output, 64, activation=tf.nn.relu) 
+    f0 = tf.layers.dense(f0, 1, activation=tf.nn.relu)
+    vuv = tf.layers.dense(ap, 1, activation=tf.nn.sigmoid)
     return output[:,:,:-1],vuv
 
 
@@ -359,21 +363,15 @@ def GAN_generator(inputs, num_block = config.wavenet_layers):
 
     inputs = tf.layers.dense(inputs, config.lstm_size, name = "G_1")
     inputs = tf.layers.dense(inputs, 60, name = "G_2")
-    first_conv_2 = tf.layers.conv1d(inputs, config.wavenet_filters, 1)
+    inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 1)
 
-    skips_2 = []
-    skip, residual = nr_wavenet_block(first_conv_2, dilation_rate=1)
-    output_2 = skip
-    for i in range(num_block):
-        skip, residual = nr_wavenet_block(residual, dilation_rate=2**(i+1))
-        skips_2.append(skip)
-    for skip in skips_2:
-        output_2+=skip 
-    output_2 = output_2+first_conv_2
+    inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 2, padding = 'same', name = "G_c1")
+    inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 4, padding = 'same', name = "G_c2")
+    inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 8, padding = 'same', name = "G_c3")
+    inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 16, padding = 'same', name = "G_c4")
+    inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 32, padding = 'same', name = "G_c5")
 
-    output_2 = tf.nn.relu(output_2)
-
-    harm = tf.layers.dense(output_2, 60)
+    harm = tf.nn.tanh(tf.layers.dense(inputs, 60, name = "G_3"))
     # import pdb;pdb.set_trace()
     # inputs = tf.reshape(inputs,[config.batch_size, config.max_phr_len, config.input_features] )
     return harm
@@ -397,6 +395,8 @@ def GAN_discriminator(inputs, conditioning):
 
 
     ops = tf.reshape(ops, [config.batch_size,-1])
+    ops = tf.layers.dense(ops, 30, name = "D_2")
+    ops = tf.layers.dense(ops, 15, name = "D_3")
     ops = tf.layers.dense(ops, 1, name = "D_4")
     ops = tf.nn.sigmoid(ops)
     return ops
