@@ -28,6 +28,8 @@ norm_mode_in = "max_min"
 voc_ext = '_voc_stft.npy'
 feats_ext = '_synth_feats.npy'
 
+f0_weight = 60
+max_models_to_keep = 100
 
 def get_teacher_prob(epoch):
     if epoch < 500:
@@ -74,8 +76,8 @@ wavenet_layers = 5
 rec_field = 2**wavenet_layers
 wavenet_filters = 66
 
-print_every = 1
-save_every = 5
+print_every = 5
+save_every = 30
 
 use_gan = False
 gan_lr = 0.0001

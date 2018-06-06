@@ -245,6 +245,7 @@ def psuedo_r_wavenet(inputs, num_block = config.wavenet_layers):
     receptive_field = 2**num_block
 
     first_conv = tf.layers.conv1d(prenet_out, config.wavenet_filters, 1)
+    
     skips = []
     skip, residual = nr_wavenet_block(first_conv, dilation_rate=1)
     output = skip
@@ -267,9 +268,26 @@ def psuedo_r_wavenet(inputs, num_block = config.wavenet_layers):
 
     harm_1 = tf.layers.dense(output, 60, activation=tf.nn.relu)
     ap = tf.layers.dense(output, 4, activation=tf.nn.relu)
-    f0 = tf.layers.dense(output, 64, activation=tf.nn.relu) 
-    f0 = tf.layers.dense(f0, 1, activation=tf.nn.relu)
-    vuv = tf.layers.dense(ap, 1, activation=tf.nn.sigmoid)
+    f0 = tf.layers.dense(output, 66, activation=tf.nn.relu) 
+
+    skips = []
+    skip, residual = nr_wavenet_block(f0, dilation_rate=1)
+    output = skip
+    for i in range(num_block):
+        skip, residual = nr_wavenet_block(residual, dilation_rate=2**(i+1))
+        skips.append(skip)
+    for skip in skips:
+        output+=skip
+    output = output+f0
+
+    output = tf.nn.relu(output)
+
+    output = tf.layers.conv1d(output,config.wavenet_filters,1)
+
+    output = tf.nn.relu(output)
+
+    f0 = tf.layers.dense(output, 1, activation=tf.nn.relu)
+    vuv = tf.layers.dense(ap+f0, 1, activation=tf.nn.sigmoid)
 
     first_conv_2 = tf.layers.conv1d(harm_1, config.wavenet_filters, 1)
 

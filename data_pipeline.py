@@ -10,7 +10,7 @@ import utils
 
 
 def gen_train_val():
-    mix_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('ikala') or x.endswith('.hdf5') and x.startswith('med') ]
+    mix_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('med') ]
 
     train_list = mix_list[:int(len(mix_list)*config.split)]
 
@@ -27,11 +27,11 @@ def data_gen(mode = 'Train'):
 
 
 
-    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir')]
+    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('ikala')]
 
     back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('med')]
 
-    mix_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('ikala') or x.endswith('.hdf5') and x.startswith('med') ]
+    mix_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('med') ]
 
     train_list = mix_list[:int(len(mix_list)*config.split)]
 
