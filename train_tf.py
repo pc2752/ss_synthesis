@@ -21,6 +21,9 @@ def binary_cross(p,q):
     return -(p * tf.log(q + 1e-12) + (1 - p) * tf.log( 1 - q + 1e-12))
 
 def train(_):
+    stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
+    max_feat = np.array(stat_file["feats_maximus"])
+    min_feat = np.array(stat_file["feats_minimus"])
     with tf.Graph().as_default():
         
         input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.input_features),name='input_placeholder')
@@ -133,7 +136,7 @@ def train(_):
         summary = tf.summary.merge_all()
 
         init_op = tf.group(tf.global_variables_initializer(), tf.local_variables_initializer())
-        saver = tf.train.Saver()
+        saver = tf.train.Saver(max_to_keep= config.max_models_to_keep)
         sess = tf.Session()
 
         sess.run(init_op)
@@ -152,7 +155,11 @@ def train(_):
         start_epoch = int(sess.run(tf.train.get_global_step())/(config.batches_per_epoch_train))
 
         print("Start from: %d" % start_epoch)
+        f0_accs = []
         for epoch in xrange(start_epoch, config.num_epochs):
+            val_f0_accs = []
+
+
             data_generator = data_gen()
             start_time = time.time()
 
@@ -253,13 +260,56 @@ def train(_):
 
             with tf.variable_scope('Validation'):
 
-                for voc, feat in val_generator:
+                for voc, feat,nchunks_in, lent, county, max_count in val_generator:
+
+                    if (epoch + 1) % config.save_every == 0 or (epoch + 1) == config.num_epochs:
+
+                        if county == 1:
+                            f0_gt = []
+                            vuv_gt = []
+                            f0_output = []
+
+                        f0_op = sess.run(f0,feed_dict={input_placeholder: voc,target_placeholder: feat})
+                        f0_output.append(f0_op)
+                        f0_gt.append(feat[:,:,-2:-1])
+                        vuv_gt.append(feat[:,:,-1:])
+
+                        if county == max_count:
+                            f0_output = utils.overlapadd(np.array(f0_output), nchunks_in) 
+                            f0_gt = utils.overlapadd(np.array(f0_gt), nchunks_in) 
+                            vuv_gt = utils.overlapadd(np.array(vuv_gt), nchunks_in) 
+
+                            f0_output = f0_output[:lent]
+                            f0_gt = f0_gt[:lent]
+                            vuv_gt = vuv_gt[:lent]
+
+                            f0_output = f0_output*((max_feat[-2]-min_feat[-2])+min_feat[-2])*(1-vuv_gt)
+                            f0_gt = f0_gt*((max_feat[-2]-min_feat[-2])+min_feat[-2])*(1-vuv_gt)
+
+                            f0_output[f0_output == 0] = np.nan
+
+                            f0_gt[f0_gt == 0] = np.nan
+
+                            f0_difference = np.nan_to_num(abs(f0_gt-f0_output))
+                            f0_greater = np.where(f0_difference>config.f0_threshold)
+                            diff_per = f0_greater[0].shape[0]/len(f0_output)
+                            val_f0_accs.append(1 - diff_per)
+
+                
+                        # import pdb;pdb.set_trace()
+
+
+
+
+
+
                     # step_initial_loss_val = sess.run(initial_loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
                     step_loss_harm_val = sess.run(harm_loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
                     step_loss_ap_val = sess.run(ap_loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
                     step_loss_f0_val = sess.run(f0_loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
                     step_loss_vuv_val = sess.run(vuv_loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
                     step_total_loss_val = sess.run(loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
+
                     if config.use_gan:
                         step_gen_loss_GAN, step_gen_loss_diff = sess.run([G_loss_GAN, G_loss_diff], feed_dict={input_placeholder: voc,target_placeholder: feat})
                         step_dis_loss_real,step_dis_loss_fake = sess.run([D_loss_real,D_loss_fake], feed_dict={input_placeholder: voc,target_placeholder: feat})
@@ -280,13 +330,15 @@ def train(_):
 
                     utils.progress(batch_num_val,config.batches_per_epoch_val, suffix = 'validiation done')
                     batch_num_val+=1
+                    
+                f0_accs.append(np.mean(val_f0_accs))
 
                 # epoch_initial_loss_val = epoch_initial_loss_val/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len*60)
-                epoch_loss_harm_val = epoch_loss_harm_val/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len*60)
-                epoch_loss_ap_val = epoch_loss_ap_val/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len*4)
-                epoch_loss_f0_val = epoch_loss_f0_val/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len)
-                epoch_loss_vuv_val = epoch_loss_vuv_val/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len)
-                epoch_total_loss_val = epoch_total_loss_val/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len*66)
+                epoch_loss_harm_val = epoch_loss_harm_val/(batch_num_val *config.batch_size*config.max_phr_len*60)
+                epoch_loss_ap_val = epoch_loss_ap_val/(batch_num_val *config.batch_size*config.max_phr_len*4)
+                epoch_loss_f0_val = epoch_loss_f0_val/(batch_num_val *config.batch_size*config.max_phr_len)
+                epoch_loss_vuv_val = epoch_loss_vuv_val/(batch_num_val *config.batch_size*config.max_phr_len)
+                epoch_total_loss_val = epoch_total_loss_val/(batch_num_val *config.batch_size*config.max_phr_len*66)
 
                 if config.use_gan:
 
@@ -301,6 +353,8 @@ def train(_):
                 val_summary_writer.flush()
 
             duration = time.time() - start_time
+
+            np.save('./ikala_eval/accuracies', f0_accs)
 
             if (epoch+1) % config.print_every == 0:
                 print('epoch %d: Harm Training Loss = %.10f (%.3f sec)' % (epoch+1, epoch_loss_harm, duration))
@@ -320,6 +374,11 @@ def train(_):
                 print('        : Ap Validation Loss = %.10f ' % (epoch_loss_ap_val))
                 print('        : F0 Validation Loss = %.10f ' % (epoch_loss_f0_val))
                 print('        : VUV Validation Loss = %.10f ' % (epoch_loss_vuv_val))
+                
+                if (epoch + 1) % config.save_every == 0 or (epoch + 1) == config.num_epochs:
+                    print('        : Mean F0 IKala Accuracy  = %.10f ' % (np.mean(val_f0_accs)))
+
+                # print('        : Mean F0 IKala Accuracy = '+'%{1:.{0}f}%'.format(np.mean(val_f0_accs)))
                 # print('        : Initial Validation Loss = %.10f ' % (epoch_initial_loss_val))
 
                 if config.use_gan:
@@ -331,6 +390,7 @@ def train(_):
 
 
             if (epoch + 1) % config.save_every == 0 or (epoch + 1) == config.num_epochs:
+                utils.list_to_file(val_f0_accs,'./ikala_eval/accuracies_'+str(epoch+1)+'.txt')
                 checkpoint_file = os.path.join(config.log_dir, 'model.ckpt')
                 saver.save(sess, checkpoint_file, global_step=epoch)
 
@@ -499,14 +559,23 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
             
 
             plt.figure(3)
-            f0 = val_outer[:,-2]*((max_feat[-2]-min_feat[-2])+min_feat[-2])
-            uu = f0*(1-targs[:,-1])
-            uu[uu == 0] = np.nan
-            plt.plot(uu, label = "Predicted Value")
-            f0 = targs[:,-2]*((max_feat[-2]-min_feat[-2])+min_feat[-2])
-            uu = f0*(1-targs[:,-1])
-            uu[uu == 0] = np.nan
-            plt.plot(uu, label="Ground Truth")
+
+            f0_output = val_outer[:,-2]*((max_feat[-2]-min_feat[-2])+min_feat[-2])
+            f0_output = f0_output*(1-targs[:,-1])
+            f0_output[f0_output == 0] = np.nan
+            plt.plot(f0_output, label = "Predicted Value")
+            f0_gt = targs[:,-2]*((max_feat[-2]-min_feat[-2])+min_feat[-2])
+            f0_gt = f0_gt*(1-targs[:,-1])
+            f0_gt[f0_gt == 0] = np.nan
+            plt.plot(f0_gt, label="Ground Truth")
+            f0_difference = np.nan_to_num(abs(f0_gt-f0_output))
+            f0_greater = np.where(f0_difference>config.f0_threshold)
+            diff_per = f0_greater[0].shape[0]/len(f0_output)
+            plt.suptitle("Percentage correct = "+'{:.3%}'.format(1-diff_per))
+            # import pdb;pdb.set_trace()
+
+
+            # import pdb;pdb.set_trace()
             # uu = f0_sac[:,0]*(1-f0_sac[:,1])
             # uu[uu == 0] = np.nan
             # plt.plot(uu, label="Sac f0")

@@ -33,9 +33,15 @@ def data_gen(mode = 'Train'):
 
     mix_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('med') ]
 
-    train_list = mix_list[:int(len(mix_list)*config.split)]
+    # train_list = mix_list[:int(len(mix_list)*config.split)]
 
-    val_list = mix_list[int(len(mix_list)*config.split):]
+    # val_list = mix_list[int(len(mix_list)*config.split):]
+
+    # import pdb;pdb.set_trace()
+
+    train_list = mix_list
+
+    val_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('ikala') ]
 
     stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
 
@@ -142,50 +148,77 @@ def data_gen(mode = 'Train'):
             yield inputs, targets
 
     else:
+
+        for file_name in val_list:
+
+            voc_file = h5py.File(config.voice_dir+file_name, "r")
+
+
+            feats = voc_file['feats'] 
+
+            mix_file = h5py.File(config.backing_dir+file_name, "r")
+
+            mix_stft = mix_file["mix_stft"]
+
+            lent = len(mix_stft)
+
+            in_batches, nchunks_in = utils.generate_overlapadd(mix_stft)
+
+            targ_batches, nchunks_in = utils.generate_overlapadd(feats)
+
+            count = 0
+
+            for inputs, targets in zip(in_batches,targ_batches):
+                targets = (targets-min_feat)/(max_feat-min_feat)
+                inputs = inputs/max_mix
+                count+=1
+                yield inputs, targets, nchunks_in, lent, count, in_batches.shape[0]
+
+
         # print('val')
-        for k in range(config.batches_per_epoch_val):
+        # for k in range(config.batches_per_epoch_val):
 
-            inputs = []
-            targets = []
+        #     inputs = []
+        #     targets = []
 
-            # start_time = time.time()
+        #     # start_time = time.time()
 
-            for i in range(max_files_to_process):
+        #     for i in range(max_files_to_process):
 
-                    file_index = np.random.randint(0,len(val_list))
+        #             file_index = np.random.randint(0,len(val_list))
 
-                    tr_file = val_list[file_index]
+        #             tr_file = val_list[file_index]
 
-                    voc_file = h5py.File(config.voice_dir+tr_file, "r")
+        #             voc_file = h5py.File(config.voice_dir+tr_file, "r")
 
 
-                    feats = voc_file['feats'] 
+        #             feats = voc_file['feats'] 
 
-                    mix_file = h5py.File(config.backing_dir+tr_file, "r")
+        #             mix_file = h5py.File(config.backing_dir+tr_file, "r")
 
-                    mix_stft = mix_file["mix_stft"]
+        #             mix_stft = mix_file["mix_stft"]
 
-                    for j in range(config.samples_per_file):
-                        voc_idx = np.random.randint(0,len(mix_stft)-config.max_phr_len)
+        #             for j in range(config.samples_per_file):
+        #                 voc_idx = np.random.randint(0,len(mix_stft)-config.max_phr_len)
 
-                        inputs.append(mix_stft[voc_idx:voc_idx+config.max_phr_len,:])
+        #                 inputs.append(mix_stft[voc_idx:voc_idx+config.max_phr_len,:])
 
-                        targets.append(feats[voc_idx:voc_idx+config.max_phr_len,:])
+        #                 targets.append(feats[voc_idx:voc_idx+config.max_phr_len,:])
 
-            targets = np.array(targets)
-            inputs = np.array(inputs)
+        #     targets = np.array(targets)
+        #     inputs = np.array(inputs)
 
-            # inputs = np.clip(inputs,0.0,1.0)
+        #     # inputs = np.clip(inputs,0.0,1.0)
 
-            # targets = utils.normalize(targets, 'feats', mode=config.norm_mode_out)
-            targets = (targets-min_feat)/(max_feat-min_feat)
-            inputs = inputs/max_mix
+        #     # targets = utils.normalize(targets, 'feats', mode=config.norm_mode_out)
+        #     targets = (targets-min_feat)/(max_feat-min_feat)
+        #     inputs = inputs/max_mix
 
-            # assert inputs.max() <= 1.0
+        #     # assert inputs.max() <= 1.0
 
-            # assert targets.max() <= 1.0
+        #     # assert targets.max() <= 1.0
 
-            yield inputs, targets
+            
 
         # import pdb;pdb.set_trace()
 
@@ -281,11 +314,11 @@ def get_stats():
 
 
 def main():
-    gen_train_val()
+    # gen_train_val()
     # get_stats()
-    # gen = data_gen()
-    # while True :
-    #     inputs, targets = next(gen)
+    gen = data_gen(mode ='val')
+    while True :
+        inputs, targets, nchunks_in, lent, county, max_count = next(gen)
 
     #     plt.subplot(411)
     #     plt.imshow(np.log(1+inputs.reshape(-1,513).T),aspect='auto',origin='lower')
@@ -301,7 +334,7 @@ def main():
     #     # gen = get_batches()
 
 
-    #     import pdb;pdb.set_trace()
+        import pdb;pdb.set_trace()
 
 
 if __name__ == '__main__':

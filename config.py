@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
+ikala_gt_fo_dir = '../datasets/iKala/PitchLabel/'
 wav_dir = '../datasets/iKala/Wavfile/'
 wav_dir_nus = '../datasets/nus-smc-corpus_48/'
 wav_dir_mus = '../datasets/musdb18/train/'
@@ -30,6 +31,7 @@ feats_ext = '_synth_feats.npy'
 
 f0_weight = 60
 max_models_to_keep = 100
+f0_threshold = 10
 
 def get_teacher_prob(epoch):
     if epoch < 500:
@@ -49,9 +51,9 @@ aug_prob = 0.35
 
 
 # Hyperparameters
-num_epochs = 3000
-batches_per_epoch_train = 500
-batches_per_epoch_val = 100
+num_epochs = 1000
+batches_per_epoch_train = 1000
+batches_per_epoch_val = 252*6
 batch_size = 30 
 samples_per_file = 5
 max_phr_len = 64
