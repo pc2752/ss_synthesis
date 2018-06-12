@@ -18,7 +18,7 @@ def main():
     # maximus=np.zeros(66)
     # minimus=np.ones(66)*1000
     singers = next(os.walk(config.wav_dir_nus))[1]
-    singers = [x for x in singers if x not in["VKOW","SAMF","MPUR","JLEE","KENN"]]
+    # singers = [x for x in singers if x not in["VKOW","SAMF","MPUR","JLEE","KENN"]]
     # import pdb;pdb.set_trace()
     
 

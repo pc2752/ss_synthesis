@@ -17,7 +17,7 @@ def main():
 
     # maximus=np.zeros(66)
     # minimus=np.ones(66)*1000
-    wav_files=[x for x in os.listdir(config.wav_dir) if x.endswith('.wav')]
+    wav_files=[x for x in os.listdir(config.wav_dir) if x.endswith('.wav') and not x.startswith('.')]
     count=0
 
 

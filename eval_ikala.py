@@ -118,8 +118,10 @@ def eval_file():
 
             f0_output = val_outer[:,-2]*((max_feat[-2]-min_feat[-2])+min_feat[-2])
             f0_output = f0_output*(1-targs[:,-1])
+            f0_output = utils.new_base_to_hertz(f0_output)
             f0_gt = targs[:,-2]
             f0_gt = f0_gt*(1-targs[:,-1])
+            f0_gt = utils.new_base_to_hertz(f0_gt)
             f0_outputs = []
             gt_outputs = []
             for i,f0_o in enumerate(f0_output):

@@ -45,7 +45,7 @@ def get_teacher_prob(epoch):
 
 split = 0.9
 
-augment = True
+augment = False
 aug_prob = 0.35
 
 

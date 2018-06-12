@@ -148,7 +148,8 @@ def stft_to_feats(vocals, fs, mode=config.comp_mode):
     harm=10*np.log10(feats[1].reshape([feats[2].shape[0],feats[2].shape[1]]))
     f0 = pitch.extract_f0_sac(vocals, fs, 0.00580498866)
 
-    y=69+12*np.log2(f0/440)
+    # y=69+12*np.log2(f0/440)
+    y = hertz_to_new_base(f0)
     nans, x= nan_helper(y)
     naners=np.isinf(y)
     y[nans]= np.interp(x(nans), x(~nans), y[~nans])
@@ -193,7 +194,8 @@ def file_to_sac(input_file):
     audio,fs = sf.read(input_file)
     vocals = np.array(audio[:,1])
     f0 = pitch.extract_f0_sac(vocals, config.fs, 0.00580498866)
-    y=69+12*np.log2(f0/440)
+    # y=69+12*np.log2(f0/440)
+    y = hertz_to_new_base(f0)
     nans, x= nan_helper(y)
     naners=np.isinf(y)
     y[nans]= np.interp(x(nans), x(~nans), y[~nans])
@@ -204,21 +206,34 @@ def file_to_sac(input_file):
     return y
 
 def f0_to_hertz(f0):
+    # if f0 == 0:
+    #     return 0
+    # else:
     f0 = f0-69
     f0 = f0/12
     f0 = 2**f0
     f0 = f0*440
     return f0
 
+
+def hertz_to_new_base(f0):
+    # if f0 == 0:
+    #     return 0
+    # else:
+    return 1200*np.log2(f0/10)
+
+def new_base_to_hertz(f0):
+    return 2**(f0*10)/1200
+
 def feats_to_audio(in_feats,filename, fs=config.fs,  mode=config.comp_mode):
     harm = in_feats[:,:60]
     ap = in_feats[:,60:-2]
     f0 = in_feats[:,-2:]
-    f0[:,0] = f0[:,0]-69
-    f0[:,0] = f0[:,0]/12
-    f0[:,0] = 2**f0[:,0]
-    f0[:,0] = f0[:,0]*440
-
+    # f0[:,0] = f0[:,0]-69
+    # f0[:,0] = f0[:,0]/12
+    # f0[:,0] = 2**f0[:,0]
+    # f0[:,0] = f0[:,0]*440
+    f0[:,0] = new_base_to_hertz(f0[:,0])
 
     f0 = f0[:,0]*(1-f0[:,1])
 

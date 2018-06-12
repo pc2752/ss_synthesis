@@ -223,7 +223,7 @@ def data_gen(mode = 'Train'):
         # import pdb;pdb.set_trace()
 
 def get_stats():
-    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir')]
+    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('nus')]
 
     back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('med')]
 
@@ -315,26 +315,26 @@ def get_stats():
 
 def main():
     # gen_train_val()
-    # get_stats()
-    gen = data_gen(mode ='val')
-    while True :
-        inputs, targets, nchunks_in, lent, county, max_count = next(gen)
+    get_stats()
+    # gen = data_gen(mode ='val')
+    # while True :
+    #     inputs, targets, nchunks_in, lent, county, max_count = next(gen)
 
-    #     plt.subplot(411)
-    #     plt.imshow(np.log(1+inputs.reshape(-1,513).T),aspect='auto',origin='lower')
-    #     plt.subplot(412)
-    #     plt.imshow(targets.reshape(-1,66)[:,:64].T,aspect='auto',origin='lower')
-    #     plt.subplot(413)
-    #     plt.plot(targets.reshape(-1,66)[:,-2])
-    #     plt.subplot(414)
-    #     plt.plot(targets.reshape(-1,66)[:,-1])
+    # #     plt.subplot(411)
+    # #     plt.imshow(np.log(1+inputs.reshape(-1,513).T),aspect='auto',origin='lower')
+    # #     plt.subplot(412)
+    # #     plt.imshow(targets.reshape(-1,66)[:,:64].T,aspect='auto',origin='lower')
+    # #     plt.subplot(413)
+    # #     plt.plot(targets.reshape(-1,66)[:,-2])
+    # #     plt.subplot(414)
+    # #     plt.plot(targets.reshape(-1,66)[:,-1])
 
-    #     plt.show()
-    #     # vg = val_generator()
-    #     # gen = get_batches()
+    # #     plt.show()
+    # #     # vg = val_generator()
+    # #     # gen = get_batches()
 
 
-        import pdb;pdb.set_trace()
+    #     import pdb;pdb.set_trace()
 
 
 if __name__ == '__main__':
