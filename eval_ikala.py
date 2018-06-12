@@ -22,7 +22,8 @@ from reduce import mgc_to_mfsc
 def eval_file():
     file_path=config.wav_dir
 
-    log_dir = './log_ikala_notrain/'
+    # log_dir = './log_ikala_notrain/'
+    log_dir = config.log_dir
 
 
     mode =0 
@@ -58,7 +59,11 @@ def eval_file():
 
         if ckpt and ckpt.model_checkpoint_path:
             print("Using the model in %s"%ckpt.model_checkpoint_path)
-            saver.restore(sess, ckpt.model_checkpoint_path)
+            # saver.restore(sess, ckpt.model_checkpoint_path)
+            saver.restore(sess, './log/model.ckpt-59')
+            
+
+        # import pdb;pdb.set_trace()
 
         files = [x for x in os.listdir(config.wav_dir) if x.endswith('.wav') and not x.startswith('.')]
         diffs = []
@@ -147,6 +152,19 @@ def cross_comp():
 
     for file_name in file_list:
         out_time, out_freq = mir_eval.io.load_time_series(net_out_dir+file_name)
+
+
+
+        for i, freq in enumerate(out_freq):
+            if float(freq) == 0.0 :
+                out_freq[i] = 0
+            else:
+                out_freq[i] = utils.f0_to_hertz(float(freq))
+
+
+
+
+
         out_freq, out_vuv = mir_eval.melody.freq_to_voicing(out_freq)
 
 
@@ -154,29 +172,48 @@ def cross_comp():
 
         ref_time_o, ref_freq_o = mir_eval.io.load_time_series(ikala_gt_dir+file_name)
 
-        # haha = mir_eval.melody.evaluate(ref_time_o,ref_freq_o,out_time,out_freq)
+        for i, freq in enumerate(ref_freq_o):
+            if float(freq) == 0.0 :
+                ref_freq_o[i] = 0
+            else:
+                ref_freq_o[i] = utils.f0_to_hertz(float(freq))      
 
+        plt.figure(1)
+        plt.plot(out_freq)
+        plt.plot(ref_freq_o)
+        plt.show()
 
+        # import pdb;pdb.set_trace()  
 
-        ref_freq_o, ref_vuv_o = mir_eval.melody.freq_to_voicing(ref_freq_o)
-        ref_freq,ref_vuv = mir_eval.melody.resample_melody_series(ref_time_o,ref_freq_o, ref_vuv_o,out_time) 
+        haha = mir_eval.melody.evaluate(ref_time_o,ref_freq_o,out_time,out_freq)
 
-        out_freq_o, out_vuv_o = mir_eval.melody.resample_melody_series(out_time,out_freq, out_vuv,ref_time_o) 
+        out_string = file_name
 
-        raw_pitch_accuracy_10_o = mir_eval.melody.raw_pitch_accuracy(ref_vuv_o,ref_freq_o,out_vuv_o,out_freq_o, cent_tolerance = 10)  
-        raw_pitch_accuracy_25_o = mir_eval.melody.raw_pitch_accuracy(ref_vuv_o,ref_freq_o,out_vuv_o,out_freq_o, cent_tolerance = 25)  
-        raw_pitch_accuracy_50_o = mir_eval.melody.raw_pitch_accuracy(ref_vuv_o,ref_freq_o,out_vuv_o,out_freq_o, cent_tolerance = 50)  
-        raw_chroma_accuracy_o = mir_eval.melody.raw_chroma_accuracy(ref_vuv_o,ref_freq_o,out_vuv_o,out_freq_o)  
-
-
-        raw_pitch_accuracy_10 = mir_eval.melody.raw_pitch_accuracy(ref_vuv,ref_freq,out_vuv,out_freq, cent_tolerance = 10)  
-        raw_pitch_accuracy_25 = mir_eval.melody.raw_pitch_accuracy(ref_vuv,ref_freq,out_vuv,out_freq, cent_tolerance = 25)  
-        raw_pitch_accuracy_50 = mir_eval.melody.raw_pitch_accuracy(ref_vuv,ref_freq,out_vuv,out_freq, cent_tolerance = 50)  
-        raw_chroma_accuracy = mir_eval.melody.raw_chroma_accuracy(ref_vuv,ref_freq,out_vuv,out_freq)  
+        for key in haha.keys():
+            out_string = out_string+';'+str(haha[key])
 
         # import pdb;pdb.set_trace()
 
-        output.append(file_name+';'+str(raw_pitch_accuracy_10)+';'+str(raw_pitch_accuracy_25)+';'+str(raw_pitch_accuracy_50)+';'+str(raw_chroma_accuracy)+';'+str(raw_pitch_accuracy_10_o)+';'+str(raw_pitch_accuracy_25_o)+';'+str(raw_pitch_accuracy_50_o)+';'+str(raw_chroma_accuracy_o))
+        # ref_freq_o, ref_vuv_o = mir_eval.melody.freq_to_voicing(ref_freq_o)
+        # ref_freq,ref_vuv = mir_eval.melody.resample_melody_series(ref_time_o,ref_freq_o, ref_vuv_o,out_time) 
+
+        # out_freq_o, out_vuv_o = mir_eval.melody.resample_melody_series(out_time,out_freq, out_vuv,ref_time_o) 
+
+        # raw_pitch_accuracy_10_o = mir_eval.melody.raw_pitch_accuracy(ref_vuv_o,ref_freq_o,out_vuv_o,out_freq_o, cent_tolerance = 10)  
+        # raw_pitch_accuracy_25_o = mir_eval.melody.raw_pitch_accuracy(ref_vuv_o,ref_freq_o,out_vuv_o,out_freq_o, cent_tolerance = 25)  
+        # raw_pitch_accuracy_50_o = mir_eval.melody.raw_pitch_accuracy(ref_vuv_o,ref_freq_o,out_vuv_o,out_freq_o, cent_tolerance = 50)  
+        # raw_chroma_accuracy_o = mir_eval.melody.raw_chroma_accuracy(ref_vuv_o,ref_freq_o,out_vuv_o,out_freq_o)  
+
+
+        # raw_pitch_accuracy_10 = mir_eval.melody.raw_pitch_accuracy(ref_vuv,ref_freq,out_vuv,out_freq, cent_tolerance = 10)  
+        # raw_pitch_accuracy_25 = mir_eval.melody.raw_pitch_accuracy(ref_vuv,ref_freq,out_vuv,out_freq, cent_tolerance = 25)  
+        # raw_pitch_accuracy_50 = mir_eval.melody.raw_pitch_accuracy(ref_vuv,ref_freq,out_vuv,out_freq, cent_tolerance = 50)  
+        # raw_chroma_accuracy = mir_eval.melody.raw_chroma_accuracy(ref_vuv,ref_freq,out_vuv,out_freq)  
+
+        # import pdb;pdb.set_trace()
+        output.append(out_string)
+
+        # output.append(file_name+';'+str(raw_pitch_accuracy_10)+';'+str(raw_pitch_accuracy_25)+';'+str(raw_pitch_accuracy_50)+';'+str(raw_chroma_accuracy)+';'+str(raw_pitch_accuracy_10_o)+';'+str(raw_pitch_accuracy_25_o)+';'+str(raw_pitch_accuracy_50_o)+';'+str(raw_chroma_accuracy_o))
 
     utils.list_to_file(output,'./ikala_eval/mir_eval_results.txt')
 

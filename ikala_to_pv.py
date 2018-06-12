@@ -21,7 +21,7 @@ for file_name in file_list:
     inter_list = []
     initial_f0_values = open(config.ikala_gt_fo_dir+file_name).readlines()
     for i,f0_value in enumerate(initial_f0_values):
-        inter_list.append(str(i*0.032*10000000)+' '+str(f0_value[:-2]))
+        inter_list.append(str(i*0.032*10000000)+' '+str(f0_value[:-1]))
     utils.list_to_file(inter_list,'./ikala_eval/ikala_gt/'+file_name)
     count+=1
 
