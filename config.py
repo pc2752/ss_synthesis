@@ -48,7 +48,7 @@ split = 0.9
 augment = False
 aug_prob = 0.35
 
-
+pred_mode = 'f0'
 
 # Hyperparameters
 num_epochs = 1000
@@ -58,7 +58,10 @@ batch_size = 30
 samples_per_file = 5
 max_phr_len = 64
 input_features = 513
-lstm_size = 128
+
+first_embed = 256
+
+
 output_features = 66
 highway_layers = 4
 highway_units = 128
