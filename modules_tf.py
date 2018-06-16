@@ -231,13 +231,40 @@ def nr_wavenet(inputs, num_block = config.wavenet_layers):
 
     output = tf.nn.relu(output)
 
-    # harm = tf.layers.dense(output, 60, activation=tf.nn.relu)
-    # ap = tf.layers.dense(output, 4, activation=tf.nn.relu)
+    harm = tf.layers.dense(output, 60, activation=tf.nn.relu)
+    ap = tf.layers.dense(output, 4, activation=tf.nn.relu)
     output = tf.layers.dense(output, 64, activation=tf.nn.relu) 
     f0 = tf.layers.dense(output, 1, activation=tf.nn.relu)
+    f0 = tf.layers.conv1d(f0,1,16, padding = 'same')
     vuv = tf.layers.dense(output, 1, activation=tf.nn.sigmoid)
 
-    return f0, vuv
+    return harm, ap, f0, vuv
+
+
+
+def f0_network(inputs):
+
+    embedding = tf.layers.dense(inputs, config.first_embed)
+
+    output_1 = tf.layers.dense(embedding, 64, activation=tf.nn.relu) 
+
+    f0_1 = tf.layers.dense(output_1, 1, activation=tf.nn.relu)
+
+    embed_2 = tf.concat([embedding, f0_1], axis = -1)
+
+    first_conv = tf.layers.conv1d(embed_2, config.wavenet_filters, 3, padding='same')
+
+    second_conv = tf.layers.conv1d(first_conv, config.wavenet_filters, 5, padding='same')
+
+    third_conv = tf.layers.conv1d(second_conv, config.wavenet_filters, 7, padding='same')
+
+    output_2 = tf.layers.dense(third_conv, 64)
+
+    f0 = tf.layers.dense(output_2, 1, activation=tf.nn.relu) + f0_1
+
+    vuv = tf.layers.dense(output_1, 1, activation=tf.nn.sigmoid)
+
+    return f0_1, f0, vuv
 
 
 

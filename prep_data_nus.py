@@ -20,6 +20,8 @@ def main():
     singers = next(os.walk(config.wav_dir_nus))[1]
     # singers = [x for x in singers if x not in["VKOW","SAMF","MPUR","JLEE","KENN"]]
     # import pdb;pdb.set_trace()
+
+    # phonemas = set([])
     
 
     for singer in singers:
@@ -32,6 +34,12 @@ def main():
         print ("Processing singer %s" % singer)
         for lf in sing_wav_files:
         # print(lf)
+            # if not os.path.exists(config.voice_dir+'nus_'+singer+'_sing_'+lf[:-4]+'.hdf5'):
+
+            audio,fs = sf.read(os.path.join(sing_dir,lf))
+            if fs !=config.fs:
+                command = "ffmpeg -y -i "+os.path.join(sing_dir,lf)+" -ar "+str(config.fs)+" "+os.path.join(sing_dir,lf)
+                os.system(command)
             audio,fs = sf.read(os.path.join(sing_dir,lf))
 
             if len(audio.shape) == 2:
@@ -43,29 +51,86 @@ def main():
 
             voc_stft = abs(utils.stft(vocals))
 
-            out_feats = utils.stft_to_feats(vocals,fs)
 
 
-            if not out_feats.shape[0]==voc_stft.shape[0] :
-                if out_feats.shape[0]<voc_stft.shape[0]:
-                    while out_feats.shape[0]<voc_stft.shape[0]:
-                        out_feats = np.concatenate(((out_feats,np.zeros((1,out_feats.shape[1])))))
-                elif out_feats.shape[0]<voc_stft.shape[0]:
-                    print("You are an idiot")
+            lab_f = open(os.path.join(sing_dir,lf[:-4]+'.txt'))
+            # note_f=open(in_dir+lf[:-4]+'.notes')
+            phos = lab_f.readlines()
+            lab_f.close()
 
-            assert out_feats.shape[0]==voc_stft.shape[0]
+            phonemes=[]
 
-            hdf5_file = h5py.File(config.voice_dir+'nus_'+singer+'_sing_'+lf[:-4]+'.hdf5', mode='w')
+            for pho in phos:
+                st,end,phonote=pho.split()
+                # import pdb;pdb.set_trace()
+                st = int(np.round(float(st)/0.005804576860324892))
+                en = int(np.round(float(end)/0.005804576860324892))
+                if phonote=='pau' or phonote=='br':
+                    phonote='sil'
+                phonemes.append([st,en,phonote])
+                # phonemas.add(phonote)
 
-            hdf5_file.create_dataset("voc_stft", voc_stft.shape, np.float32)
+            # div_fac = float(end)/len(voc_stft)
 
-            hdf5_file.create_dataset("feats", out_feats.shape, np.float32)
+            # for i in range(len(phonemes)):
+            #     phonemes[i][0] = int(float(phonemes[i][0])/div_fac)
+            #     phonemes[i][1] = int(float(phonemes[i][1])/div_fac)
 
-            hdf5_file["voc_stft"][:,:] = voc_stft
+            # import pdb;pdb.set_trace()
 
-            hdf5_file["feats"][:,:] = out_feats
+            phonemes[-1][1] = len(voc_stft)
+
+
+
+
+            strings_p = np.zeros(phonemes[-1][1])
+
+            for i in range(len(phonemes)):
+                pho=phonemes[i]
+                value = config.phonemas.index(pho[2])
+                strings_p[pho[0]:pho[1]+1] = value
+
+            # import pdb;pdb.set_trace()
+
+            if not len(strings_p) == len(voc_stft):
+                import pdb;pdb.set_trace()
+
+
+            # out_feats = utils.stft_to_feats(vocals,fs)
+
+
+            # if not out_feats.shape[0]==voc_stft.shape[0] :
+            #     if out_feats.shape[0]<voc_stft.shape[0]:
+            #         while out_feats.shape[0]<voc_stft.shape[0]:
+            #             out_feats = np.concatenate(((out_feats,np.zeros((1,out_feats.shape[1])))))
+            #     elif out_feats.shape[0]<voc_stft.shape[0]:
+            #         print("You are an idiot")
+
+            # assert out_feats.shape[0]==voc_stft.shape[0]
+
+            hdf5_file = h5py.File(config.voice_dir+'nus_'+singer+'_sing_'+lf[:-4]+'.hdf5', mode='a')
+            # import pdb;pdb.set_trace()
+
+            if not  "phonemes" in hdf5_file:
+
+                hdf5_file.create_dataset("phonemes", [voc_stft.shape[0]], int)
+
+            hdf5_file["phonemes"][:,] = strings_p
+
+            # hdf5_file.create_dataset("voc_stft", voc_stft.shape, np.float32)
+
+            # hdf5_file.create_dataset("feats", out_feats.shape, np.float32)
+
+            # hdf5_file["voc_stft"][:,:] = voc_stft
+
+            # hdf5_file["feats"][:,:] = out_feats
 
             hdf5_file.close()
+
+
+
+
+
 
             count+=1
 
@@ -75,47 +140,98 @@ def main():
         read_wav_files=[x for x in os.listdir(read_dir) if x.endswith('.wav') and not x.startswith('.')]
         print ("Processing reader %s" % singer)
         count = 0
-        for lf in sing_wav_files:
-        # print(lf)
-            audio,fs = sf.read(os.path.join(read_dir,lf))
+        if not singer == 'KENN':
+            for lf in sing_wav_files:
 
-            if len(audio.shape) == 2:
+                # if not os.path.exists(config.voice_dir+'nus_'+singer+'_read_'+lf[:-4]+'.hdf5'):
+            # print(lf)
+                audio,fs = sf.read(os.path.join(read_dir,lf))
+                if fs !=config.fs:
+                    command = "ffmpeg -y -i "+os.path.join(read_dir,lf)+" -ar "+str(config.fs)+" "+os.path.join(read_dir,lf)
+                    os.system(command)
+                audio,fs = sf.read(os.path.join(read_dir,lf))
 
-                vocals = np.array((audio[:,1]+audio[:,0])/2)
+                if len(audio.shape) == 2:
 
-            else: 
-                vocals = np.array(audio)
+                    vocals = np.array((audio[:,1]+audio[:,0])/2)
 
-            voc_stft = abs(utils.stft(vocals))
+                else: 
+                    vocals = np.array(audio)
 
-            out_feats = utils.stft_to_feats(vocals,fs)
+                voc_stft = abs(utils.stft(vocals))
 
-            
+                lab_f = open(os.path.join(read_dir,lf[:-4]+'.txt'))
+            # note_f=open(in_dir+lf[:-4]+'.notes')
+                phos = lab_f.readlines()
+                lab_f.close()
 
-            if not out_feats.shape[0]==voc_stft.shape[0] :
-                if out_feats.shape[0]<voc_stft.shape[0]:
-                    while out_feats.shape[0]<voc_stft.shape[0]:
-                        out_feats = np.concatenate(((out_feats,np.zeros((1,out_feats.shape[1])))))
-                elif out_feats.shape[0]<voc_stft.shape[0]:
-                    print("You are an idiot")
+                phonemes=[]
 
-            assert out_feats.shape[0]==voc_stft.shape[0] 
+                for pho in phos:
+                    st,end,phonote=pho.split()
+                    # import pdb;pdb.set_trace()
+                    st = int(np.round(float(st)/0.005804576860324892))
+                    en = int(np.round(float(end)/0.005804576860324892))
+                    if phonote=='pau' or phonote=='br':
+                        phonote='sil'
+                    phonemes.append([st,en,phonote])
+                    # phonemas.add(phonote)
 
-            hdf5_file = h5py.File(config.voice_dir+'nus_'+singer+'_read_'+lf[:-4]+'.hdf5', mode='w')
+                phonemes[-1][1] = len(voc_stft)
 
-            hdf5_file.create_dataset("voc_stft", voc_stft.shape, np.float32)
+                # div_fac = float(end)/len(voc_stft)
 
-            hdf5_file.create_dataset("feats", out_feats.shape, np.float32)
+                # for i in range(len(phonemes)):
+                #     phonemes[i][0] = int(float(phonemes[i][0])/div_fac)
+                #     phonemes[i][1] = int(float(phonemes[i][1])/div_fac)
 
-            hdf5_file["voc_stft"][:,:] = voc_stft
 
-            hdf5_file["feats"][:,:] = out_feats
+                strings_p = np.zeros(phonemes[-1][1])
+                for i in range(len(phonemes)):
+                    pho=phonemes[i]
+                    # if singer == 'KENN':
+                        # import pdb;pdb.set_trace()
+                    value = config.phonemas.index(pho[2])
+                    strings_p[pho[0]:pho[1]+1] = value
 
-            hdf5_file.close()
+                if not len(strings_p) == len(voc_stft):
+                    import pdb;pdb.set_trace()
 
-            count+=1
+                    # out_feats = utils.stft_to_feats(vocals,fs)
 
-            utils.progress(count,len(read_wav_files))
+                    
+
+                    # if not out_feats.shape[0]==voc_stft.shape[0] :
+                    #     if out_feats.shape[0]<voc_stft.shape[0]:
+                    #         while out_feats.shape[0]<voc_stft.shape[0]:
+                    #             out_feats = np.concatenate(((out_feats,np.zeros((1,out_feats.shape[1])))))
+                    #     elif out_feats.shape[0]<voc_stft.shape[0]:
+                    #         print("You are an idiot")
+
+                    # assert out_feats.shape[0]==voc_stft.shape[0] 
+
+                hdf5_file = h5py.File(config.voice_dir+'nus_'+singer+'_read_'+lf[:-4]+'.hdf5', mode='a')
+
+                if not  "phonemes" in hdf5_file:
+
+                    hdf5_file.create_dataset("phonemes", [voc_stft.shape[0]], int)
+
+                hdf5_file["phonemes"][:,] = strings_p
+
+                # hdf5_file.create_dataset("voc_stft", voc_stft.shape, np.float32)
+
+                # hdf5_file.create_dataset("feats", out_feats.shape, np.float32)
+
+                # hdf5_file["voc_stft"][:,:] = voc_stft
+
+                # hdf5_file["feats"][:,:] = out_feats
+
+                hdf5_file.close()
+
+                count+=1
+
+                utils.progress(count,len(read_wav_files))
+    import pdb;pdb.set_trace()        
 
 
 if __name__ == '__main__':

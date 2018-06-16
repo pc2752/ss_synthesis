@@ -262,7 +262,7 @@ def train(_):
 
                 for voc, feat,nchunks_in, lent, county, max_count in val_generator:
 
-                    if (epoch + 1) % config.save_every == 0 or (epoch + 1) == config.num_epochs:
+                    if (epoch + 1) % config.print_every == 0 or (epoch + 1) == config.num_epochs:
 
                         if county == 1:
                             f0_gt = []
@@ -330,8 +330,8 @@ def train(_):
 
                     utils.progress(batch_num_val,config.batches_per_epoch_val, suffix = 'validiation done')
                     batch_num_val+=1
-                    
-                f0_accs.append(np.mean(val_f0_accs))
+                if (epoch + 1) % config.print_every == 0 or (epoch + 1) == config.num_epochs:    
+                    f0_accs.append(np.mean(val_f0_accs))
 
                 # epoch_initial_loss_val = epoch_initial_loss_val/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len*60)
                 epoch_loss_harm_val = epoch_loss_harm_val/(batch_num_val *config.batch_size*config.max_phr_len*60)
@@ -375,8 +375,7 @@ def train(_):
                 print('        : F0 Validation Loss = %.10f ' % (epoch_loss_f0_val))
                 print('        : VUV Validation Loss = %.10f ' % (epoch_loss_vuv_val))
                 
-                if (epoch + 1) % config.save_every == 0 or (epoch + 1) == config.num_epochs:
-                    print('        : Mean F0 IKala Accuracy  = %.10f ' % (np.mean(val_f0_accs)))
+                print('        : Mean F0 IKala Accuracy  = %.10f ' % (np.mean(val_f0_accs)))
 
                 # print('        : Mean F0 IKala Accuracy = '+'%{1:.{0}f}%'.format(np.mean(val_f0_accs)))
                 # print('        : Initial Validation Loss = %.10f ' % (epoch_initial_loss_val))

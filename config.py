@@ -29,7 +29,7 @@ norm_mode_in = "max_min"
 voc_ext = '_voc_stft.npy'
 feats_ext = '_synth_feats.npy'
 
-f0_weight = 60
+f0_weight = 10
 max_models_to_keep = 100
 f0_threshold = 10
 
@@ -43,19 +43,23 @@ def get_teacher_prob(epoch):
 
 
 
+phonemas = ['t', 'y', 'l', 'k', 'aa', 'jh', 'ae', 'ng', 'ah', 'hh', 'z', 'ey', 'f', 'uw', 'iy', 'ay', 'b', 's', 'd', 'sil', 'p', 'n', 'sh', 'ao', 'g', 'ch', 'ih', 'eh', 'aw', 'sp', 'oy', 'th', 'w', 'ow', 'v', 'uh', 'm', 'er', 'zh', 'r', 'dh']
+
+
+
 split = 0.9
 
-augment = False
-aug_prob = 0.35
-
-pred_mode = 'f0'
+augment = True
+aug_prob = 0.45
+noise_threshold = 0.4
+pred_mode = 'all'
 
 # Hyperparameters
 num_epochs = 1000
-batches_per_epoch_train = 1000
+batches_per_epoch_train = 500
 batches_per_epoch_val = 252*6
 batch_size = 30 
-samples_per_file = 5
+samples_per_file = 30
 max_phr_len = 64
 input_features = 513
 
@@ -65,7 +69,7 @@ first_embed = 256
 output_features = 66
 highway_layers = 4
 highway_units = 128
-init_lr = 0.001
+init_lr = 0.0001
 num_conv_layers = 8
 conv_filters = 128
 conv_activation = tf.nn.relu
@@ -81,8 +85,8 @@ wavenet_layers = 5
 rec_field = 2**wavenet_layers
 wavenet_filters = 66
 
-print_every = 5
-save_every = 30
+print_every = 1
+save_every = 5
 
 use_gan = False
 gan_lr = 0.0001

@@ -28,11 +28,11 @@ def train(_):
         
         input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.input_features),name='input_placeholder')
         tf.summary.histogram('inputs', input_placeholder)
-        target_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,2),name='target_placeholder')
+        target_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,3),name='target_placeholder')
         tf.summary.histogram('targets', target_placeholder)
 
         with tf.variable_scope('First_Model') as scope:
-            f0, vuv = modules.nr_wavenet(input_placeholder)
+            f0, f0_1, vuv = modules.f0_network(input_placeholder)
 
             # tf.summary.histogram('initial_output', op)
 
@@ -50,13 +50,15 @@ def train(_):
 
         # ap_loss = tf.reduce_sum(tf.abs(ap - target_placeholder[:,:,60:-2])*(1-target_placeholder[:,:,-1:]))
 
-        f0_loss = tf.reduce_sum(tf.abs(f0 - target_placeholder[:,:,-2:-1])*(1-target_placeholder[:,:,-1:])) 
+        f0_loss_1 = tf.reduce_sum(tf.abs(f0 - target_placeholder[:,:,-3:-2])*(1-target_placeholder[:,:,-1:])) 
+
+        f0_loss_2 = tf.reduce_sum(tf.abs(f0_1 - target_placeholder[:,:,-2:-1])*(1-target_placeholder[:,:,-1:])) 
 
         # vuv_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels=, logits=vuv))
 
-        vuv_loss = tf.reduce_mean(tf.reduce_sum(binary_cross(target_placeholder[:,:,-1:],vuv)))
+        vuv_loss = tf.reduce_sum(binary_cross(target_placeholder[:,:,-1:],vuv))
 
-        loss = f0_loss + vuv_loss
+        loss = f0_loss_1 + vuv_loss + f0_loss_2
 
         # initial_summary = tf.summary.scalar('initial_loss', initial_loss)
 
@@ -64,7 +66,9 @@ def train(_):
 
         # ap_summary = tf.summary.scalar('ap_loss', ap_loss)
 
-        f0_summary = tf.summary.scalar('f0_loss', f0_loss)
+        f0_summary_1 = tf.summary.scalar('f0_loss_1', f0_loss_1)
+
+        f0_summary_2 = tf.summary.scalar('f0_loss_2', f0_loss_2)
 
         vuv_summary = tf.summary.scalar('vuv_loss', vuv_loss)
 
@@ -112,7 +116,8 @@ def train(_):
         print("Start from: %d" % start_epoch)
         f0_accs = []
         for epoch in xrange(start_epoch, config.num_epochs):
-            val_f0_accs = []
+            val_f0_accs_1 = []
+            val_f0_accs_2 = []
 
 
             data_generator = data_gen()
@@ -120,14 +125,16 @@ def train(_):
 
             epoch_loss_harm = 0
             epoch_loss_ap = 0
-            epoch_loss_f0 = 0
+            epoch_loss_f0_1 = 0
+            epoch_loss_f0_2 = 0
             epoch_loss_vuv = 0
             epoch_total_loss = 0
             # epoch_initial_loss = 0
 
             epoch_loss_harm_val = 0
             epoch_loss_ap_val = 0
-            epoch_loss_f0_val = 0
+            epoch_loss_f0_val_1 = 0
+            epoch_loss_f0_val_2 = 0
             epoch_loss_vuv_val = 0
             epoch_total_loss_val = 0
             # epoch_initial_loss_val = 0
@@ -153,8 +160,8 @@ def train(_):
 
                 for voc, feat in data_generator:
 
-                    _, step_loss_f0, step_loss_vuv, step_total_loss = sess.run([train_function, 
-                        f0_loss, vuv_loss, loss], feed_dict={input_placeholder: voc,target_placeholder: feat})
+                    _, step_loss_f0_1,step_loss_f0_2, step_loss_vuv, step_total_loss = sess.run([train_function, 
+                        f0_loss_1,f0_loss_2, vuv_loss, loss], feed_dict={input_placeholder: voc,target_placeholder: feat})
                     # _, step_loss_f0 = sess.run([train_f0, f0_loss], feed_dict={input_placeholder: voc,target_placeholder: feat})
                     
                     if config.use_gan:
@@ -176,7 +183,8 @@ def train(_):
                     # epoch_initial_loss+=step_initial_loss
                     # epoch_loss_harm+=step_loss_harm
                     # epoch_loss_ap+=step_loss_ap
-                    epoch_loss_f0+=step_loss_f0
+                    epoch_loss_f0_1+=step_loss_f0_1
+                    epoch_loss_f0_2+=step_loss_f0_2
                     epoch_loss_vuv+=step_loss_vuv
                     epoch_total_loss+=step_total_loss
 
@@ -196,9 +204,10 @@ def train(_):
                 # epoch_initial_loss = epoch_initial_loss/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len*60)
                 # epoch_loss_harm = epoch_loss_harm/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len*60)
                 # epoch_loss_ap = epoch_loss_ap/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len*4)
-                epoch_loss_f0 = epoch_loss_f0/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len)
+                epoch_loss_f0_1 = epoch_loss_f0_1/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len)
+                epoch_loss_f0_2 = epoch_loss_f0_2/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len)
                 epoch_loss_vuv = epoch_loss_vuv/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len)
-                epoch_total_loss = epoch_total_loss/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len*2)
+                epoch_total_loss = epoch_total_loss/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len*3)
 
                 if config.use_gan:
 
@@ -217,39 +226,48 @@ def train(_):
 
                 for voc, feat,nchunks_in, lent, county, max_count in val_generator:
 
-                    if (epoch + 1) % config.save_every == 0 or (epoch + 1) == config.num_epochs:
+                    if (epoch + 1) % config.print_every == 0 or (epoch + 1) == config.num_epochs:
 
                         if county == 1:
                             f0_gt = []
                             vuv_gt = []
-                            f0_output = []
+                            f0_output_1 = []
+                            f0_output_2 = []
 
-                        f0_op = sess.run(f0,feed_dict={input_placeholder: voc,target_placeholder: feat})
-                        f0_output.append(f0_op)
+                        f0_op_1, f0_op_2 = sess.run([f0,f0_1],feed_dict={input_placeholder: voc,target_placeholder: feat})
+                        f0_output_1.append(f0_op_1)
+                        f0_output_2.append(f0_op_2)
                         f0_gt.append(feat[:,:,-2:-1])
                         vuv_gt.append(feat[:,:,-1:])
 
                         if county == max_count:
-                            f0_output = utils.overlapadd(np.array(f0_output), nchunks_in) 
+                            f0_output_1 = utils.overlapadd(np.array(f0_output_1), nchunks_in) 
+                            f0_output_2 = utils.overlapadd(np.array(f0_output_2), nchunks_in) 
                             f0_gt = utils.overlapadd(np.array(f0_gt), nchunks_in) 
                             vuv_gt = utils.overlapadd(np.array(vuv_gt), nchunks_in) 
 
-                            f0_output = f0_output[:lent]
+                            f0_output_1 = f0_output_1[:lent]
+                            f0_output_2 = f0_output_2[:lent]
                             f0_gt = f0_gt[:lent]
                             vuv_gt = vuv_gt[:lent]
 
-                            f0_output = f0_output*((max_feat[-2]-min_feat[-2])+min_feat[-2])*(1-vuv_gt)
+                            f0_output_1 = f0_output_1*((max_feat[-2]-min_feat[-2])+min_feat[-2])*(1-vuv_gt)
+                            f0_output_2 = f0_output_2*((max_feat[-2]-min_feat[-2])+min_feat[-2])*(1-vuv_gt)
                             f0_gt = f0_gt*((max_feat[-2]-min_feat[-2])+min_feat[-2])*(1-vuv_gt)
 
-                            f0_output[f0_output == 0] = np.nan
+                            # f0_output_1[f0_output_1 == 0] = np.nan
 
-                            f0_gt[f0_gt == 0] = np.nan
+                            # f0_gt[f0_gt == 0] = np.nan
 
-                            f0_difference = np.nan_to_num(abs(f0_gt-f0_output))
-                            f0_greater = np.where(f0_difference>config.f0_threshold)
-                            diff_per = f0_greater[0].shape[0]/len(f0_output)
-                            val_f0_accs.append(1 - diff_per)
+                            f0_difference_1 = np.nan_to_num(abs(f0_gt-f0_output_1))
+                            f0_greater_1 = np.where(f0_difference_1>config.f0_threshold)
+                            diff_per_1 = f0_greater_1[0].shape[0]/len(f0_output_1)
+                            val_f0_accs_1.append(1 - diff_per_1)
 
+                            f0_difference_2 = np.nan_to_num(abs(f0_gt-f0_output_2))
+                            f0_greater_2 = np.where(f0_difference_2>config.f0_threshold)
+                            diff_per_2 = f0_greater_2[0].shape[0]/len(f0_output_2)
+                            val_f0_accs_2.append(1 - diff_per_2)
                 
                         # import pdb;pdb.set_trace()
 
@@ -259,9 +277,10 @@ def train(_):
 
 
                     # step_initial_loss_val = sess.run(initial_loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
-                    step_loss_harm_val = sess.run(harm_loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
-                    step_loss_ap_val = sess.run(ap_loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
-                    step_loss_f0_val = sess.run(f0_loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
+                    # step_loss_harm_val = sess.run(harm_loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
+                    # step_loss_ap_val = sess.run(ap_loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
+                    step_loss_f0_val_1 = sess.run(f0_loss_1, feed_dict={input_placeholder: voc,target_placeholder: feat})
+                    step_loss_f0_val_2 = sess.run(f0_loss_2, feed_dict={input_placeholder: voc,target_placeholder: feat})
                     step_loss_vuv_val = sess.run(vuv_loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
                     step_total_loss_val = sess.run(loss, feed_dict={input_placeholder: voc,target_placeholder: feat})
 
@@ -270,9 +289,10 @@ def train(_):
                         step_dis_loss_real,step_dis_loss_fake = sess.run([D_loss_real,D_loss_fake], feed_dict={input_placeholder: voc,target_placeholder: feat})
 
                     # epoch_initial_loss_val+=step_initial_loss_val
-                    epoch_loss_harm_val+=step_loss_harm_val
-                    epoch_loss_ap_val+=step_loss_ap_val
-                    epoch_loss_f0_val+=step_loss_f0_val
+                    # epoch_loss_harm_val+=step_loss_harm_val
+                    # epoch_loss_ap_val+=step_loss_ap_val
+                    epoch_loss_f0_val_1+=step_loss_f0_val_1
+                    epoch_loss_f0_val_2+=step_loss_f0_val_2
                     epoch_loss_vuv_val+=step_loss_vuv_val
                     epoch_total_loss_val+=step_total_loss_val
 
@@ -285,13 +305,14 @@ def train(_):
 
                     utils.progress(batch_num_val,config.batches_per_epoch_val, suffix = 'validiation done')
                     batch_num_val+=1
-                    
-                f0_accs.append(np.mean(val_f0_accs))
+                if (epoch + 1) % config.print_every == 0 or (epoch + 1) == config.num_epochs:    
+                    f0_accs.append(np.mean(val_f0_accs_2))
 
                 # epoch_initial_loss_val = epoch_initial_loss_val/(config.batches_per_epoch_val *config.batch_size*config.max_phr_len*60)
-                epoch_loss_harm_val = epoch_loss_harm_val/(batch_num_val *config.batch_size*config.max_phr_len*60)
-                epoch_loss_ap_val = epoch_loss_ap_val/(batch_num_val *config.batch_size*config.max_phr_len*4)
-                epoch_loss_f0_val = epoch_loss_f0_val/(batch_num_val *config.batch_size*config.max_phr_len)
+                # epoch_loss_harm_val = epoch_loss_harm_val/(batch_num_val *config.batch_size*config.max_phr_len*60)
+                # epoch_loss_ap_val = epoch_loss_ap_val/(batch_num_val *config.batch_size*config.max_phr_len*4)
+                epoch_loss_f0_val_1 = epoch_loss_f0_val_1/(batch_num_val *config.batch_size*config.max_phr_len)
+                epoch_loss_f0_val_2 = epoch_loss_f0_val_2/(batch_num_val *config.batch_size*config.max_phr_len)
                 epoch_loss_vuv_val = epoch_loss_vuv_val/(batch_num_val *config.batch_size*config.max_phr_len)
                 epoch_total_loss_val = epoch_total_loss_val/(batch_num_val *config.batch_size*config.max_phr_len*66)
 
@@ -312,7 +333,7 @@ def train(_):
             np.save('./ikala_eval/accuracies', f0_accs)
 
             if (epoch+1) % config.print_every == 0:
-                print('epoch %d: F0 Training Loss = %.10f (%.3f sec)' % (epoch+1, epoch_loss_f0, duration))
+                print('epoch %d: F0 Training Loss = %.10f (%.3f sec)' % (epoch+1, epoch_loss_f0_1, duration))
                 # print('        : Ap Training Loss = %.10f ' % (epoch_loss_ap))
                 # print('        : F0 Training Loss = %.10f ' % (epoch_loss_f0))
                 print('        : VUV Training Loss = %.10f ' % (epoch_loss_vuv))
@@ -327,11 +348,13 @@ def train(_):
 
                 # print('        : Harm Validation Loss = %.10f ' % (epoch_loss_harm_val))
                 # print('        : Ap Validation Loss = %.10f ' % (epoch_loss_ap_val))
-                print('        : F0 Validation Loss = %.10f ' % (epoch_loss_f0_val))
+                print('        : F0 Validation Loss_1 = %.10f ' % (epoch_loss_f0_val_1))
+                print('        : F0 Validation Loss_2 = %.10f ' % (epoch_loss_f0_val_2))
                 print('        : VUV Validation Loss = %.10f ' % (epoch_loss_vuv_val))
                 
-                if (epoch + 1) % config.save_every == 0 or (epoch + 1) == config.num_epochs:
-                    print('        : Mean F0 IKala Accuracy  = %.10f ' % (np.mean(val_f0_accs)))
+                if (epoch + 1) % config.print_every == 0 or (epoch + 1) == config.num_epochs:
+                    print('        : Mean F0 IKala Accuracy_1  = %.10f ' % (np.mean(val_f0_accs_1)))
+                    print('        : Mean F0 IKala Accuracy_2  = %.10f ' % (np.mean(val_f0_accs_2)))
 
                 # print('        : Mean F0 IKala Accuracy = '+'%{1:.{0}f}%'.format(np.mean(val_f0_accs)))
                 # print('        : Initial Validation Loss = %.10f ' % (epoch_initial_loss_val))
@@ -345,7 +368,7 @@ def train(_):
 
 
             if (epoch + 1) % config.save_every == 0 or (epoch + 1) == config.num_epochs:
-                utils.list_to_file(val_f0_accs,'./ikala_eval/accuracies_'+str(epoch+1)+'.txt')
+                # utils.list_to_file(val_f0_accs,'./ikala_eval/accuracies_'+str(epoch+1)+'.txt')
                 checkpoint_file = os.path.join(config.log_dir, 'model.ckpt')
                 saver.save(sess, checkpoint_file, global_step=epoch)
 
@@ -383,7 +406,7 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
 
 
         with tf.variable_scope('First_Model') as scope:
-            harm, ap, f0, vuv = modules.nr_wavenet(input_placeholder)
+            f0, vuv = modules.nr_wavenet(input_placeholder)
 
             # harmy = harm_1+harm
 
@@ -429,7 +452,7 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
         gan_op =[]
 
         for in_batch in in_batches:
-            val_harm, val_ap, val_f0, val_vuv = sess.run([harm, ap, f0, vuv], feed_dict={input_placeholder: in_batch})
+            val_f0, val_vuv = sess.run([f0, vuv], feed_dict={input_placeholder: in_batch})
             if config.use_gan:
                 val_op = sess.run(gen_op, feed_dict={input_placeholder: in_batch})
                 
@@ -437,8 +460,8 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
 
             # first_pred.append(harm1)
             # cleaner.append(val_harm)
-            val_harm = val_harm
-            val_outs = np.concatenate((val_harm, val_ap, val_f0, val_vuv), axis=-1)
+            # val_harm = val_harm
+            val_outs = np.concatenate((val_f0, val_vuv), axis=-1)
             val_outer.append(val_outs)
 
         val_outer = np.array(val_outer)
@@ -461,6 +484,8 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
 
         targs = (targs-min_feat)/(max_feat-min_feat)
 
+        # import pdb;pdb.set_trace()
+
         # first_pred = (first_pred-min_feat[:60])/(max_feat[:60]-min_feat[:60])
         # cleaner = (cleaner-min_feat[:60])/(max_feat[:60]-min_feat[:60])
 
@@ -470,47 +495,7 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
         if show_plots:
 
             # import pdb;pdb.set_trace()
-        
-            ins = val_outer[:,:60]
-            outs = targs[:,:60]
-            plt.figure(1)
-            ax1 = plt.subplot(211)
-            plt.imshow(ins.T, origin='lower', aspect='auto')
-            ax1.set_title("Predicted Harm ", fontsize = 10)
-            ax2 = plt.subplot(212)
-            plt.imshow(outs.T, origin='lower', aspect='auto')
-            ax2.set_title("Ground Truth Harm ", fontsize = 10)
-            # ax1 = plt.subplot(413)
-            # plt.imshow(first_pred.T, origin='lower', aspect='auto')
-            # ax1.set_title("Initial Prediction ", fontsize = 10)
-            # ax2 = plt.subplot(412)
-            # plt.imshow(cleaner.T, origin='lower', aspect='auto')
-            # ax2.set_title("Residual Added ", fontsize = 10)
-
-            if config.use_gan:
-                plt.figure(5)
-                ax1 = plt.subplot(411)
-                plt.imshow(ins.T, origin='lower', aspect='auto')
-                ax1.set_title("Predicted Harm ", fontsize = 10)
-                ax2 = plt.subplot(414)
-                plt.imshow(outs.T, origin='lower', aspect='auto')
-                ax2.set_title("Ground Truth Harm ", fontsize = 10)
-                ax1 = plt.subplot(412)
-                plt.imshow(gan_op.T, origin='lower', aspect='auto')
-                ax1.set_title("GAN output ", fontsize = 10)
-                ax1 = plt.subplot(413)
-                plt.imshow((gan_op[:ins.shape[0],:]+ins).T, origin='lower', aspect='auto')
-                ax1.set_title("GAN output ", fontsize = 10)
-
-
-
-            plt.figure(2)
-            ax1 = plt.subplot(211)
-            plt.imshow(val_outer[:,60:-2].T, origin='lower', aspect='auto')
-            ax1.set_title("Predicted Aperiodic Part", fontsize = 10)
-            ax2 = plt.subplot(212)
-            plt.imshow(targs[:,60:-2].T, origin='lower', aspect='auto')
-            ax2.set_title("Ground Truth Aperiodic Part", fontsize = 10)
+    
             
 
             plt.figure(3)

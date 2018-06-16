@@ -103,7 +103,7 @@ def data_gen(mode = 'Train'):
                     for j in range(config.samples_per_file):
                             voc_idx = np.random.randint(0,len(voc_stft)-config.max_phr_len)
                             bac_idx = np.random.randint(0,len(back_stft)-config.max_phr_len)
-                            mix_stft = voc_stft[voc_idx:voc_idx+config.max_phr_len,:] + back_stft[bac_idx:bac_idx+config.max_phr_len,:]*np.clip(np.random.rand(1),0.0,0.9)
+                            mix_stft = voc_stft[voc_idx:voc_idx+config.max_phr_len,:]*np.clip(np.random.rand(1),0.0,0.9) + back_stft[bac_idx:bac_idx+config.max_phr_len,:]*np.clip(np.random.rand(1),0.0,0.9)+ np.random.rand(config.max_phr_len,config.input_features)*config.noise_threshold
                             targets.append(feats[voc_idx:voc_idx+config.max_phr_len,:])
                             inputs.append(mix_stft)
 
@@ -131,7 +131,7 @@ def data_gen(mode = 'Train'):
                     for j in range(config.samples_per_file):
                         voc_idx = np.random.randint(0,len(mix_stft)-config.max_phr_len)
 
-                        inputs.append(mix_stft[voc_idx:voc_idx+config.max_phr_len,:] + np.random.rand(config.max_phr_len,config.input_features)*0.2)
+                        inputs.append(mix_stft[voc_idx:voc_idx+config.max_phr_len,:] + np.random.rand(config.max_phr_len,config.input_features)*config.noise_threshold)
 
                         targets.append(feats[voc_idx:voc_idx+config.max_phr_len,:])
 
@@ -139,13 +139,17 @@ def data_gen(mode = 'Train'):
             
             inputs = np.array(inputs)
 
+            # f0_tens = (np.floor(targets[:,:,-2:-1]/10)*10 - 30)/50
+
+            f0_ones = (np.floor(targets[:,:,-2:-1]/10) - 30)/50
+
             targets = (targets-min_feat)/(max_feat-min_feat)
             inputs = inputs/max_mix
 
 
             if config.pred_mode == 'f0':
 
-                yield inputs, targets[:,:,-2:]
+                yield inputs, np.concatenate((f0_ones,targets[:,:,-2:]),axis = -1)
             else:
                 yield inputs, targets
 
@@ -173,14 +177,23 @@ def data_gen(mode = 'Train'):
             count = 0
 
             for inputs, targets in zip(in_batches,targ_batches):
+                f0_ones = (np.floor(targets[:,:,-2:-1]/10) - 30)/50
+
                 targets = (targets-min_feat)/(max_feat-min_feat)
                 inputs = inputs/max_mix
+
                 count+=1
-                yield inputs, targets, nchunks_in, lent, count, in_batches.shape[0]
+
+
+                if config.pred_mode == 'f0':
+
+                    yield inputs, np.concatenate((f0_ones,targets[:,:,-2:]),axis = -1), nchunks_in, lent, count, in_batches.shape[0]
+                else:
+                    yield inputs, targets, nchunks_in, lent, count, in_batches.shape[0]
 
 
 def get_stats():
-    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('nus')]
+    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir')]
 
     back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('med')]
 
