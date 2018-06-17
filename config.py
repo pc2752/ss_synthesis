@@ -45,6 +45,7 @@ def get_teacher_prob(epoch):
 
 phonemas = ['t', 'y', 'l', 'k', 'aa', 'jh', 'ae', 'ng', 'ah', 'hh', 'z', 'ey', 'f', 'uw', 'iy', 'ay', 'b', 's', 'd', 'sil', 'p', 'n', 'sh', 'ao', 'g', 'ch', 'ih', 'eh', 'aw', 'sp', 'oy', 'th', 'w', 'ow', 'v', 'uh', 'm', 'er', 'zh', 'r', 'dh']
 
+val_files = 30
 
 
 split = 0.9
@@ -57,7 +58,7 @@ pred_mode = 'all'
 # Hyperparameters
 num_epochs = 1000
 batches_per_epoch_train = 500
-batches_per_epoch_val = 252*6
+batches_per_epoch_val = 30*6
 batch_size = 30 
 samples_per_file = 30
 max_phr_len = 64

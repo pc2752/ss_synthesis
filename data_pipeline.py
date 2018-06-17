@@ -27,7 +27,7 @@ def data_gen(mode = 'Train'):
 
 
 
-    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('ikala')]
+    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('ikala') and not x.startswith('nus_KENN') and not x == 'nus_MCUR_read_17.hdf5']
 
     back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('med')]
 
@@ -41,7 +41,9 @@ def data_gen(mode = 'Train'):
 
     train_list = mix_list
 
-    val_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('ikala') ]
+    val_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('ikala') ]  
+
+    # import pdb;pdb.set_trace()
 
     stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
 
@@ -72,6 +74,8 @@ def data_gen(mode = 'Train'):
             for i in range(max_files_to_process):
                 augment = np.random.rand(1)<config.aug_prob
 
+                Flag = False
+
                 # augment = True
 
                 if augment:
@@ -81,7 +85,11 @@ def data_gen(mode = 'Train'):
                     voc_index = np.random.randint(0,len(voc_list))
                     voc_to_open = voc_list[voc_index]
 
+
+
                     voc_file = h5py.File(config.voice_dir+voc_to_open, "r")
+
+
 
                     # print("Vocal file: %s" % voc_file)
 
@@ -94,6 +102,10 @@ def data_gen(mode = 'Train'):
                     back_to_open = back_list[back_index]
 
                     back_file = h5py.File(config.backing_dir+back_to_open, "r")
+                    if voc_to_open.startswith('nus'):
+                        Flag = True
+                        pho_target = np.array(voc_file["phonemes"]).reshape(-1,1)
+                        pho_targs = []
 
                     # print("Backing file: %s" % back_file)
 
@@ -105,6 +117,8 @@ def data_gen(mode = 'Train'):
                             bac_idx = np.random.randint(0,len(back_stft)-config.max_phr_len)
                             mix_stft = voc_stft[voc_idx:voc_idx+config.max_phr_len,:]*np.clip(np.random.rand(1),0.0,0.9) + back_stft[bac_idx:bac_idx+config.max_phr_len,:]*np.clip(np.random.rand(1),0.0,0.9)+ np.random.rand(config.max_phr_len,config.input_features)*config.noise_threshold
                             targets.append(feats[voc_idx:voc_idx+config.max_phr_len,:])
+                            if Flag:
+                                pho_targs.append(pho_target[voc_idx:voc_idx+config.max_phr_len,:])
                             inputs.append(mix_stft)
 
         
@@ -146,50 +160,89 @@ def data_gen(mode = 'Train'):
             targets = (targets-min_feat)/(max_feat-min_feat)
             inputs = inputs/max_mix
 
+            if Flag:
+                yield inputs, targets, np.array(pho_targs)
+
 
             if config.pred_mode == 'f0':
 
                 yield inputs, np.concatenate((f0_ones,targets[:,:,-2:]),axis = -1)
             else:
-                yield inputs, targets
+                yield inputs, targets, None
 
     else:
 
-        for file_name in val_list:
+        val_file_index = np.random.randint(0,len(val_list)-config.val_files)
 
-            voc_file = h5py.File(config.voice_dir+file_name, "r")
+        for file_name in [x for x in os.listdir(config.voice_dir) if x.startswith('nus_KENN_sing') or x == 'nus_MCUR_read_17.hdf5']:
 
+            if not file_name.startswith('nus'):
 
-            feats = voc_file['feats'] 
-
-            mix_file = h5py.File(config.backing_dir+file_name, "r")
-
-            mix_stft = mix_file["mix_stft"]
-
-            # import pdb;pdb.set_trace()
-
-            lent = len(mix_stft)
-
-            in_batches, nchunks_in = utils.generate_overlapadd(mix_stft)
-
-            targ_batches, nchunks_in = utils.generate_overlapadd(feats)
-
-            count = 0
-
-            for inputs, targets in zip(in_batches,targ_batches):
-                f0_ones = (np.floor(targets[:,:,-2:-1]/10) - 30)/50
-
-                targets = (targets-min_feat)/(max_feat-min_feat)
-                inputs = inputs/max_mix
-
-                count+=1
+                voc_file = h5py.File(config.voice_dir+file_name, "r")
 
 
-                if config.pred_mode == 'f0':
+                feats = voc_file['feats'] 
 
-                    yield inputs, np.concatenate((f0_ones,targets[:,:,-2:]),axis = -1), nchunks_in, lent, count, in_batches.shape[0]
-                else:
-                    yield inputs, targets, nchunks_in, lent, count, in_batches.shape[0]
+                mix_file = h5py.File(config.backing_dir+file_name, "r")
+
+                mix_stft = mix_file["mix_stft"]
+
+                # import pdb;pdb.set_trace()
+
+                lent = len(mix_stft)
+
+                in_batches, nchunks_in = utils.generate_overlapadd(mix_stft)
+
+                targ_batches, nchunks_in = utils.generate_overlapadd(feats)
+
+                count = 0
+
+                for inputs, targets in zip(in_batches,targ_batches):
+                    # f0_ones = (np.floor(targets[:,:,-2:-1]/10) - 30)/50
+
+                    targets = (targets-min_feat)/(max_feat-min_feat)
+                    inputs = inputs/max_mix
+
+                    count+=1
+
+
+                    if config.pred_mode == 'f0':
+
+                        yield inputs, np.concatenate((f0_ones,targets[:,:,-2:]),axis = -1), nchunks_in, lent, count, in_batches.shape[0]
+                    else:
+                        yield inputs, targets, None, nchunks_in, lent, count, in_batches.shape[0]
+            else:
+                count = 0
+
+
+                voc_file = h5py.File(config.voice_dir+file_name, "r")
+                feats = voc_file['feats'] 
+                voc_stft = voc_file['voc_stft']
+
+                lent = len(voc_stft)
+                
+                pho_target = np.array(voc_file["phonemes"]).reshape(-1,1)
+                in_batches, nchunks_in = utils.generate_overlapadd(voc_stft)
+
+                targ_batches, nchunks_in = utils.generate_overlapadd(feats)
+                pho_batches, nchunks_in = utils.generate_overlapadd(pho_target)
+
+                for inputs, targets, phos in zip(in_batches,targ_batches,pho_batches):
+                    # f0_ones = (np.floor(targets[:,:,-2:-1]/10) - 30)/50
+
+                    targets = (targets-min_feat)/(max_feat-min_feat)
+                    inputs = inputs/max_mix
+
+
+                    count+=1
+
+
+                    if config.pred_mode == 'f0':
+
+                        yield inputs, np.concatenate((f0_ones,targets[:,:,-2:]),axis = -1), nchunks_in, lent, count, in_batches.shape[0]
+                    else:
+                        yield inputs, targets, phos, nchunks_in, lent, count, in_batches.shape[0]
+
 
 
 def get_stats():
@@ -294,10 +347,10 @@ def get_stats():
 def main():
     # gen_train_val()
     # get_stats()
-    gen = data_gen()
+    gen = data_gen('val')
     while True :
         start_time = time.time()
-        inputs, targets = next(gen)
+        inputs, targets, phos, nchunks_in, lent, count, in_batches = next(gen)
         print(time.time()-start_time)
 
     #     plt.subplot(411)

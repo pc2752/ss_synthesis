@@ -169,6 +169,7 @@ def cbhg(inputs, scope='cbhg', training=True):
         f0 = tf.layers.dense(output, 64, activation=tf.nn.relu) 
         f0 = tf.layers.dense(f0, 1, activation=tf.nn.relu)
         vuv = tf.layers.dense(ap, 1, activation=tf.nn.sigmoid)
+        phonemes = tf.layers.dense(output, 41, activation=tf.nn.relu)
     return harm, ap, f0, vuv
         
 
