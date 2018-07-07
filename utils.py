@@ -61,6 +61,8 @@ def stft(data, window=np.hanning(1024),
     # centered on the first sample of data
 
     # import pdb;pdb.set_trace()
+    if len(data.shape)>1:
+        data = np.mean(data, axis = -1)
     data = np.concatenate((np.zeros(int(lengthWindow/2)), data))
     
     # zero-padding data such that it holds an exact number of frames
@@ -85,6 +87,64 @@ def stft(data, window=np.hanning(1024),
     N = np.arange(numberFrames)*hopsize/np.double(fs)
     
     return STFT
+
+def istft(mag, phase, window=np.hanning(1024),
+         hopsize=256.0, nfft=1024.0, fs=44100.0,
+          analysisWindow=None):
+    """
+    data = istft_norm(X,window=sinebell(2048),hopsize=1024.0,nfft=2048.0,fs=44100)
+    Computes an inverse of the short time Fourier transform (STFT),
+    here, the overlap-add procedure is implemented.
+    Inputs:
+        X                     :
+            STFT of the signal, to be \"inverted\"
+        window=sinebell(2048) :
+            synthesis window
+            (should be the \"complementary\" window
+            for the analysis window)
+        hopsize=1024.0        :
+            hopsize for the analysis
+        nfft=2048.0           :
+            number of points for the Fourier computation
+            (the user has to provide an even number)
+    Outputs:
+        data                  :
+            time series corresponding to the given STFT
+            the first half-window is removed, complying
+            with the STFT computation given in the
+            function stft
+    """
+    X = mag * np.exp(1j*phase)
+    X = X.T
+    if analysisWindow is None:
+        analysisWindow = window
+
+    lengthWindow = np.array(window.size)
+    numberFrequencies, numberFrames = X.shape
+    lengthData = int(hopsize*(numberFrames-1) + lengthWindow)
+
+    normalisationSeq = np.zeros(lengthData)
+
+    data = np.zeros(lengthData)
+
+    for n in np.arange(numberFrames):
+        beginFrame = int(n * hopsize)
+        endFrame = beginFrame + lengthWindow
+        frameTMP = np.fft.irfft(X[:,n], np.int32(nfft), norm = 'ortho')
+        frameTMP = frameTMP[:lengthWindow]
+        normalisationSeq[beginFrame:endFrame] = (
+            normalisationSeq[beginFrame:endFrame] +
+            window * analysisWindow)
+        data[beginFrame:endFrame] = (
+            data[beginFrame:endFrame] + window * frameTMP)
+
+    data = data[int(lengthWindow/2.0):]
+    normalisationSeq = normalisationSeq[int(lengthWindow/2.0):]
+    normalisationSeq[normalisationSeq==0] = 1.
+
+    data = data / normalisationSeq
+
+    return data
 
 def progress(count, total, suffix=''):
     bar_len = 60
@@ -117,12 +177,29 @@ def file_to_stft(input_file, mode =0):
     audio,fs=sf.read(input_file)
     if mode == 0 :
         mixture = (audio[:,0]+audio[:,1])*0.7
+        mix_stft=abs(stft(mixture))
+    
+        return mix_stft
     elif mode ==1:
         mixture = audio
+        mix_stft=abs(stft(mixture))
+    
+        return mix_stft
     elif mode ==2:
         mixture = audio[:,0]
-    mix_stft=abs(stft(mixture))
-    return mix_stft
+        mix_stft=abs(stft(mixture))
+        return mix_stft
+    elif mode ==3:
+        mixture = audio
+
+        mix_stft=stft(mixture)
+        return abs(mix_stft), np.angle(mix_stft)
+
+
+
+
+
+
 
 def input_to_feats(input_file, mode=0):
     audio,fs=sf.read(input_file)

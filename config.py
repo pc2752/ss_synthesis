@@ -66,20 +66,21 @@ phonemas_weights[14] = 0.75
 phonemas_weights[27] = 0.75
 val_files = 30
 
+singers = ['ADIZ', 'JLEE', 'JTAN', 'KENN', 'MCUR', 'MPOL', 'MPUR', 'NJAT', 'PMAR', 'SAMF', 'VKOW' ,'ZHIY']
 
 split = 0.9
 
 augment = True
 aug_prob = 1.0
-noise_threshold = 0.005
+noise_threshold = 0.2
 pred_mode = 'all'
 
 # Hyperparameters
 num_epochs = 2000
 batches_per_epoch_train = 1000
-batches_per_epoch_val = 343
+batches_per_epoch_val = 300
 batch_size = 30
-samples_per_file = 30
+samples_per_file = 5
 max_phr_len = 32
 input_features = 513
 
