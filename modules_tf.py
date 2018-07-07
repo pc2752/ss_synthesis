@@ -373,7 +373,7 @@ def f0_network(inputs):
 
     return f0_1
 
-def f0_network_2(encoded, f0, phones):
+def f0_network_2(encoded, f0, phones, prob):
 
     encoded_embedding = tf.layers.dense(encoded, 32)
 
@@ -420,13 +420,15 @@ def f0_network_2(encoded, f0, phones):
     output_2 = tf.reshape(conv6, [30, 32, 128])
 
     output_1 = bi_static_stacked_RNN(output_2, scope = 'RNN_3')
+
+    output_1 = tf.nn.dropout(tf.layers.dense(output_1, 256), prob)
 
     f0_1 = tf.layers.dense(output_1, 177)
 
     return f0_1
 
 
-def final_net(encoded, f0, phones):
+def final_net(encoded, f0, phones, prob):
 
     encoded_embedding = tf.layers.dense(encoded, 32)
 
@@ -473,6 +475,8 @@ def final_net(encoded, f0, phones):
     output_2 = tf.reshape(conv6, [30, 32, 128])
 
     output_1 = bi_static_stacked_RNN(output_2, scope = 'RNN_3')
+
+    output_1 = tf.nn.dropout(tf.layers.dense(output_1, 256), prob)
 
     final_voc = tf.layers.dense(output_1, 513)
 
@@ -527,7 +531,7 @@ def phone_network(inputs, f0):
 
     return phonemes
 
-def singer_network(inputs):
+def singer_network(inputs, prob):
     embed_1 = tf.layers.dense(inputs, 256)
 
 
@@ -546,37 +550,11 @@ def singer_network(inputs):
 
     encoded = tf.reshape(encoded, [config.batch_size, -1])
 
-    # import pdb;pdb.set_trace()
+    encoded_1= tf.nn.dropout(tf.layers.dense(encoded, 64), prob)
 
-    # upsample1 = tf.image.resize_images(tf.reshape(encoded, [30,4,1,32]), size=(8,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+    singer = tf.layers.dense(encoded_1, 12)
 
-    # conv4 = tf.layers.conv2d(inputs=upsample1, filters=32, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
-    # # Now 7x7x16
-    # upsample2 = tf.image.resize_images(conv4, size=(16,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    # # Now 14x14x16
-    # conv5 = tf.layers.conv2d(inputs=upsample2, filters=64, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
-    # # Now 14x14x32
-    # upsample3 = tf.image.resize_images(conv5, size=(32,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    # # Now 28x28x32
-    # conv6 = tf.layers.conv2d(inputs=upsample3, filters=128, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
-
-    # upsample4 = tf.image.resize_images(conv6, size=(32,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-
-    # import pdb;pdb.set_trace()
-
-    # output_1 = tf.reshape(conv6, [30, 32, 128])
-
-    # import pdb;pdb.set_trace()
-
-
-
-
-
-    # output_1 = bi_static_stacked_RNN(embed_1, scope = 'RNN_1')
-
-    singer = tf.layers.dense(encoded, 12)
-
-    return encoded, singer
+    return encoded_1, singer
 
 
 
