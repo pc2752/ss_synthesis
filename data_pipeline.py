@@ -295,7 +295,7 @@ def get_stats_phonems():
 def main():
     # gen_train_val()
     # get_stats_phonems()
-    gen = data_gen('Val')
+    gen = data_gen('Train')
     while True :
         start_time = time.time()
         inputs, targets_f0_1, targets_f0_2, pho_targs, targets_singers = next(gen)
