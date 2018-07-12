@@ -72,11 +72,11 @@ split = 0.9
 
 augment = True
 aug_prob = 1.0
-noise_threshold = 0.2
+noise_threshold = 0.0
 pred_mode = 'all'
 
 # Hyperparameters
-num_epochs = 2000
+num_epochs = 1000
 batches_per_epoch_train = 1000
 batches_per_epoch_val = 300
 batch_size = 30
@@ -109,7 +109,7 @@ rec_field = 2**wavenet_layers
 wavenet_filters = 256
 
 print_every = 1
-save_every = 5
+save_every = 10
 
 use_gan = False
 gan_lr = 0.001
