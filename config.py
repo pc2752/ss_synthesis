@@ -13,6 +13,7 @@ wav_dir_timit = '../datasets/TIMIT/TIMIT/'
 voice_dir = './voice/'
 backing_dir = './backing/'
 log_dir = './log/'
+log_dir_m1 = './log_m1/'
 # log_dir = './log_mfsc_6_best_so_far/'
 data_log = './log/data_log.log'
 
@@ -30,9 +31,9 @@ norm_mode_in = "max_min"
 voc_ext = '_voc_stft.npy'
 feats_ext = '_synth_feats.npy'
 
-f0_weight = 1
+f0_weight = 10
 max_models_to_keep = 100
-f0_threshold = 10
+f0_threshold = 1
 
 def get_teacher_prob(epoch):
     if epoch < 500:
@@ -72,13 +73,14 @@ split = 0.9
 
 augment = True
 aug_prob = 1.0
-noise_threshold = 0.0
+noise_threshold = 0.1
 pred_mode = 'all'
 
 # Hyperparameters
 num_epochs = 1000
 batches_per_epoch_train = 1000
 batches_per_epoch_val = 300
+batches_per_epoch_val_m1 = 300
 batch_size = 30
 samples_per_file = 5
 max_phr_len = 32

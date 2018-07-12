@@ -206,55 +206,39 @@ def nr_wavenet_block(conditioning, dilation_rate = 2, scope = 'nr_wavenet_block'
 
 def nr_wavenet(inputs, num_block = config.wavenet_layers):
 
-    embed_1 = tf.layers.dense(inputs, 256)
-    # output = tf.layers.dense(prenet_out, config.first_embed)
+    prenet_out = tf.layers.dense(inputs, config.lstm_size*2)
+    prenet_out = tf.layers.dense(prenet_out, config.lstm_size)
 
-    # receptive_field = 2**num_block
+    receptive_field = 2**num_block
 
-    # first_conv = tf.layers.conv1d(prenet_out, config.wavenet_filters, 1)
-    # skips = []
-    # skip, residual = nr_wavenet_block(first_conv, dilation_rate=1, scope = 'nr_wavenet_block_0')
-    # output = skip
-    # for i in range(num_block):
-    #     skip, residual = nr_wavenet_block(residual, dilation_rate=2**(i+1), scope = 'nr_wavenet_block_'+str(i+1))
-    #     skips.append(skip)
-    # for skip in skips:
-    #     output+=skip
-    # output = output+first_conv
+    first_conv = tf.layers.conv1d(prenet_out, config.wavenet_filters, 1)
+    skips = []
+    skip, residual = nr_wavenet_block(first_conv, dilation_rate=1, scope = "nr_wavenet_block_0")
+    output = skip
+    for i in range(num_block):
+        skip, residual = nr_wavenet_block(residual, dilation_rate=2**(i+1), scope = "nr_wavenet_block_"+str(i+1))
+        skips.append(skip)
+    for skip in skips:
+        output+=skip
+    output = output+first_conv
 
-    # output = tf.nn.relu(output)
+    output = tf.nn.relu(output)
 
-    # output = tf.layers.conv1d(output,config.wavenet_filters,1)
+    output = tf.layers.conv1d(output,config.wavenet_filters,1)
 
-    # output = tf.nn.relu(output)
+    output = tf.nn.relu(output)
 
-    # output = tf.layers.conv1d(output,config.wavenet_filters/2,1)
+    output = tf.layers.conv1d(output,config.wavenet_filters,1)
 
-    # output = tf.nn.relu(output)
+    output = tf.nn.relu(output)
 
-    output_1 = bi_static_stacked_RNN(embed_1, scope = 'RNN_1')
+    harm = tf.layers.dense(output, 60, activation=tf.nn.relu)
+    ap = tf.layers.dense(output, 4, activation=tf.nn.relu)
+    f0 = tf.layers.dense(output, 64, activation=tf.nn.relu) 
+    f0 = tf.layers.dense(f0, 1, activation=tf.nn.relu)
+    vuv = tf.layers.dense(ap, 1, activation=tf.nn.sigmoid)
 
-
-    f0_1 = tf.layers.dense(output_1, 128)
-
-    inputs_2 = tf.concat([inputs, f0_1], axis = -1)
-
-    embed_2 = tf.layers.dense(inputs_2, 256)
-
-    output_2 = bi_static_stacked_RNN(embed_2, scope = 'RNN_2')
-
-    # f0_2 = tf.layers.dense(output_2, 32, activation=tf.nn.relu) 
-    # f0_2 = tf.layers.dense(f0_2, 1, activation=tf.nn.relu)
-    # f0_2 = tf.layers.conv1d(f0_2,1,8, padding = 'same')
-
-    # inputs_3 = tf.concat([embed_2, f0_2], axis = -1)
-
-    # output = bi_static_stacked_RNN(output_2, scope = 'RNN_2')
-
-    phonemes = tf.layers.dense(output_2, 41)
-    
-
-    return f0_1, phonemes
+    return harm, ap, f0, vuv
 
 def f0_pho_network(inputs):
     embed_1 = tf.layers.dense(inputs, 256)

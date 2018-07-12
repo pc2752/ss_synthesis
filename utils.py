@@ -16,7 +16,7 @@ from tqdm import tqdm
 import config
 
 
-def griffinlim(spectrogram, n_iter = 100, window = 'hann', n_fft = 1024, hop_length = -1, verbose = False):
+def griffinlim(spectrogram, n_iter = 50, window = 'hann', n_fft = 1024, hop_length = -1, verbose = False):
     if hop_length == -1:
         hop_length = n_fft // 4
 
@@ -28,7 +28,7 @@ def griffinlim(spectrogram, n_iter = 100, window = 'hann', n_fft = 1024, hop_len
         inverse = istft(spectrogram,angles)
         rebuilt = stft(inverse)[:spectrogram.shape[0],:]
         angles = np.exp(1j * np.angle(rebuilt))
-        progress(i,100)
+        progress(i,n_iter)
         # import pdb;pdb.set_trace()
 
         if verbose:
