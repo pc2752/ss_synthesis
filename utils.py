@@ -340,7 +340,7 @@ def feats_to_audio(in_feats,filename, fs=config.fs,  mode=config.comp_mode):
     # f0[:,0] = f0[:,0]/12
     # f0[:,0] = 2**f0[:,0]
     # f0[:,0] = f0[:,0]*440
-    f0[:,0] = new_base_to_hertz(f0[:,0])
+    f0[:,0] = f0_to_hertz(f0[:,0])
 
     f0 = f0[:,0]*(1-f0[:,1])
 

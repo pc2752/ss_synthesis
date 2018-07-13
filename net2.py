@@ -764,11 +764,15 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         audio_out_griffin = audio_utilities.reconstruct_signal_griffin_lim(out_batches_voc_stft, 1024, 256, 100)
 
+        audio_out_griffin_test = audio_utilities.reconstruct_signal_griffin_lim(voc_stft_mag, 1024, 256, 100)
+
         
 
         sf.write('./test_ori_pha.wav',audio_out,config.fs)
 
         sf.write('./test_griffin.wav',audio_out_griffin,config.fs)
+
+        sf.write('./test_griffin_test.wav',audio_out_griffin_test,config.fs)
 
         sf.write('./test_out_phase.wav',audio_out_out_phase,config.fs)
 
