@@ -125,6 +125,18 @@ def main():
 
             # hdf5_file["feats"][:,:] = out_feats
 
+
+            hdf5_file.create_dataset("voc_stft_phase", voc_stft_phase.shape, np.float32)
+
+            # hdf5_file["phonemes"][:,] = strings_p
+
+            # hdf5_file.create_dataset("voc_stft", voc_stft.shape, np.float32)
+
+            # hdf5_file.create_dataset("feats", out_feats.shape, np.float32)
+
+            # hdf5_file["voc_stft"][:,:] = voc_stft
+            hdf5_file["voc_stft_phase"][:,:] = voc_stft_phase
+
             hdf5_file.close()
 
 

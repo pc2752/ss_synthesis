@@ -40,6 +40,9 @@ def griffinlim(spectrogram, n_iter = 50, window = 'hann', n_fft = 1024, hop_leng
 
     return inverse
 
+
+
+
 def stft(data, window=np.hanning(1024),
          hopsize=256.0, nfft=1024.0, fs=44100.0):
     """

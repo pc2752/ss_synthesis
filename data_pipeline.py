@@ -74,6 +74,7 @@ def data_gen(mode = 'Train'):
     for k in range(num_batches):
 
         inputs = []
+        phase_targs = []
         targets_f0_1 = []
         targets_f0_2 = []
         targets_singers = []
@@ -102,6 +103,10 @@ def data_gen(mode = 'Train'):
                 # print("Vocal file: %s" % voc_file)
 
                 voc_stft = np.array(voc_file['voc_stft'])
+
+                voc_stft_phase = np.array(voc_file['voc_stft_phase'])
+
+                # import pdb;pdb.set_trace()
 
                 # plt.imshow(np.log(voc_stft.T), aspect = 'auto', origin = 'lower')
                 # plt.show()
@@ -133,19 +138,19 @@ def data_gen(mode = 'Train'):
 
                 back_to_open = back_list[back_index]
 
-                back_file = h5py.File(config.backing_dir+back_to_open, "r")
+                # back_file = h5py.File(config.backing_dir+back_to_open, "r")
 
                 pho_target = np.array(voc_file["phonemes"])
 
 
                 # print("Backing file: %s" % back_file)
 
-                back_stft = back_file['back_stft']
+                # back_stft = back_file['back_stft']
 
 
                 for j in range(config.samples_per_file):
                         voc_idx = np.random.randint(0,len(voc_stft)-config.max_phr_len)
-                        bac_idx = np.random.randint(0,len(back_stft)-config.max_phr_len)
+                        # bac_idx = np.random.randint(0,len(back_stft)-config.max_phr_len)
                         mix_stft = voc_stft[voc_idx:voc_idx+config.max_phr_len,:]
                         # *np.clip(np.random.rand(1),0.5,0.9) + back_stft[bac_idx:bac_idx+config.max_phr_len,:]*np.clip(np.random.rand(1),0.0,0.9)+ np.random.rand(config.max_phr_len,config.input_features)*np.clip(np.random.rand(1),0.0,config.noise_threshold)
                         targets_f0_1.append(f0_quant[voc_idx:voc_idx+config.max_phr_len])
@@ -153,6 +158,7 @@ def data_gen(mode = 'Train'):
                         targets_singers.append(singer_index)
                         pho_targs.append(pho_target[voc_idx:voc_idx+config.max_phr_len])
                         inputs.append(mix_stft)
+                        phase_targs.append(voc_stft_phase[voc_idx:voc_idx+config.max_phr_len,:])
 
         targets_f0_1 = np.array(targets_f0_1)
 
@@ -160,17 +166,19 @@ def data_gen(mode = 'Train'):
         
         inputs = np.array(inputs)
 
+        phase_targs = (np.array(phase_targs)+3.1415927)/(3.1415927*2)
+
         # inputs_norm = inputs/(inputs.max(axis = 1).max(axis = 0))
 
         inputs_norm = inputs/max_voc
 
-        yield inputs_norm, targets_f0_1, targets_f0_2, np.array(pho_targs), np.array(targets_singers)
+        yield inputs_norm, phase_targs, targets_f0_1, targets_f0_2, np.array(pho_targs), np.array(targets_singers)
 
 
 
 
 def get_stats():
-    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir')]
+    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and x.startswith('nus') and not x.startswith('nus_KENN') and not x == 'nus_MCUR_sing_04.hdf5' and not x == 'nus_MCUR_read_04.hdf5']
 
     back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('med')]
 
@@ -298,7 +306,7 @@ def main():
     gen = data_gen('Train')
     while True :
         start_time = time.time()
-        inputs, targets_f0_1, targets_f0_2, pho_targs, targets_singers = next(gen)
+        inputs, phase_targs, targets_f0_1, targets_f0_2, pho_targs, targets_singers = next(gen)
         print(time.time()-start_time)
 
     #     plt.subplot(411)

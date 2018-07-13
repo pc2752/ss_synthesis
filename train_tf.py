@@ -548,11 +548,11 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
             targs = np.ascontiguousarray(targs*(max_feat-min_feat)+min_feat)
 
             # val_outer = np.ascontiguousarray(utils.denormalize(val_outer,'feats', mode=config.norm_mode_out))
-            # try:
-            #     utils.feats_to_audio(val_outer,file_name[:-4]+'_synth_pred_f0')
-            #     print("File saved to %s" % config.val_dir+file_name[:-4]+'_synth_pred_f0.wav')
-            # except:
-            #     print("Couldn't synthesize with predicted f0")
+            try:
+                utils.feats_to_audio(val_outer,file_name[:-4]+'_synth_pred_f0')
+                print("File saved to %s" % config.val_dir+file_name[:-4]+'_synth_pred_f0.wav')
+            except:
+                print("Couldn't synthesize with predicted f0")
             try:
                 val_outer[:,-2:] = targs[:,-2:]
                 utils.feats_to_audio(val_outer,file_name[:-4]+'_synth_ori_f0')

@@ -467,6 +467,62 @@ def final_net(encoded, f0, phones, prob):
     return final_voc
 
 
+def final_net_phase(encoded, f0, phones, spec, prob):
+
+    encoded_embedding = tf.layers.dense(encoded, 32)
+
+
+    
+    embed_1 = tf.layers.dense(f0, 64)
+
+    embed_ph = tf.layers.dense(phones, 64)
+
+    embed_spec = tf.layers.dense(spec, 64)
+
+    inputs_2 = tf.concat([embed_1, embed_ph, embed_spec], axis = -1)
+
+    conv1 = tf.layers.conv1d(inputs=inputs_2, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu)
+
+    maxpool1 = tf.layers.max_pooling1d(conv1, pool_size=2, strides=2, padding='same')
+
+    conv2 = tf.layers.conv1d(inputs=maxpool1, filters=64, kernel_size=4, padding='same', activation=tf.nn.relu)
+
+    maxpool2 = tf.layers.max_pooling1d(conv2, pool_size=2, strides=2, padding='same')
+
+    conv3 = tf.layers.conv1d(inputs=maxpool2, filters=32, kernel_size=4, padding='same', activation=tf.nn.relu)
+
+    encoded = tf.layers.max_pooling1d(conv3, pool_size=2, strides=2, padding='same')
+
+    encoded = tf.concat([tf.reshape(encoded, [config.batch_size, -1]), encoded_embedding], axis = -1)
+
+    upsample1 = tf.image.resize_images(tf.reshape(encoded, [30,4,1,-1]), size=(8,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+
+    conv4 = tf.layers.conv2d(inputs=upsample1, filters=32, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
+    # Now 7x7x16
+    upsample2 = tf.image.resize_images(conv4, size=(16,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+    # Now 14x14x16
+    conv5 = tf.layers.conv2d(inputs=upsample2, filters=64, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
+    # Now 14x14x32
+    upsample3 = tf.image.resize_images(conv5, size=(32,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+    # Now 28x28x32
+    conv6 = tf.layers.conv2d(inputs=upsample3, filters=128, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
+
+    # encoded_embedding = tf.reshape(tf.tile(encoded_embedding, [1,config.max_phr_len]), [config.batch_size, config.max_phr_len, 32])
+
+    # encoded_embedding = tf.reshape(tf.image.resize_images(tf.reshape(encoded_embedding, [30,1,1,32]), size=(config.max_phr_len,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR), [config.batch_size, config.max_phr_len, 32])
+# 
+    # import pdb;pdb.set_trace()
+
+    output_2 = tf.reshape(conv6, [30, 32, 128])
+
+    output_1 = bi_static_stacked_RNN(output_2, scope = 'RNN_3')
+
+    output_1 = tf.nn.dropout(tf.layers.dense(output_1, 256), prob)
+
+    final_voc_phase = tf.layers.dense(output_1, 513)
+
+    return final_voc_phase
+
 def phone_network(inputs, f0):
 
     embed_f0 = tf.layers.dense(f0, 32)
