@@ -485,11 +485,11 @@ def train(_):
 
 def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
-    file_name = "nus_MPOL_sing_05.hdf5"
+    file_name = "nus_JTAN_sing_15.hdf5"
 
 
 
-    speaker_file = "nus_MPOL_sing_05.hdf5"
+    speaker_file = "nus_JTAN_sing_15.hdf5"
 
     stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
 
@@ -613,6 +613,8 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         # feats = utils.input_to_feats('./numofbea.wav', mode = 1)
 
         f0 = feats[:,-2]
+
+        # import pdb;pdb.set_trace()
 
         med = np.median(f0[f0 > 0])
 
@@ -760,17 +762,18 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         out_batches_feats = out_batches_feats*(max_feat[:-2]-min_feat[:-2])+min_feat[:-2]
 
-        haha = np.concatenate((out_batches_feats[:f0.shape[0]], feats[:,-2:-1],feats[:,-1:0]) ,axis=-1)
+
+        haha = np.concatenate((out_batches_feats[:f0.shape[0]], feats[:,-2:]) ,axis=-1)
         haha = np.ascontiguousarray(haha)
 
-        hehe = np.concatenate((out_batches_feats[:f0.shape[0],:60], feats[:,60:-1],feats[:,-1:0]) ,axis=-1)
+        # jaja = np.concatenate((out_batches_feats[:f0.shape[0]], f0_output[:f0.shape[0]].reshape(-1,1),feats[:,-1:0]) ,axis=-1)
+        # jaja = np.ascontiguousarray(jaja)
+
+        hehe = np.concatenate((out_batches_feats[:f0.shape[0],:60], feats[:,60:]) ,axis=-1)
         hehe = np.ascontiguousarray(hehe)
 
-        utils.feats_to_audio(hehe[:5000,:],'_test_with_original_f0.wav')
+        # import pdb;pdb.set_trace()
 
-        utils.feats_to_audio(hehe[:5000,:],'_test_with_original_f0_ap.wav')
-
-        utils.feats_to_audio(feats[:5000,:],'_test_original.wav')
 
         plt.figure(1)
 
@@ -792,6 +795,25 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         plt.subplot(212)
 
         plt.imshow(out_batches_feats[:,60:].T,aspect='auto',origin='lower')
+
+        plt.figure(3)
+        plt.plot(feats[:,-2:-1])
+        plt.plot(f0_output)
+
+        plt.show()
+
+        # import pdb;pdb.set_trace()
+
+
+        utils.feats_to_audio(haha[:5000,:],'_test_with_original_f0.wav')
+
+        # utils.feats_to_audio(jaja[:5000,:],'_test.wav')
+
+        utils.feats_to_audio(hehe[:5000,:],'_test_with_original_f0_ap.wav')
+
+        utils.feats_to_audio(feats[:5000,:],'_test_original.wav')
+
+
 
 
         # utils.feats_to_audio(feats,'_synth_ori_f0')
