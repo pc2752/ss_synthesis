@@ -462,7 +462,7 @@ def final_net(encoded, f0, phones, prob):
 
     output_1 = tf.nn.dropout(tf.layers.dense(output_1, 256), prob)
 
-    final_voc = tf.layers.dense(output_1, 513)
+    final_voc = tf.layers.dense(output_1, 64)
 
     return final_voc
 

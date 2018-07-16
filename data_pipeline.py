@@ -74,7 +74,7 @@ def data_gen(mode = 'Train'):
     for k in range(num_batches):
 
         inputs = []
-        phase_targs = []
+        feats_targs = []
         targets_f0_1 = []
         targets_f0_2 = []
         targets_singers = []
@@ -158,7 +158,7 @@ def data_gen(mode = 'Train'):
                         targets_singers.append(singer_index)
                         pho_targs.append(pho_target[voc_idx:voc_idx+config.max_phr_len])
                         inputs.append(mix_stft)
-                        phase_targs.append(voc_stft_phase[voc_idx:voc_idx+config.max_phr_len,:])
+                        feats_targs.append(feats[voc_idx:voc_idx+config.max_phr_len,:-2])
 
         targets_f0_1 = np.array(targets_f0_1)
 
@@ -166,13 +166,13 @@ def data_gen(mode = 'Train'):
         
         inputs = np.array(inputs)
 
-        phase_targs = (np.array(phase_targs)+3.1415927)/(3.1415927*2)
+        feats_targs = (np.array(feats_targs)-min_feat[:-2])/(max_feat[:-2]-min_feat[:-2])
 
         # inputs_norm = inputs/(inputs.max(axis = 1).max(axis = 0))
 
         inputs_norm = inputs/max_voc
 
-        yield inputs_norm, phase_targs, targets_f0_1, targets_f0_2, np.array(pho_targs), np.array(targets_singers)
+        yield inputs_norm, feats_targs, targets_f0_1, targets_f0_2, np.array(pho_targs), np.array(targets_singers)
 
 
 
@@ -306,7 +306,7 @@ def main():
     gen = data_gen('Train')
     while True :
         start_time = time.time()
-        inputs, phase_targs, targets_f0_1, targets_f0_2, pho_targs, targets_singers = next(gen)
+        inputs, feats_targs, targets_f0_1, targets_f0_2, pho_targs, targets_singers = next(gen)
         print(time.time()-start_time)
 
     #     plt.subplot(411)
