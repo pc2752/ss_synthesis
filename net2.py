@@ -766,8 +766,15 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         haha = np.concatenate((out_batches_feats[:f0.shape[0]], feats[:,-2:]) ,axis=-1)
         haha = np.ascontiguousarray(haha)
 
-        # jaja = np.concatenate((out_batches_feats[:f0.shape[0]], f0_output[:f0.shape[0]].reshape(-1,1),feats[:,-1:0]) ,axis=-1)
-        # jaja = np.ascontiguousarray(jaja)
+        jaja = np.concatenate((out_batches_feats[:f0.shape[0]], f0_output[:f0.shape[0]].reshape(-1,1)) ,axis=-1)
+
+        # import pdb;pdb.set_trace()
+
+        jaja = np.concatenate((jaja,feats[:,-1:]) ,axis=-1)
+
+
+        
+        jaja = np.ascontiguousarray(jaja)
 
         hehe = np.concatenate((out_batches_feats[:f0.shape[0],:60], feats[:,60:]) ,axis=-1)
         hehe = np.ascontiguousarray(hehe)
@@ -807,7 +814,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         utils.feats_to_audio(haha[:5000,:],'_test_with_original_f0.wav')
 
-        # utils.feats_to_audio(jaja[:5000,:],'_test.wav')
+        utils.feats_to_audio(jaja[:5000,:],'_test.wav')
 
         utils.feats_to_audio(hehe[:5000,:],'_test_with_original_f0_ap.wav')
 
