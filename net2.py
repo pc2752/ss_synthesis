@@ -612,7 +612,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         # feats = np.array(voc_file['feats'])
 
-        feats = utils.input_to_feats('./U2_-_With_or_without_you_verse_1.wav', mode = 1)
+        feats = utils.input_to_feats('./Annie_Lennox,_David_A_Stewart_-_Sweet_Dreams_verse_2.wav', mode = 1)
 
         f0 = feats[:,-2]
 
@@ -640,7 +640,14 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         f0_midi_a = np.rint(np.clip(f0_midi_a - 30, 0.0,54.0))
 
-        # import pdb;pdb.set_trace()
+        plt.plot(f0_midi_a)
+
+        plt.plot(f0_midi)
+
+        plt.show()
+
+
+        import pdb;pdb.set_trace()
 
 
 
