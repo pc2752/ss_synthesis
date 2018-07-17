@@ -19,6 +19,8 @@ import modules_tf as modules
 import utils
 from reduce import mgc_to_mfsc
 
+import prep_ayesha_for_synth
+
 def one_hotize(inp, max_index=41):
     # output = np.zeros((inp.shape[0],inp.shape[1],max_index))
     # for i, index in enumerate(inp):
@@ -489,7 +491,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
 
-    speaker_file = "nus_MPOL_sing_05.hdf5"
+    speaker_file = "nus_KENN_sing_17.hdf5"
 
     stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
 
@@ -608,9 +610,9 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         # speaker_file.close()
         # import pdb;pdb.set_trace()
 
-        feats = np.array(voc_file['feats'])
+        # feats = np.array(voc_file['feats'])
 
-        # feats = utils.input_to_feats('./bellaciao.wav', mode = 1)
+        feats = utils.input_to_feats('./U2_-_With_or_without_you_verse_1.wav', mode = 1)
 
         f0 = feats[:,-2]
 
@@ -634,19 +636,26 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         pho_target = np.array(voc_file["phonemes"])
 
+        f0_midi_a, pho_target_a = prep_ayesha_for_synth.get_notes()
+
+        f0_midi_a = np.rint(np.clip(f0_midi_a - 30, 0.0,54.0))
+
+        # import pdb;pdb.set_trace()
 
 
-        in_batches_voc_stft, nchunks_in = utils.generate_overlapadd(voc_stft)
+
+
+        # in_batches_voc_stft, nchunks_in = utils.generate_overlapadd(voc_stft)
 
         in_batches_speaker_stft, nchunks_in_speaker = utils.generate_overlapadd(speaker_stft)
 
         # import pdb;pdb.set_trace()
 
-        in_batches_f0_midi, nchunks_in = utils.generate_overlapadd(f0_midi.reshape(-1,1))
+        in_batches_f0_midi, nchunks_in = utils.generate_overlapadd(f0_midi_a.reshape(-1,1))
 
-        in_batches_f0_quant, nchunks_in = utils.generate_overlapadd(f0_quant.reshape(-1,1))
+        # in_batches_f0_quant, nchunks_in = utils.generate_overlapadd(f0_quant.reshape(-1,1))
 
-        in_batches_pho, nchunks_in = utils.generate_overlapadd(pho_target.reshape(-1,1))
+        in_batches_pho, nchunks_in_pho = utils.generate_overlapadd(pho_target_a.reshape(-1,1))
 
         in_batches_feat, kaka = utils.generate_overlapadd(feats)
 
@@ -678,12 +687,13 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
         # for in_batch_voc_stft, in_batch_f0_midi, in_batch_f0_quant, in_batch_pho_target in zip(in_batches_voc_stft, in_batches_f0_midi, in_batches_f0_quant, in_batches_pho):
-        for in_batch_voc_stft, in_batch_f0_midi, in_batch_f0_quant in zip(in_batches_voc_stft, in_batches_f0_midi, in_batches_f0_quant):
+        # for in_batch_voc_stft, in_batch_f0_midi, in_batch_f0_quant in zip(in_batches_voc_stft, in_batches_f0_midi, in_batches_f0_quant):
+        for in_batch_pho_target, in_batch_f0_midi in zip(in_batches_pho, in_batches_f0_midi):
 
             # in_batch_voc_stft = in_batch_voc_stft/(in_batch_voc_stft.max(axis = 1).max(axis = 0))
             # in_batch_speaker_stft = in_batch_speaker_stft/(in_batch_speaker_stft.max(axis = 1).max(axis = 0))
-            in_batch_voc_stft = in_batch_voc_stft/max_voc
-            in_batch_speaker_stft = in_batch_speaker_stft/max_voc
+            # in_batch_voc_stft = in_batch_voc_stft/max_voc
+            # in_batch_speaker_stft = in_batch_speaker_stft/max_voc
 
 
             # s_embed = sess.run(singer_embedding, feed_dict={speaker_input_placeholder: in_batch_speaker_stft})
@@ -692,30 +702,32 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
             # import pdb;pdb.set_trace()
 
-            f0_outputs_1 = sess.run(f0_probs_midi, feed_dict = {input_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed} )
+            # f0_outputs_1 = sess.run(f0_probs_midi, feed_dict = {input_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed} )
 
             # in_batch_voc_stft = in_batch_voc_stft.reshape([config.batch_size, config.max_phr_len, 177])
 
-            in_batch_f0_quant = in_batch_f0_quant.reshape([config.batch_size, config.max_phr_len])
+            # in_batch_f0_quant = in_batch_f0_quant.reshape([config.batch_size, config.max_phr_len])
 
             in_batch_f0_midi = in_batch_f0_midi.reshape([config.batch_size, config.max_phr_len])
 
-            # in_batch_pho_target = in_batch_pho_target.reshape([config.batch_size, config.max_phr_len])
+            in_batch_pho_target = in_batch_pho_target.reshape([config.batch_size, config.max_phr_len])
 
 
 
 
-            pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: in_batch_voc_stft,f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54)} )
+            # pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: in_batch_voc_stft,f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54)} )
 
-            f0_outputs_2 = sess.run(f0_probs, feed_dict={input_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed, 
-                f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54), pho_input_placeholder: pho_outs} )
+            f0_outputs_2 = sess.run(f0_probs, feed_dict={singer_embedding_placeholder: s_embed, 
+                f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54), pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41)} )
+
+            # import pdb;pdb.set_trace()
 
             # output_voc_stft = sess.run(voc_output_decoded, feed_dict={f0_input_placeholder: one_hotize(in_batch_f0_quant, max_index=177),
             #     pho_input_placeholder: pho_outs, output_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed})
 
 
             output_feats = sess.run(voc_output_decoded, feed_dict={f0_input_placeholder: f0_outputs_2,
-                pho_input_placeholder: pho_outs,singer_embedding_placeholder: s_embed})
+                pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41),singer_embedding_placeholder: s_embed})
 
             # output_voc_stft_phase = sess.run(voc_output_phase_decoded, feed_dict={input_placeholder: output_voc_stft, f0_input_placeholder: f0_outputs_2,
             #     pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41), output_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed})
@@ -724,11 +736,11 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
             out_batches_feats.append(output_feats)
 
-            out_batches_f0_midi.append(f0_outputs_1)
+            # out_batches_f0_midi.append(f0_outputs_1)
 
             out_batches_f0_quant.append(f0_outputs_2)
 
-            out_batches_pho_target.append(pho_outs)
+            # out_batches_pho_target.append(pho_outs)
 
             # out_batches_voc_stft_phase.append(output_voc_stft_phase)
 
@@ -738,7 +750,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         out_batches_feats = np.array(out_batches_feats)
         # import pdb;pdb.set_trace()
-        out_batches_feats = utils.overlapadd(out_batches_feats, kaka) 
+        out_batches_feats = utils.overlapadd(out_batches_feats, nchunks_in_pho) 
 
         
 
@@ -746,11 +758,11 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         # # import pdb;pdb.set_trace()
         # out_batches_voc_stft_phase = utils.overlapadd(out_batches_voc_stft_phase, nchunks_in) 
 
-        out_batches_f0_midi = np.array(out_batches_f0_midi)
-        out_batches_f0_midi = utils.overlapadd(out_batches_f0_midi, nchunks_in)    
+        # out_batches_f0_midi = np.array(out_batches_f0_midi)
+        # out_batches_f0_midi = utils.overlapadd(out_batches_f0_midi, nchunks_in)    
 
         out_batches_f0_quant = np.array(out_batches_f0_quant)
-        out_batches_f0_quant = utils.overlapadd(out_batches_f0_quant, nchunks_in) 
+        out_batches_f0_quant = utils.overlapadd(out_batches_f0_quant, nchunks_in_pho) 
 
         f0_output= np.argmax(out_batches_f0_quant, axis = -1).astype('float32')
         f0_output[f0_output == 0] = np.nan
@@ -766,54 +778,58 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         haha = np.concatenate((out_batches_feats[:f0.shape[0]], feats[:,-2:]) ,axis=-1)
         haha = np.ascontiguousarray(haha)
 
-        jaja = np.concatenate((out_batches_feats[:f0.shape[0]], f0_output[:f0.shape[0]].reshape(-1,1)),axis=-1)
+        # jaja = np.concatenate((out_batches_feats[:f0.shape[0]], f0_output[:f0.shape[0]].reshape(-1,1)),axis=-1)
 
-        jaja = np.concatenate((jaja, feats[:,-1].reshape(-1,1)),axis=-1)
-        jaja = np.ascontiguousarray(jaja)
+        # import pdb;pdb.set_trace()
 
-        hehe = np.concatenate((out_batches_feats[:f0.shape[0],:60], feats[:,60:]) ,axis=-1)
-        hehe = np.ascontiguousarray(hehe)
+        # jaja = np.concatenate((jaja, feats[:,-1].reshape(-1,1)),axis=-1)
+        # jaja = np.ascontiguousarray(jaja)
+
+        # hehe = np.concatenate((out_batches_feats[:f0.shape[0],:60], feats[:,60:]) ,axis=-1)
+        # hehe = np.ascontiguousarray(hehe)
 
         # import pdb;pdb.set_trace()
 
 
-        plt.figure(1)
+        # plt.figure(1)
 
-        plt.subplot(211)
+        # plt.subplot(211)
 
-        plt.imshow(feats[:,:60].T,aspect='auto',origin='lower')
+        # plt.imshow(feats[:,:60].T,aspect='auto',origin='lower')
 
-        plt.subplot(212)
+        # plt.subplot(212)
 
-        plt.imshow(out_batches_feats[:,:60].T,aspect='auto',origin='lower')
+        # plt.imshow(out_batches_feats[:,:60].T,aspect='auto',origin='lower')
 
 
-        plt.figure(2)
+        # plt.figure(2)
 
-        plt.subplot(211)
+        # plt.subplot(211)
 
-        plt.imshow(feats[:,60:-2].T,aspect='auto',origin='lower')
+        # plt.imshow(feats[:,60:-2].T,aspect='auto',origin='lower')
 
-        plt.subplot(212)
+        # plt.subplot(212)
 
-        plt.imshow(out_batches_feats[:,60:].T,aspect='auto',origin='lower')
+        # plt.imshow(out_batches_feats[:,60:].T,aspect='auto',origin='lower')
 
-        plt.figure(3)
-        plt.plot(feats[:,-2:-1])
-        plt.plot(f0_output)
+        # plt.figure(3)
+        # plt.plot(feats[:,-2:-1])
+        # plt.plot(f0_output)
 
-        plt.show()
+        # plt.show()
 
         # import pdb;pdb.set_trace()
 
 
-        utils.feats_to_audio(haha[:5000,:],'_test_with_original_f0.wav')
+        utils.feats_to_audio(haha[:5000,:],'_test_ayesha_with_original_f0.wav')
 
-        utils.feats_to_audio(jaja[:5000,:],'_test.wav')
 
-        utils.feats_to_audio(hehe[:5000,:],'_test_with_original_f0_ap.wav')
 
-        utils.feats_to_audio(feats[:5000,:],'_test_original.wav')
+        # utils.feats_to_audio(jaja[:5000,:],'_test_ayesha.wav')
+
+        # utils.feats_to_audio(hehe[:5000,:],'_test_with_original_f0_ap.wav')
+
+        # utils.feats_to_audio(feats[:5000,:],'_test_original.wav')
 
 
 
