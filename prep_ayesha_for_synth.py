@@ -24,16 +24,16 @@ def get_notes():
 
         for pho in phos:
             st,en,phonote=pho.split()
-            st = int(int(st)/50000)
-            en = int(int(en)/50000)
+            st = int(int(st)/58045)
+            en = int(int(en)/58045)
             if phonote == 'pau' or phonote == 'br':
                 phonote = 'sil'
             phonemes.append([st,en,phonote])
 
         for note in notes:
             st,en,phonote = note.split()
-            st=int(int(st)/5)
-            en=int(int(en)/5)
+            st=int(int(st)/5.8045)
+            en=int(int(en)/5.8045)
             if phonote == 'sil':
                 phonote = 0
             noters.append([st,en,phonote])
