@@ -580,7 +580,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         sess.run(init_op)
 
-        ckpt = tf.train.get_checkpoint_state('./log/')
+        ckpt = tf.train.get_checkpoint_state('./log_0.1N_feats/')
 
         if ckpt and ckpt.model_checkpoint_path:
             print("Using the model in %s"%ckpt.model_checkpoint_path)
@@ -716,7 +716,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
             # pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: in_batch_voc_stft,f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54)} )
-
+# 
             f0_outputs_2 = sess.run(f0_probs, feed_dict={singer_embedding_placeholder: s_embed, 
                 f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54), pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41)} )
 
@@ -778,7 +778,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         haha = np.concatenate((out_batches_feats[:f0.shape[0]], feats[:,-2:]) ,axis=-1)
         haha = np.ascontiguousarray(haha)
 
-        # jaja = np.concatenate((out_batches_feats[:f0.shape[0]], f0_output[:f0.shape[0]].reshape(-1,1)),axis=-1)
+        jaja = np.concatenate((out_batches_feats[:f0.shape[0]], f0_output[:f0.shape[0]].reshape(-1,1)),axis=-1)
 
         # import pdb;pdb.set_trace()
 
