@@ -485,11 +485,11 @@ def train(_):
 
 def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
-    file_name = "nus_KENN_sing_04.hdf5"
+    file_name = "nus_MPOL_sing_05.hdf5"
 
 
 
-    speaker_file = "nus_KENN_sing_04.hdf5"
+    speaker_file = "nus_MPOL_sing_05.hdf5"
 
     stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
 
@@ -575,7 +575,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         sess.run(init_op)
 
-        ckpt = tf.train.get_checkpoint_state('./log/')
+        ckpt = tf.train.get_checkpoint_state('./log_phase/')
 
         if ckpt and ckpt.model_checkpoint_path:
             print("Using the model in %s"%ckpt.model_checkpoint_path)
@@ -656,7 +656,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         out_embeddings = []
 
-        voc_stft_mag, voc_stft_phase = utils.file_to_stft(config.wav_dir_nus+'KENN/sing/04.wav', mode = 3)
+        voc_stft_mag, voc_stft_phase = utils.file_to_stft(config.wav_dir_nus+'MPOL/sing/05.wav', mode = 3)
 
         for in_batch_speaker_stft in in_batches_speaker_stft:
             s_embed = sess.run(singer_embedding, feed_dict={speaker_input_placeholder: in_batch_speaker_stft})
@@ -698,7 +698,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
             pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: in_batch_voc_stft,f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54)} )
 
-            f0_outputs_2 = sess.run(f0_probs, feed_dict={input_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed, 
+            f0_outputs_2 = sess.run(f0_probs, feed_dict={singer_embedding_placeholder: s_embed, 
                 f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54), pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41)} )
 
             # output_voc_stft = sess.run(voc_output_decoded, feed_dict={f0_input_placeholder: one_hotize(in_batch_f0_quant, max_index=177),
@@ -762,17 +762,19 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         # audio_out_1 = utils.griffin_lim(out_batches_voc_stft, audio_out.shape )
 
-        audio_out_griffin = audio_utilities.reconstruct_signal_griffin_lim(out_batches_voc_stft, 1024, 256, 100)
+        audio_out_griffin = audio_utilities.reconstruct_signal_griffin_lim(out_batches_voc_stft, 1024, 256, 50)
+
+        griffin_fft = utils.stft(audio_out_griffin)
+
+        griffin_mag = abs(griffin_fft)
+
+        griffin_phase = np.angle(griffin_fft)
+
+        import pdb;pdb.set_trace() 
 
         
 
-        sf.write('./test_ori_pha.wav',audio_out,config.fs)
 
-        sf.write('./test_griffin.wav',audio_out_griffin,config.fs)
-
-        sf.write('./test_out_phase.wav',audio_out_out_phase,config.fs)
-
-        import pdb;pdb.set_trace() 
         
 
         if show_plots:
@@ -780,10 +782,22 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
             plt.figure(1)
             ax1 = plt.subplot(211)
             plt.imshow(np.log(voc_stft.T), origin='lower', aspect='auto')
-            ax1.set_title("Ground Truth FFT", fontsize = 10)
+            ax1.set_title("Ground Truth FFT Mag", fontsize = 10)
             ax2 = plt.subplot(212)
             plt.imshow(np.log(out_batches_voc_stft.T), origin='lower', aspect='auto')
-            ax2.set_title("Synthesized FFT ", fontsize = 10)
+            ax2.set_title("Synthesized FFT Mag ", fontsize = 10)
+
+            plt.figure(7)
+            ax1 = plt.subplot(311)
+            plt.imshow(voc_stft_phase[:out_batches_voc_stft.shape[0],:].T, origin='lower', aspect='auto')
+            ax1.set_title("Ground Truth FFT Phase", fontsize = 10)
+            ax2 = plt.subplot(312)
+            plt.imshow(out_batches_voc_stft_phase.T, origin='lower', aspect='auto')
+            ax2.set_title("Synthesized FFT Phase ", fontsize = 10)
+            ax3 = plt.subplot(313)
+            plt.imshow(griffin_phase.T, origin='lower', aspect='auto')
+            ax3.set_title("Griffin FFT Phase ", fontsize = 10)
+
 
             plt.figure(2)
             ax1 = plt.subplot(211)
@@ -835,6 +849,14 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
             plt.legend()
 
             plt.show()
+
+        sf.write('./test_ori_pha.wav',audio_out,config.fs)
+
+        sf.write('./test_griffin.wav',audio_out_griffin*20,config.fs)
+
+        sf.write('./test_out_phase.wav',audio_out_out_phase,config.fs)
+
+        import pdb;pdb.set_trace() 
 
 
 
