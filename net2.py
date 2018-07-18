@@ -485,11 +485,11 @@ def train(_):
 
 def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
-    file_name = "nus_KENN_sing_04.hdf5"
+    file_name = "nus_MPOL_sing_05.hdf5"
 
 
 
-    speaker_file = "nus_JTAN_sing_15.hdf5"
+    speaker_file = "nus_MPOL_sing_05.hdf5"
 
     stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
 
@@ -578,7 +578,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         sess.run(init_op)
 
-        ckpt = tf.train.get_checkpoint_state('./log/')
+        ckpt = tf.train.get_checkpoint_state('./log_0.1N_feats/')
 
         if ckpt and ckpt.model_checkpoint_path:
             print("Using the model in %s"%ckpt.model_checkpoint_path)
