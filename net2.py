@@ -485,7 +485,7 @@ def train(_):
 
 def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
-    file_name = "nus_MPOL_sing_05.hdf5"
+    file_name = "nus_KENN_sing_04.hdf5"
 
 
 
@@ -708,7 +708,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
             pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: in_batch_voc_stft,f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54)} )
 
             f0_outputs_2 = sess.run(f0_probs, feed_dict={singer_embedding_placeholder: s_embed, 
-                f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54), pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41)} )
+                f0_input_placeholder_midi: one_hotize(in_batch_f0_midi+12, max_index=54), pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41)} )
 
             # output_voc_stft = sess.run(voc_output_decoded, feed_dict={f0_input_placeholder: one_hotize(in_batch_f0_quant, max_index=177),
             #     pho_input_placeholder: pho_outs, output_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed})
@@ -812,13 +812,13 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         # import pdb;pdb.set_trace()
 
 
-        utils.feats_to_audio(haha[:5000,:],'_test_with_original_f0.wav')
+        # utils.feats_to_audio(haha[:5000,:],'_test_with_original_f0.wav')
 
         utils.feats_to_audio(jaja[:5000,:],'_test.wav')
 
-        utils.feats_to_audio(hehe[:5000,:],'_test_with_original_f0_ap.wav')
+        # utils.feats_to_audio(hehe[:5000,:],'_test_with_original_f0_ap.wav')
 
-        utils.feats_to_audio(feats[:5000,:],'_test_original.wav')
+        # utils.feats_to_audio(feats[:5000,:],'_test_original.wav')
 
 
 
