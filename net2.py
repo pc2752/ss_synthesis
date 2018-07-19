@@ -140,6 +140,15 @@ def train(_):
 
         singer_acc = tf.metrics.accuracy(labels=singer_labels , predictions=singer_classes)
 
+
+        pho_acc_val = tf.metrics.accuracy(labels=labels, predictions=pho_classes)
+
+        f0_acc_val = tf.metrics.accuracy(labels=f0_target_placeholder, predictions=f0_classes)
+
+        f0_acc_midi_val = tf.metrics.accuracy(labels=f0_target_placeholder_midi, predictions=f0_classes_midi)
+
+        singer_acc_val = tf.metrics.accuracy(labels=singer_labels , predictions=singer_classes)
+
         # vuv_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels=, logits=vuv))
 
         # vuv_loss = tf.reduce_mean(tf.reduce_sum(binary_cross(target_placeholder[:,:,-1:],vuv)))
@@ -154,6 +163,8 @@ def train(_):
 
         pho_acc_summary = tf.summary.scalar('pho_accuracy', pho_acc[0])
 
+        pho_acc_summary_val = tf.summary.scalar('pho_accuracy_val', pho_acc_val[0])
+
         # ap_summary = tf.summary.scalar('ap_loss', ap_loss)
 
         f0_summary = tf.summary.scalar('f0_loss', f0_loss)
@@ -164,13 +175,19 @@ def train(_):
 
         f0_acc_summary = tf.summary.scalar('f0_accuracy', f0_acc[0])
 
+        f0_acc_summary_val = tf.summary.scalar('f0_accuracy_val', f0_acc_val[0])
+
         f0_summary_midi = tf.summary.scalar('f0_loss_midi', f0_loss_midi)
 
         f0_acc_summary_midi = tf.summary.scalar('f0_accuracy_midi', f0_acc_midi[0])
 
+        f0_acc_summary_midi_val = tf.summary.scalar('f0_accuracy_midi_val', f0_acc_midi_val[0])
+
         singer_summary = tf.summary.scalar('singer_loss', singer_loss)
 
         singer_acc_summary = tf.summary.scalar('singer_accuracy', singer_acc[0])
+
+        singer_acc_summary_val = tf.summary.scalar('singer_accuracy_val', singer_acc_val[0])
 
         # vuv_summary = tf.summary.scalar('vuv_loss', vuv_loss)
 
@@ -386,12 +403,12 @@ def train(_):
 
                 for inputs, feats_targets, targets_f0_1, targets_f0_2, pho_targs, singer_idss in val_generator:
 
-                    step_loss_f0_midi, step_acc_f0_midi = sess.run([f0_loss_midi, f0_acc_midi], feed_dict={input_placeholder: inputs,f0_target_placeholder_midi: targets_f0_2})
-                    step_loss_singer, step_acc_singer, s_embed = sess.run([singer_loss, singer_acc, singer_embedding], feed_dict={input_placeholder: inputs,singer_labels: singer_ids})
+                    step_loss_f0_midi, step_acc_f0_midi = sess.run([f0_loss_midi, f0_acc_midi_val], feed_dict={input_placeholder: inputs,f0_target_placeholder_midi: targets_f0_2})
+                    step_loss_singer, step_acc_singer, s_embed = sess.run([singer_loss, singer_acc_val, singer_embedding], feed_dict={input_placeholder: inputs,singer_labels: singer_ids})
                     
 
-                    step_loss_f0, step_acc_f0 = sess.run([f0_loss, f0_acc], feed_dict={input_placeholder: inputs,singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: one_hotize(targets_f0_2, max_index=54), pho_input_placeholder:one_hotize(pho_targs, max_index=41), f0_target_placeholder: targets_f0_1})
-                    step_loss_pho, step_acc_pho = sess.run([pho_loss, pho_acc], feed_dict={input_placeholder: inputs,f0_input_placeholder_midi: one_hotize(targets_f0_2, max_index=54), labels: pho_targs})
+                    step_loss_f0, step_acc_f0 = sess.run([f0_loss, f0_acc_val], feed_dict={input_placeholder: inputs,singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: one_hotize(targets_f0_2, max_index=54), pho_input_placeholder:one_hotize(pho_targs, max_index=41), f0_target_placeholder: targets_f0_1})
+                    step_loss_pho, step_acc_pho = sess.run([pho_loss, pho_acc_val], feed_dict={input_placeholder: inputs,f0_input_placeholder_midi: one_hotize(targets_f0_2, max_index=54), labels: pho_targs})
                     step_loss_total = sess.run(reconstruct_loss, feed_dict={f0_input_placeholder: one_hotize(targets_f0_1, max_index=177), pho_input_placeholder: one_hotize(pho_targs, max_index=41), output_placeholder: feats_targets,singer_embedding_placeholder: s_embed})
                     # step_loss_total_phase = sess.run(reconstruct_loss_phase, feed_dict={input_placeholder:inputs, f0_input_placeholder: one_hotize(targets_f0_1, max_index=177), pho_input_placeholder: one_hotize(pho_targs, max_index=41),singer_embedding_placeholder: s_embed, prob:0.5, output_phase_placeholder: phase_targets})
 
@@ -578,7 +595,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         sess.run(init_op)
 
-        ckpt = tf.train.get_checkpoint_state('./log_0.1N_feats/')
+        ckpt = tf.train.get_checkpoint_state('./log_feat_long_time/')
 
         if ckpt and ckpt.model_checkpoint_path:
             print("Using the model in %s"%ckpt.model_checkpoint_path)
@@ -708,7 +725,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
             pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: in_batch_voc_stft,f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54)} )
 
             f0_outputs_2 = sess.run(f0_probs, feed_dict={singer_embedding_placeholder: s_embed, 
-                f0_input_placeholder_midi: one_hotize(in_batch_f0_midi+12, max_index=54), pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41)} )
+                f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54), pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41)} )
 
             # output_voc_stft = sess.run(voc_output_decoded, feed_dict={f0_input_placeholder: one_hotize(in_batch_f0_quant, max_index=177),
             #     pho_input_placeholder: pho_outs, output_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed})
@@ -804,10 +821,13 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         plt.imshow(out_batches_feats[:,60:].T,aspect='auto',origin='lower')
 
         plt.figure(3)
-        plt.plot(feats[:,-2:-1])
-        plt.plot(f0_output)
+        plt.plot((feats[:,-2:-1]-69-(12*np.log2(440))+(12*np.log2(10)))*100)
+        plt.plot((f0_output-69-(12*np.log2(440))+(12*np.log2(10)))*100)
+        # plt.plot(f0_output)
 
         plt.show()
+
+        import pdb;pdb.set_trace()
 
         # import pdb;pdb.set_trace()
 
