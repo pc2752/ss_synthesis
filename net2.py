@@ -640,9 +640,17 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         f0_midi_a = np.rint(np.clip(f0_midi_a - 30, 0.0,54.0))
 
-        plt.plot(f0_midi_a)
+        f0_midi_a[f0_midi_a==0] = np.nan
 
-        plt.plot(f0_midi)
+        f0_midi[f0_midi==0] = np.nan
+
+
+
+        plt.plot(f0_midi_a, label = "Midi note annotation from score")
+
+        plt.plot(f0_midi, label = "F0 (in midi note) extracted from audio using SAC")
+
+        plt.legend()
 
         plt.show()
 
