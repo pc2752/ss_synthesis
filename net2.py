@@ -819,8 +819,8 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         plt.imshow(out_batches_feats[:,60:].T,aspect='auto',origin='lower')
 
         plt.figure(3)
-        plt.plot((feats[:,-2:-1]-69-(12*np.log2(440))+(12*np.log2(10)))*100)
-        plt.plot((f0_output-69-(12*np.log2(440))+(12*np.log2(10)))*100)
+        plt.plot((feats[:,-2:-1]-69+(12*np.log2(440))-(12*np.log2(10)))*100)
+        plt.plot((f0_output-69+(12*np.log2(440))-(12*np.log2(10)))*100)
         # plt.plot(f0_output)
 
         plt.show()
