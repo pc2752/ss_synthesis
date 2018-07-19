@@ -149,15 +149,7 @@ def train(_):
 
         singer_acc_val = tf.metrics.accuracy(labels=singer_labels , predictions=singer_classes)
 
-        # vuv_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels=, logits=vuv))
 
-        # vuv_loss = tf.reduce_mean(tf.reduce_sum(binary_cross(target_placeholder[:,:,-1:],vuv)))
-
-        # loss = pho_loss + f0_loss
-
-        # initial_summary = tf.summary.scalar('initial_loss', initial_loss)
-
-        # harm_summary = tf.summary.scalar('harm_loss', harm_loss)
 
         pho_summary = tf.summary.scalar('pho_loss', pho_loss)
 
@@ -188,6 +180,10 @@ def train(_):
         singer_acc_summary = tf.summary.scalar('singer_accuracy', singer_acc[0])
 
         singer_acc_summary_val = tf.summary.scalar('singer_accuracy_val', singer_acc_val[0])
+
+        summary = tf.summary.merge([f0_summary, f0_summary_midi, pho_summary, singer_summary, reconstruct_summary, pho_acc_summary, f0_acc_summary, f0_acc_summary_midi, singer_acc_summary ])
+
+        summary_val = tf.summary.merge([f0_summary, f0_summary_midi, pho_summary, singer_summary, reconstruct_summary, pho_acc_summary_val, f0_acc_summary_val, f0_acc_summary_midi_val, singer_acc_summary_val ])
 
         # vuv_summary = tf.summary.scalar('vuv_loss', vuv_loss)
 
@@ -243,7 +239,9 @@ def train(_):
 
         # train_vuv = optimizer.minimize(vuv_loss, global_step= global_step)
 
-        summary = tf.summary.merge_all()
+        # import pdb;pdb.set_trace()
+
+        
 
         init_op = tf.group(tf.global_variables_initializer(), tf.local_variables_initializer())
         saver = tf.train.Saver(max_to_keep= config.max_models_to_keep)
@@ -455,7 +453,7 @@ def train(_):
                 # epoch_total_loss_val = epoch_total_loss_val/(config.batches_per_epoch_val *config.batch_size)
                 # epoch_total_loss_phase_val = epoch_total_loss_phase_val/(config.batches_per_epoch_val *config.batch_size)
 
-                summary_str = sess.run(summary, feed_dict={input_placeholder: inputs,f0_target_placeholder: targets_f0_1,f0_input_placeholder: one_hotize(targets_f0_1, max_index=177),  labels:pho_targs, singer_labels: singer_ids, singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: one_hotize(targets_f0_2, max_index=54), f0_target_placeholder_midi: targets_f0_2, pho_input_placeholder:one_hotize(pho_targs, max_index=41), f0_input_placeholder: one_hotize(targets_f0_1, max_index=177),output_placeholder: feats_targets, prob:0.5})
+                summary_str = sess.run(summary_val, feed_dict={input_placeholder: inputs,f0_target_placeholder: targets_f0_1,f0_input_placeholder: one_hotize(targets_f0_1, max_index=177),  labels:pho_targs, singer_labels: singer_ids, singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: one_hotize(targets_f0_2, max_index=54), f0_target_placeholder_midi: targets_f0_2, pho_input_placeholder:one_hotize(pho_targs, max_index=41), f0_input_placeholder: one_hotize(targets_f0_1, max_index=177),output_placeholder: feats_targets, prob:0.5})
                 val_summary_writer.add_summary(summary_str, epoch)
                 # summary_writer.add_summary(summary_str_val, epoch)
                 val_summary_writer.flush()
