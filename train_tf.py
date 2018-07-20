@@ -198,6 +198,8 @@ def train(_):
 
                 for voc, feat in data_generator:
 
+                    voc = np.clip(voc + np.random.rand(config.batch_size, config.max_phr_len,config.input_features)*np.clip(np.random.rand(1),0.0,0.2), 0.0, 1.0)
+
                     _, step_loss_harm, step_loss_ap,  step_loss_f0, step_loss_vuv, step_total_loss = sess.run([train_function, 
                         harm_loss, ap_loss, f0_loss, vuv_loss, loss], feed_dict={input_placeholder: voc,target_placeholder: feat})
                     # _, step_loss_f0 = sess.run([train_f0, f0_loss], feed_dict={input_placeholder: voc,target_placeholder: feat})
@@ -547,7 +549,7 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
             val_outer = np.ascontiguousarray(val_outer*(max_feat-min_feat)+min_feat)
             targs = np.ascontiguousarray(targs*(max_feat-min_feat)+min_feat)
 
-            import pdb;pdb.set_trace()
+            # import pdb;pdb.set_trace()
 
             # val_outer = np.ascontiguousarray(utils.denormalize(val_outer,'feats', mode=config.norm_mode_out))
             try:

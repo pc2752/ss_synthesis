@@ -320,7 +320,7 @@ def train(_):
 
                 for inputs, feats_targets, targets_f0_1, targets_f0_2, pho_targs, singer_ids in data_generator:
 
-                    input_noisy = np.clip(inputs + np.random.rand(config.max_phr_len,config.input_features)*np.clip(np.random.rand(1),0.0,config.noise_threshold), 0.0, 1.0)
+                    input_noisy = np.clip(inputs + np.random.rand(config.batch_size, config.max_phr_len,config.input_features)*np.clip(np.random.rand(1),0.0,config.noise_threshold), 0.0, 1.0)
 
                     _, step_loss_f0_midi, step_acc_f0_midi = sess.run([f0_train_function_midi, f0_loss_midi, f0_acc_midi], feed_dict={input_placeholder: input_noisy,f0_target_placeholder_midi: targets_f0_2})
                     _, step_loss_singer, step_acc_singer, s_embed = sess.run([singer_train_function, singer_loss, singer_acc, singer_embedding], feed_dict={input_placeholder: inputs,singer_labels: singer_ids, prob:0.5})
