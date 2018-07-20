@@ -156,7 +156,7 @@ def train(_):
 
         print("Start from: %d" % start_epoch)
         f0_accs = []
-        for epoch in xrange(start_epoch, config.num_epochs):
+        for epoch in xrange(start_epoch, config.num_epochs_m1):
             val_f0_accs = []
 
 

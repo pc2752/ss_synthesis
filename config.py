@@ -78,6 +78,7 @@ pred_mode = 'all'
 
 # Hyperparameters
 num_epochs = 250
+num_epochs_m1 = 2000
 batches_per_epoch_train = 1000
 batches_per_epoch_val = 300
 batches_per_epoch_val_m1 = 300
