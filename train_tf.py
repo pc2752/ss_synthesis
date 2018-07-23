@@ -198,7 +198,7 @@ def train(_):
 
                 for voc, feat in data_generator:
 
-                    voc = np.clip(voc + np.random.rand(config.batch_size, config.max_phr_len,config.input_features)*np.clip(np.random.rand(1),0.0,0.2), 0.0, 1.0)
+                    voc = np.clip(voc + np.random.rand(config.batch_size, config.max_phr_len,config.input_features)*np.clip(np.random.rand(1),0.0,0.05), 0.0, 1.0)
 
                     _, step_loss_harm, step_loss_ap,  step_loss_f0, step_loss_vuv, step_total_loss = sess.run([train_function, 
                         harm_loss, ap_loss, f0_loss, vuv_loss, loss], feed_dict={input_placeholder: voc,target_placeholder: feat})
@@ -346,7 +346,7 @@ def train(_):
 
 
             if (epoch + 1) % config.save_every == 0 or (epoch + 1) == config.num_epochs:
-                utils.list_to_file(val_f0_accs,'./ikala_eval/accuracies_'+str(epoch+1)+'.txt')
+                # utils.list_to_file(val_f0_accs,'./ikala_eval/accuracies_'+str(epoch+1)+'.txt')
                 checkpoint_file = os.path.join(config.log_dir_m1, 'model.ckpt')
                 saver.save(sess, checkpoint_file, global_step=epoch)
 
@@ -405,7 +405,7 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
 
         sess.run(init_op)
 
-        ckpt = tf.train.get_checkpoint_state(config.log_dir_m1)
+        ckpt = tf.train.get_checkpoint_state('./log_m1/')
 
         if ckpt and ckpt.model_checkpoint_path:
             print("Using the model in %s"%ckpt.model_checkpoint_path)

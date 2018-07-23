@@ -500,11 +500,11 @@ def train(_):
 
 def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
-    file_name = "nus_JLEE_sing_08.hdf5"
+    file_name = "nus_MPOL_sing_05.hdf5"
 
 
 
-    speaker_file = "nus_JLEE_sing_08.hdf5"
+    speaker_file = "nus_MPOL_sing_05.hdf5"
 
     stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
 
@@ -593,7 +593,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         sess.run(init_op)
 
-        ckpt = tf.train.get_checkpoint_state('./log_feat_long_time/')
+        ckpt = tf.train.get_checkpoint_state('./log_feat_long_time_dropout/')
 
         if ckpt and ckpt.model_checkpoint_path:
             print("Using the model in %s"%ckpt.model_checkpoint_path)
@@ -607,12 +607,12 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         speaker_file = h5py.File(config.voice_dir+speaker_file, "r")
 
-        # voc_stft = np.array(voc_file['voc_stft'])
+        voc_stft = np.array(voc_file['voc_stft'])
 
-        voc_stft = utils.file_to_stft('./billy.wav', mode =1)
+        # voc_stft = utils.file_to_stft('./billy.wav', mode =1)
 
-        # speaker_stft = np.array(speaker_file['voc_stft'])
-        speaker_stft = utils.file_to_stft('./bellaciao.wav', mode =1)
+        speaker_stft = np.array(speaker_file['voc_stft'])
+        # speaker_stft = utils.file_to_stft('./bellaciao.wav', mode =1)
 
         # speaker_stft = np.repeat(speaker_stft, int(np.ceil(voc_stft.shape[0]/speaker_stft.shape[0])),0)
 
@@ -623,9 +623,9 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         # speaker_file.close()
         # import pdb;pdb.set_trace()
 
-        # feats = np.array(voc_file['feats'])
+        feats = np.array(voc_file['feats'])
 
-        feats = utils.input_to_feats('./billy.wav', mode = 1)
+        # feats = utils.input_to_feats('./billy.wav', mode = 1)
 
         f0 = feats[:,-2]
 
@@ -647,7 +647,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         f0_midi = f0_midi * (1-feats[:,-1]) 
 
-        # pho_target = np.array(voc_file["phonemes"])
+        pho_target = np.array(voc_file["phonemes"])
 
 
 
@@ -661,7 +661,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         in_batches_f0_quant, nchunks_in = utils.generate_overlapadd(f0_quant.reshape(-1,1))
 
-        # in_batches_pho, nchunks_in = utils.generate_overlapadd(pho_target.reshape(-1,1))
+        in_batches_pho, nchunks_in = utils.generate_overlapadd(pho_target.reshape(-1,1))
 
         in_batches_feat, kaka = utils.generate_overlapadd(feats)
 
@@ -692,8 +692,8 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
 
-        # for in_batch_voc_stft, in_batch_f0_midi, in_batch_f0_quant, in_batch_pho_target in zip(in_batches_voc_stft, in_batches_f0_midi, in_batches_f0_quant, in_batches_pho):
-        for in_batch_voc_stft, in_batch_f0_midi, in_batch_f0_quant in zip(in_batches_voc_stft, in_batches_f0_midi, in_batches_f0_quant):
+        for in_batch_voc_stft, in_batch_f0_midi, in_batch_f0_quant, in_batch_pho_target in zip(in_batches_voc_stft, in_batches_f0_midi, in_batches_f0_quant, in_batches_pho):
+        # for in_batch_voc_stft, in_batch_f0_midi, in_batch_f0_quant in zip(in_batches_voc_stft, in_batches_f0_midi, in_batches_f0_quant):
 
             # in_batch_voc_stft = in_batch_voc_stft/(in_batch_voc_stft.max(axis = 1).max(axis = 0))
             # in_batch_speaker_stft = in_batch_speaker_stft/(in_batch_speaker_stft.max(axis = 1).max(axis = 0))
@@ -715,7 +715,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
             in_batch_f0_midi = in_batch_f0_midi.reshape([config.batch_size, config.max_phr_len])
 
-            # in_batch_pho_target = in_batch_pho_target.reshape([config.batch_size, config.max_phr_len])
+            in_batch_pho_target = in_batch_pho_target.reshape([config.batch_size, config.max_phr_len])
 
 
 
@@ -723,14 +723,14 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
             pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: in_batch_voc_stft,f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54)} )
 
             f0_outputs_2 = sess.run(f0_probs, feed_dict={singer_embedding_placeholder: s_embed, 
-                f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54), pho_input_placeholder: pho_outs} )
+                f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54), pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41)} )
 
             # output_voc_stft = sess.run(voc_output_decoded, feed_dict={f0_input_placeholder: one_hotize(in_batch_f0_quant, max_index=177),
             #     pho_input_placeholder: pho_outs, output_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed})
 
 
             output_feats = sess.run(voc_output_decoded, feed_dict={f0_input_placeholder: f0_outputs_2,
-                pho_input_placeholder: pho_outs,singer_embedding_placeholder: s_embed})
+                pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41),singer_embedding_placeholder: s_embed})
 
             # output_voc_stft_phase = sess.run(voc_output_phase_decoded, feed_dict={input_placeholder: output_voc_stft, f0_input_placeholder: f0_outputs_2,
             #     pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41), output_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed})

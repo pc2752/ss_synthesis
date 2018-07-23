@@ -27,21 +27,15 @@ def data_gen(mode = 'Train'):
 
 
 
-    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and x.startswith('ikala')]
+    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir')]
 
     back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('med')]
 
-    mix_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('ikala') ]
+    mix_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('ikala')]
 
     train_list = mix_list[:int(len(mix_list)*config.split)]
 
     val_list = mix_list[int(len(mix_list)*config.split):]
-
-    # import pdb;pdb.set_trace()
-
-    train_list = mix_list
-
-    # val_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('ikala') ]
 
     stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
 
@@ -59,58 +53,142 @@ def data_gen(mode = 'Train'):
     max_files_to_process = int(config.batch_size/config.samples_per_file)
 
     if mode == "Train":
-        batches = config.batches_per_epoch_train
-        file_list = train_list
-    else:
-        batches = config.batches_per_epoch_val_m1 
-        file_list = val_list
 
-    for k in range(batches):
+        for k in range(config.batches_per_epoch_train):
 
-        inputs = []
-        targets = []
+            inputs = []
+            targets = []
 
-        # start_time = time.time()
+            # start_time = time.time()
 
-        for i in range(max_files_to_process):
+            for i in range(max_files_to_process):
+                augment = np.random.rand(1)<config.aug_prob
 
-            file_index = np.random.randint(0,len(file_list))
+                # augment = True
 
-            tr_file = train_list[file_index]
+                if augment:
 
-            voc_file = h5py.File(config.voice_dir+tr_file, "r")
+                    # print("Augmenting")
 
-            # print("Vocal file: %s" % voc_file)
+                    voc_index = np.random.randint(0,len(voc_list))
+                    voc_to_open = voc_list[voc_index]
+
+                    voc_file = h5py.File(config.voice_dir+voc_to_open, "r")
+
+                    # print("Vocal file: %s" % voc_file)
+
+                    voc_stft = voc_file['voc_stft']
+
+                    feats = voc_file['feats']
+
+                    back_index = np.random.randint(0,len(back_list))
+
+                    back_to_open = back_list[back_index]
+
+                    back_file = h5py.File(config.backing_dir+back_to_open, "r")
+
+                    # print("Backing file: %s" % back_file)
+                    # baba  = list(back_file.keys())
+
+                    # import pdb;pdb.set_trace()
+
+                    back_stft = back_file['back_stft']
 
 
-            feats = voc_file['feats'] 
-
-            mix_file = h5py.File(config.backing_dir+tr_file, "r")
-
-            mix_stft = mix_file["mix_stft"]
-
-            for j in range(config.samples_per_file):
-                voc_idx = np.random.randint(0,len(mix_stft)-config.max_phr_len)
-
-                inputs.append(mix_stft[voc_idx:voc_idx+config.max_phr_len,:])
-
-                targets.append(feats[voc_idx:voc_idx+config.max_phr_len,:])
-
-        targets = np.array(targets)
-        inputs = np.array(inputs)
-
-        targets = (targets-min_feat)/(max_feat-min_feat)
-        inputs = inputs/max_mix
-
-        # inputs = np.clip(inputs,0.0,1.0)
+                    for j in range(config.samples_per_file):
+                            voc_idx = np.random.randint(0,len(voc_stft)-config.max_phr_len)
+                            bac_idx = np.random.randint(0,len(back_stft)-config.max_phr_len)
+                            mix_stft = voc_stft[voc_idx:voc_idx+config.max_phr_len,:] + back_stft[bac_idx:bac_idx+config.max_phr_len,:]*np.clip(np.random.rand(1),0.0,0.9)
+                            targets.append(feats[voc_idx:voc_idx+config.max_phr_len,:])
+                            inputs.append(mix_stft)
 
         
+                else:
+                    # print("not augmenting")
 
-        # assert inputs.max() <= 1.0
+                    file_index = np.random.randint(0,len(train_list))
 
-        # assert targets.max() <= 1.0
+                    tr_file = train_list[file_index]
 
-        yield inputs, targets
+                    voc_file = h5py.File(config.voice_dir+tr_file, "r")
+
+                    # print("Vocal file: %s" % voc_file)
+
+
+                    feats = voc_file['feats'] 
+
+                    mix_file = h5py.File(config.backing_dir+tr_file, "r")
+
+                    mix_stft = mix_file["mix_stft"]
+
+                    for j in range(config.samples_per_file):
+                        voc_idx = np.random.randint(0,len(mix_stft)-config.max_phr_len)
+
+                        inputs.append(mix_stft[voc_idx:voc_idx+config.max_phr_len,:])
+
+                        targets.append(feats[voc_idx:voc_idx+config.max_phr_len,:])
+
+            targets = np.array(targets)
+            inputs = np.array(inputs)
+
+            targets = (targets-min_feat)/(max_feat-min_feat)
+            inputs = inputs/max_mix
+
+            # inputs = np.clip(inputs,0.0,1.0)
+
+            
+
+            # assert inputs.max() <= 1.0
+
+            # assert targets.max() <= 1.0
+
+            yield inputs, targets
+
+    else:
+        # print('val')
+        for k in range(config.batches_per_epoch_val):
+
+            inputs = []
+            targets = []
+
+            # start_time = time.time()
+
+            for i in range(max_files_to_process):
+
+                    file_index = np.random.randint(0,len(val_list))
+
+                    tr_file = val_list[file_index]
+
+                    voc_file = h5py.File(config.voice_dir+tr_file, "r")
+
+
+                    feats = voc_file['feats'] 
+
+                    mix_file = h5py.File(config.backing_dir+tr_file, "r")
+
+                    mix_stft = mix_file["mix_stft"]
+
+                    for j in range(config.samples_per_file):
+                        voc_idx = np.random.randint(0,len(mix_stft)-config.max_phr_len)
+
+                        inputs.append(mix_stft[voc_idx:voc_idx+config.max_phr_len,:])
+
+                        targets.append(feats[voc_idx:voc_idx+config.max_phr_len,:])
+
+            targets = np.array(targets)
+            inputs = np.array(inputs)
+
+            # inputs = np.clip(inputs,0.0,1.0)
+
+            # targets = utils.normalize(targets, 'feats', mode=config.norm_mode_out)
+            targets = (targets-min_feat)/(max_feat-min_feat)
+            inputs = inputs/max_mix
+
+            # assert inputs.max() <= 1.0
+
+            # assert targets.max() <= 1.0
+
+            yield inputs, targets
 
 
 
