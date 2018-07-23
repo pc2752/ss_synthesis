@@ -956,13 +956,6 @@ if __name__ == '__main__':
     elif sys.argv[1] == '-synth' or sys.argv[1] == '--synth' or sys.argv[1] == '--s' or sys.argv[1] == '-s':
         synth_file()
 
-    elif sys.argv[1] == '-help' or sys.argv[1] == '--help' or sys.argv[1] == '--h' or sys.argv[1] == '-h':
-        print("%s --train to train the model"%sys.argv[0])
-        print("%s --synth <filename> to synthesize file"%sys.argv[0])
-        print("%s --synth <filename> -- plot to synthesize file and show plots"%sys.argv[0])
-        print("%s --synth <filename> -- plot --ns to just show plots"%sys.argv[0])
-    else:
-        print("Unable to decipher inputs please use %s --help for help on how to use this function"%sys.argv[0])
-  
+
 
 
