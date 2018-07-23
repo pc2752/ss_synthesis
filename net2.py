@@ -37,7 +37,7 @@ def train(_):
     min_feat = np.array(stat_file["feats_minimus"])
     with tf.Graph().as_default():
         
-        input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,65),name='input_placeholder')
+        input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,64+256),name='input_placeholder')
         tf.summary.histogram('inputs', input_placeholder)
 
         output_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,64),name='output_placeholder')
@@ -322,12 +322,12 @@ def train(_):
 
                     # import pdb;pdb.set_trace()
 
-                    featies = np.concatenate((feats_targets, (targets_f0_1/256).reshape(config.batch_size, config.max_phr_len, 1)),axis=-1)
+                    featies = np.concatenate((feats_targets, one_hotize(targets_f0_1, max_index=256)),axis=-1)
 
-                    input_noisy = np.clip(featies + np.random.rand(config.batch_size, config.max_phr_len,65)*np.clip(np.random.rand(1),0.0,config.noise_threshold), 0.0, 1.0)
+                    input_noisy = np.clip(featies + np.random.rand(config.batch_size, config.max_phr_len,64+256)*np.clip(np.random.rand(1),0.0,config.noise_threshold), 0.0, 1.0)
 
                     _, step_loss_f0_midi, step_acc_f0_midi = sess.run([f0_train_function_midi, f0_loss_midi, f0_acc_midi], feed_dict={input_placeholder: input_noisy,f0_target_placeholder_midi: targets_f0_2})
-                    _, step_loss_singer, step_acc_singer, s_embed = sess.run([singer_train_function, singer_loss, singer_acc, singer_embedding], feed_dict={input_placeholder: featies,singer_labels: singer_ids, prob:0.5})
+                    _, step_loss_singer, step_acc_singer, s_embed = sess.run([singer_train_function, singer_loss, singer_acc, singer_embedding], feed_dict={input_placeholder: featies,singer_labels: singer_ids})
                     
 
 
@@ -335,20 +335,20 @@ def train(_):
                     teacher_train = np.random.rand(1)<0.5
 
                     if teacher_train:
-                        _, step_loss_f0, step_acc_f0 = sess.run([f0_train_function, f0_loss, f0_acc], feed_dict={input_placeholder: input_noisy,singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: one_hotize(targets_f0_2, max_index=54), pho_input_placeholder:one_hotize(pho_targs, max_index=41), f0_target_placeholder: targets_f0_1, prob:0.5})
-                        _, step_loss_pho, step_acc_pho = sess.run([pho_train_function, pho_loss, pho_acc], feed_dict={input_placeholder: input_noisy,f0_input_placeholder_midi: one_hotize(targets_f0_2, max_index=54), labels: pho_targs, prob:0.5})
-                        _, step_loss_total = sess.run([re_train_function, reconstruct_loss], feed_dict={f0_input_placeholder: one_hotize(targets_f0_1, max_index=256), pho_input_placeholder: one_hotize(pho_targs, max_index=41), output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.5})
+                        _, step_loss_f0, step_acc_f0 = sess.run([f0_train_function, f0_loss, f0_acc], feed_dict={input_placeholder: input_noisy,singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: one_hotize(targets_f0_2, max_index=54), pho_input_placeholder:one_hotize(pho_targs, max_index=41), f0_target_placeholder: targets_f0_1, prob:1.0})
+                        _, step_loss_pho, step_acc_pho = sess.run([pho_train_function, pho_loss, pho_acc], feed_dict={input_placeholder: input_noisy,f0_input_placeholder_midi: one_hotize(targets_f0_2, max_index=54), labels: pho_targs, prob:1.0})
+                        _, step_loss_total = sess.run([re_train_function, reconstruct_loss], feed_dict={f0_input_placeholder: one_hotize(targets_f0_1, max_index=256), pho_input_placeholder: one_hotize(pho_targs, max_index=41), output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:1.0})
                         # _, step_loss_total_phase = sess.run([re_phase_train_function, reconstruct_loss_phase], feed_dict={input_placeholder:input_noisy, f0_input_placeholder: one_hotize(targets_f0_1, max_index=256), pho_input_placeholder: one_hotize(pho_targs, max_index=41),singer_embedding_placeholder: s_embed, prob:0.5, output_phase_placeholder: phase_targets})
                     
                     else:
 
                         f0_outputs_1 = sess.run(f0_probs_midi, feed_dict = {input_placeholder: input_noisy,singer_embedding_placeholder: s_embed} )
-                        _, step_loss_pho, step_acc_pho = sess.run([pho_train_function, pho_loss, pho_acc], feed_dict={input_placeholder: input_noisy,f0_input_placeholder_midi: f0_outputs_1, labels: pho_targs, prob:0.5})
+                        _, step_loss_pho, step_acc_pho = sess.run([pho_train_function, pho_loss, pho_acc], feed_dict={input_placeholder: input_noisy,f0_input_placeholder_midi: f0_outputs_1, labels: pho_targs, prob:1.0})
                         pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: input_noisy,f0_input_placeholder_midi: one_hotize(targets_f0_2, max_index=54)} )
-                        _, step_loss_f0, step_acc_f0 = sess.run([f0_train_function, f0_loss, f0_acc], feed_dict={input_placeholder: input_noisy,singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_outputs_1, f0_target_placeholder: targets_f0_1, pho_input_placeholder: pho_outs, prob:0.5})
+                        _, step_loss_f0, step_acc_f0 = sess.run([f0_train_function, f0_loss, f0_acc], feed_dict={input_placeholder: input_noisy,singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_outputs_1, f0_target_placeholder: targets_f0_1, pho_input_placeholder: pho_outs, prob:1.0})
                         f0_outputs_2 = sess.run(f0_probs, feed_dict={input_placeholder: input_noisy,singer_embedding_placeholder: s_embed, 
                             f0_input_placeholder_midi: f0_outputs_1, pho_input_placeholder: pho_outs} )
-                        _, step_loss_total = sess.run([re_train_function, reconstruct_loss], feed_dict={f0_input_placeholder: f0_outputs_2, pho_input_placeholder: pho_outs, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.5})
+                        _, step_loss_total = sess.run([re_train_function, reconstruct_loss], feed_dict={f0_input_placeholder: f0_outputs_2, pho_input_placeholder: pho_outs, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:1.0})
                         # spec_output = sess.run(voc_output_decoded,feed_dict={f0_input_placeholder: f0_outputs_2, pho_input_placeholder: pho_outs, output_placeholder: inputs,singer_embedding_placeholder: s_embed, prob:0.5} )
                         # _, step_loss_total_phase = sess.run([re_phase_train_function, reconstruct_loss_phase], feed_dict={input_placeholder:spec_output, f0_input_placeholder: f0_outputs_2, pho_input_placeholder: pho_outs,singer_embedding_placeholder: s_embed, prob:0.5, output_phase_placeholder: phase_targets})
 
@@ -405,7 +405,7 @@ def train(_):
 
                 for inputs, feats_targets, targets_f0_1, targets_f0_2, pho_targs, singer_idss in val_generator:
 
-                    featies = np.concatenate((feats_targets, (targets_f0_1/256).reshape(config.batch_size, config.max_phr_len, 1)),axis=-1)
+                    featies = np.concatenate((feats_targets, one_hotize(targets_f0_1, max_index=256)),axis=-1)
 
                     step_loss_f0_midi, step_acc_f0_midi = sess.run([f0_loss_midi, f0_acc_midi_val], feed_dict={input_placeholder: featies,f0_target_placeholder_midi: targets_f0_2})
                     step_loss_singer, step_acc_singer, s_embed = sess.run([singer_loss, singer_acc_val, singer_embedding], feed_dict={input_placeholder: featies,singer_labels: singer_ids})
@@ -620,9 +620,9 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         speaker_stft = np.array(speaker_file['voc_stft'])
         # speaker_stft = utils.file_to_stft('./bellaciao.wav', mode =1)
 
-        # speaker_stft = np.repeat(speaker_stft, int(np.ceil(voc_stft.shape[0]/speaker_stft.shape[0])),0)
+        speaker_stft = np.repeat(speaker_stft, int(np.ceil(voc_stft.shape[0]/speaker_stft.shape[0])),0)
 
-        # speaker_stft = speaker_stft[:voc_stft.shape[0]]
+        speaker_stft = speaker_stft[:voc_stft.shape[0]]
 
         # voc_file.close()
 
@@ -688,26 +688,26 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         voc_stft_mag, voc_stft_phase = utils.file_to_stft(config.wav_dir_nus+'KENN/sing/04.wav', mode = 3)
 
-        for in_batch_speaker_stft in in_batches_speaker_stft:
-            s_embed = sess.run(singer_embedding, feed_dict={speaker_input_placeholder: in_batch_speaker_stft})
-            out_embeddings.append(s_embed)
-        out_embeddings = np.array(out_embeddings)
-        s_embed = np.tile(np.mean(np.mean(out_embeddings, axis = 0), axis = 0), (config.batch_size,1))
+        # for in_batch_speaker_stft in in_batches_speaker_stft:
+        #     s_embed = sess.run(singer_embedding, feed_dict={speaker_input_placeholder: in_batch_speaker_stft})
+        #     out_embeddings.append(s_embed)
+        # out_embeddings = np.array(out_embeddings)
+        # s_embed = np.tile(np.mean(np.mean(out_embeddings, axis = 0), axis = 0), (config.batch_size,1))
 
         # import pdb;pdb.set_trace()
 
 
 
-        for in_batch_voc_stft, in_batch_f0_midi, in_batch_f0_quant, in_batch_pho_target in zip(in_batches_voc_stft, in_batches_f0_midi, in_batches_f0_quant, in_batches_pho):
+        for in_batch_voc_stft, in_batch_f0_midi, in_batch_f0_quant, in_batch_pho_target, in_batch_speaker_stft  in zip(in_batches_voc_stft, in_batches_f0_midi, in_batches_f0_quant, in_batches_pho, in_batches_speaker_stft):
         # for in_batch_voc_stft, in_batch_f0_midi, in_batch_f0_quant in zip(in_batches_voc_stft, in_batches_f0_midi, in_batches_f0_quant):
 
             # in_batch_voc_stft = in_batch_voc_stft/(in_batch_voc_stft.max(axis = 1).max(axis = 0))
             # in_batch_speaker_stft = in_batch_speaker_stft/(in_batch_speaker_stft.max(axis = 1).max(axis = 0))
             in_batch_voc_stft = in_batch_voc_stft/max_voc
-            # in_batch_speaker_stft = in_batch_speaker_stft/max_voc
+            in_batch_speaker_stft = in_batch_speaker_stft/max_voc
 
 
-            # s_embed = sess.run(singer_embedding, feed_dict={speaker_input_placeholder: in_batch_speaker_stft})
+            s_embed = sess.run(singer_embedding, feed_dict={speaker_input_placeholder: in_batch_speaker_stft})
 
 
 
