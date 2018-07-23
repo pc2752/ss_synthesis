@@ -12,7 +12,7 @@ wav_dir_timit = '../datasets/TIMIT/TIMIT/'
 
 voice_dir = './voice/'
 backing_dir = './backing/'
-log_dir = './log_feat_long_time_dropout/'
+log_dir = './log_feat_to_feat/'
 log_dir_m1 = './log_m1_old/'
 # log_dir = './log_mfsc_6_best_so_far/'
 data_log = './log/data_log.log'
@@ -72,8 +72,9 @@ singers = ['ADIZ', 'JLEE', 'JTAN', 'KENN', 'MCUR', 'MPOL', 'MPUR', 'NJAT', 'PMAR
 split = 0.9
 
 augment = True
-aug_prob = 1.0
-noise_threshold = 0.1
+aug_prob = 0.5
+
+noise_threshold = 0.05
 pred_mode = 'all'
 
 # Hyperparameters
