@@ -407,7 +407,7 @@ def f0_network_2(encoded, f0, phones, prob):
 
     output_1 = tf.nn.dropout(tf.layers.dense(output_1, 256), prob)
 
-    f0_1 = tf.layers.dense(output_1, 177)
+    f0_1 = tf.layers.dense(output_1, 256)
 
     return f0_1
 

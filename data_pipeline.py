@@ -127,7 +127,7 @@ def data_gen(mode = 'Train'):
 
 
 
-                f0_quant = np.rint(f0_nor*176) + 1
+                f0_quant = np.rint(f0_nor*255) + 1
 
                 f0_quant = f0_quant * (1-feats[:,-1]) 
 
