@@ -500,11 +500,11 @@ def train(_):
 
 def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
-    file_name = "nus_MPOL_sing_05.hdf5"
+    file_name = "nus_ADIZ_sing_01.hdf5"
 
 
 
-    speaker_file = "nus_MPOL_sing_05.hdf5"
+    speaker_file = "nus_NJAT_sing_15.hdf5"
 
     stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
 
@@ -682,26 +682,26 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         voc_stft_mag, voc_stft_phase = utils.file_to_stft(config.wav_dir_nus+'KENN/sing/04.wav', mode = 3)
 
-        for in_batch_speaker_stft in in_batches_speaker_stft:
-            s_embed = sess.run(singer_embedding, feed_dict={speaker_input_placeholder: in_batch_speaker_stft})
-            out_embeddings.append(s_embed)
-        out_embeddings = np.array(out_embeddings)
-        s_embed = np.tile(np.mean(np.mean(out_embeddings, axis = 0), axis = 0), (config.batch_size,1))
+        # for in_batch_speaker_stft in in_batches_speaker_stft:
+        #     s_embed = sess.run(singer_embedding, feed_dict={speaker_input_placeholder: in_batch_speaker_stft})
+        #     out_embeddings.append(s_embed)
+        # out_embeddings = np.array(out_embeddings)
+        # s_embed = np.tile(np.mean(np.mean(out_embeddings, axis = 0), axis = 0), (config.batch_size,1))
 
         # import pdb;pdb.set_trace()
 
 
 
-        for in_batch_voc_stft, in_batch_f0_midi, in_batch_f0_quant, in_batch_pho_target in zip(in_batches_voc_stft, in_batches_f0_midi, in_batches_f0_quant, in_batches_pho):
+        for in_batch_voc_stft, in_batch_f0_midi, in_batch_f0_quant, in_batch_pho_target, in_batch_speaker_stft  in zip(in_batches_voc_stft, in_batches_f0_midi, in_batches_f0_quant, in_batches_pho, in_batches_speaker_stft):
         # for in_batch_voc_stft, in_batch_f0_midi, in_batch_f0_quant in zip(in_batches_voc_stft, in_batches_f0_midi, in_batches_f0_quant):
 
             # in_batch_voc_stft = in_batch_voc_stft/(in_batch_voc_stft.max(axis = 1).max(axis = 0))
             # in_batch_speaker_stft = in_batch_speaker_stft/(in_batch_speaker_stft.max(axis = 1).max(axis = 0))
             in_batch_voc_stft = in_batch_voc_stft/max_voc
-            # in_batch_speaker_stft = in_batch_speaker_stft/max_voc
+            in_batch_speaker_stft = in_batch_speaker_stft/max_voc
 
 
-            # s_embed = sess.run(singer_embedding, feed_dict={speaker_input_placeholder: in_batch_speaker_stft})
+            s_embed = sess.run(singer_embedding, feed_dict={speaker_input_placeholder: in_batch_speaker_stft})
 
 
 
