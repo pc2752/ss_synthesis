@@ -405,7 +405,7 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
 
         sess.run(init_op)
 
-        ckpt = tf.train.get_checkpoint_state('./log_m1/')
+        ckpt = tf.train.get_checkpoint_state('./log_m1_old/')
 
         if ckpt and ckpt.model_checkpoint_path:
             print("Using the model in %s"%ckpt.model_checkpoint_path)

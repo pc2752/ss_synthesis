@@ -322,7 +322,7 @@ def train(_):
 
                     # import pdb;pdb.set_trace()
 
-                    featies = np.concatenate((feats_targets, (targets_f0_2/256).reshape(config.batch_size, config.max_phr_len, 1)),axis=-1)
+                    featies = np.concatenate((feats_targets, (targets_f0_1/256).reshape(config.batch_size, config.max_phr_len, 1)),axis=-1)
 
                     input_noisy = np.clip(featies + np.random.rand(config.batch_size, config.max_phr_len,65)*np.clip(np.random.rand(1),0.0,config.noise_threshold), 0.0, 1.0)
 
@@ -405,7 +405,7 @@ def train(_):
 
                 for inputs, feats_targets, targets_f0_1, targets_f0_2, pho_targs, singer_idss in val_generator:
 
-                    featies = np.concatenate((feats_targets, (targets_f0_2/256).reshape(config.batch_size, config.max_phr_len, 1)),axis=-1)
+                    featies = np.concatenate((feats_targets, (targets_f0_1/256).reshape(config.batch_size, config.max_phr_len, 1)),axis=-1)
 
                     step_loss_f0_midi, step_acc_f0_midi = sess.run([f0_loss_midi, f0_acc_midi_val], feed_dict={input_placeholder: featies,f0_target_placeholder_midi: targets_f0_2})
                     step_loss_singer, step_acc_singer, s_embed = sess.run([singer_loss, singer_acc_val, singer_embedding], feed_dict={input_placeholder: featies,singer_labels: singer_ids})
