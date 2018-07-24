@@ -506,11 +506,11 @@ def train(_):
 
 def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
-    file_name = "nus_JLEE_sing_08.hdf5"
+    file_name = "nus_NJAT_sing_15.hdf5"
 
 
 
-    speaker_file = "nus_SAMF_sing_09.hdf5"
+    speaker_file = "nus_NJAT_sing_15.hdf5"
 
     stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
 
@@ -628,9 +628,9 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         # speaker_file.close()
         # import pdb;pdb.set_trace()
 
-        # feats = np.array(voc_file['feats'])
+        feats = np.array(voc_file['feats'])
 
-        feats = utils.input_to_feats('./bellaciao.wav', mode = 1)
+        # feats = utils.input_to_feats('./bellaciao.wav', mode = 1)
 
         
 
@@ -660,9 +660,9 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
 
-        speaker_feats = np.array(speaker_file['feats'])
+        # speaker_feats = np.array(speaker_file['feats'])
 
-        # speaker_feats = utils.input_to_feats('./bellaciao.wav', mode = 1)
+        speaker_feats = utils.input_to_feats('./bellaciao.wav', mode = 1)
 
         speaker_f0 = speaker_feats[:,-2]
 
@@ -725,11 +725,11 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         # voc_stft_mag, voc_stft_phase = utils.file_to_stft(config.wav_dir_nus+'KENN/sing/04.wav', mode = 3)
 
-        # for in_batch_speaker_stft in in_batches_speaker_stft:
-        #     s_embed = sess.run(singer_embedding, feed_dict={speaker_input_placeholder: in_batch_speaker_stft})
-        #     out_embeddings.append(s_embed)
-        # out_embeddings = np.array(out_embeddings)
-        # s_embed = np.tile(np.mean(np.mean(out_embeddings, axis = 0), axis = 0), (config.batch_size,1))
+        for in_batch_speaker_stft in in_batches_speaker_feats:
+            s_embed = sess.run(singer_embedding, feed_dict={speaker_input_placeholder: in_batch_speaker_stft})
+            out_embeddings.append(s_embed)
+        out_embeddings = np.array(out_embeddings)
+        s_embed = np.tile(np.mean(np.mean(out_embeddings, axis = 0), axis = 0), (config.batch_size,1))
 
         # import pdb;pdb.set_trace()
 
@@ -745,7 +745,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
 
-            s_embed = sess.run(singer_embedding, feed_dict={speaker_input_placeholder: in_batch_speaker_feat})
+            # s_embed = sess.run(singer_embedding, feed_dict={speaker_input_placeholder: in_batch_speaker_feat})
 
 
 
@@ -767,10 +767,10 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
             pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: in_batch_feat,f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54)} )
 
             f0_outputs_2 = sess.run(f0_probs, feed_dict={singer_embedding_placeholder: s_embed, 
-                f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54), pho_input_placeholder: pho_outs} )
+                f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54), pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41)} )
 
             # output_voc_stft = sess.run(voc_output_decoded, feed_dict={f0_input_placeholder: one_hotize(in_batch_f0_quant, max_index=256),
-            #     pho_input_placeholder: pho_outs, output_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed})
+            #     pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41), output_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed})
 
 
             output_feats = sess.run(voc_output_decoded, feed_dict={f0_input_placeholder: f0_outputs_2,
