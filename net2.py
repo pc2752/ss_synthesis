@@ -327,7 +327,7 @@ def train(_):
                     input_noisy = np.clip(featies + np.random.rand(config.batch_size, config.max_phr_len,64+256)*np.clip(np.random.rand(1),0.0,config.noise_threshold), 0.0, 1.0)
 
                     _, step_loss_f0_midi, step_acc_f0_midi = sess.run([f0_train_function_midi, f0_loss_midi, f0_acc_midi], feed_dict={input_placeholder: input_noisy,f0_target_placeholder_midi: targets_f0_2})
-                    _, step_loss_singer, step_acc_singer, s_embed = sess.run([singer_train_function, singer_loss, singer_acc, singer_embedding], feed_dict={input_placeholder: featies,singer_labels: singer_ids})
+                    _, step_loss_singer, step_acc_singer, s_embed = sess.run([singer_train_function, singer_loss, singer_acc, singer_embedding], feed_dict={input_placeholder: featies,singer_labels: singer_ids, prob:0.8})
                     
 
 
@@ -336,8 +336,8 @@ def train(_):
 
                     if teacher_train:
                         _, step_loss_f0, step_acc_f0 = sess.run([f0_train_function, f0_loss, f0_acc], feed_dict={input_placeholder: input_noisy,singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: one_hotize(targets_f0_2, max_index=54), pho_input_placeholder:one_hotize(pho_targs, max_index=41), f0_target_placeholder: targets_f0_1, prob:1.0})
-                        _, step_loss_pho, step_acc_pho = sess.run([pho_train_function, pho_loss, pho_acc], feed_dict={input_placeholder: input_noisy,f0_input_placeholder_midi: one_hotize(targets_f0_2, max_index=54), labels: pho_targs, prob:1.0})
-                        _, step_loss_total = sess.run([re_train_function, reconstruct_loss], feed_dict={f0_input_placeholder: one_hotize(targets_f0_1, max_index=256), pho_input_placeholder: one_hotize(pho_targs, max_index=41), output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:1.0})
+                        _, step_loss_pho, step_acc_pho = sess.run([pho_train_function, pho_loss, pho_acc], feed_dict={input_placeholder: input_noisy,f0_input_placeholder_midi: one_hotize(targets_f0_2, max_index=54), labels: pho_targs, prob:0.75})
+                        _, step_loss_total = sess.run([re_train_function, reconstruct_loss], feed_dict={f0_input_placeholder: one_hotize(targets_f0_1, max_index=256), pho_input_placeholder: one_hotize(pho_targs, max_index=41), output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8})
                         # _, step_loss_total_phase = sess.run([re_phase_train_function, reconstruct_loss_phase], feed_dict={input_placeholder:input_noisy, f0_input_placeholder: one_hotize(targets_f0_1, max_index=256), pho_input_placeholder: one_hotize(pho_targs, max_index=41),singer_embedding_placeholder: s_embed, prob:0.5, output_phase_placeholder: phase_targets})
                     
                     else:

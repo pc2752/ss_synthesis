@@ -436,7 +436,7 @@ def final_net(encoded, f0, phones, prob):
 
     encoded = tf.layers.max_pooling1d(conv3, pool_size=2, strides=2, padding='same')
 
-    encoded = tf.nn.dropout(tf.concat([tf.reshape(encoded, [config.batch_size, -1]), encoded_embedding], axis = -1), prob)
+    encoded = tf.concat([tf.reshape(encoded, [config.batch_size, -1]), encoded_embedding], axis = -1)
 
     upsample1 = tf.image.resize_images(tf.reshape(encoded, [30,4,1,-1]), size=(16,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
@@ -524,9 +524,9 @@ def final_net(encoded, f0, phones, prob):
 
 def phone_network(inputs, f0, prob):
 
-    embed_f0 = tf.layers.dense(f0, 32)
+    embed_pho = tf.layers.dense(inputs, 32)
 
-    inputs_2 = tf.nn.dropout(tf.concat([inputs, embed_f0], axis = -1), prob)
+    inputs_2 = tf.nn.dropout(tf.concat([inputs, embed_pho], axis = -1), prob)
 
     embed_1 = tf.nn.dropout(tf.layers.dense(inputs_2, 256), prob)
 
@@ -537,8 +537,8 @@ def phone_network(inputs, f0, prob):
     return phonemes
 
 def singer_network(inputs, prob):
-    embed_1 = tf.nn.dropout(tf.layers.dense(inputs, 256), prob)
 
+    embed_1 = tf.nn.dropout(tf.layers.dense(inputs, 32), prob)
 
 
     conv1 = tf.layers.conv1d(inputs=embed_1, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu)
@@ -553,7 +553,7 @@ def singer_network(inputs, prob):
 
     encoded = tf.layers.max_pooling1d(conv3, pool_size=2, strides=2, padding='same')
 
-    encoded = tf.nn.dropout(tf.reshape(encoded, [config.batch_size, -1]), prob)
+    encoded = tf.reshape(encoded, [config.batch_size, -1])
 
     encoded_1= tf.nn.dropout(tf.layers.dense(encoded, 64), prob)
 
