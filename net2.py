@@ -506,11 +506,11 @@ def train(_):
 
 def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
-    file_name = "nus_MPOL_sing_05.hdf5"
+    file_name = "nus_JLEE_sing_08.hdf5"
 
 
 
-    speaker_file = "nus_MPOL_sing_05.hdf5"
+    speaker_file = "nus_SAMF_sing_09.hdf5"
 
     stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
 
@@ -524,10 +524,10 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
     with tf.Graph().as_default():
 
-        speaker_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.input_features),name='speaker_input_placeholder')
+        speaker_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,64+256),name='speaker_input_placeholder')
 
         
-        input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,65),name='input_placeholder')
+        input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,64+256),name='input_placeholder')
         tf.summary.histogram('inputs', input_placeholder)
 
         output_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,64),name='output_placeholder')
@@ -557,7 +557,6 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         onehot_labels_singer = tf.one_hot(indices=tf.cast(singer_labels, tf.int32), depth=12)
 
         singer_embedding_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,64),name='singer_embedding_placeholder')
-
 
 
 
@@ -599,7 +598,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         sess.run(init_op)
 
-        ckpt = tf.train.get_checkpoint_state('./log_feat_long_time_dropout/')
+        ckpt = tf.train.get_checkpoint_state('./log_feat_to_feat/')
 
         if ckpt and ckpt.model_checkpoint_path:
             print("Using the model in %s"%ckpt.model_checkpoint_path)
@@ -629,7 +628,11 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         # speaker_file.close()
         # import pdb;pdb.set_trace()
 
-        feats = np.array(voc_file['feats'])
+        # feats = np.array(voc_file['feats'])
+
+        feats = utils.input_to_feats('./bellaciao.wav', mode = 1)
+
+        
 
         # feats = utils.input_to_feats('./billy.wav', mode = 1)
 
@@ -653,13 +656,47 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         f0_midi = f0_midi * (1-feats[:,-1]) 
 
+        featies = np.concatenate(((np.array(feats[:,:-2])-min_feat[:-2])/(max_feat[:-2]-min_feat[:-2]), one_hotize(f0_quant,max_index=256)), axis = -1)
+
+
+
+        speaker_feats = np.array(speaker_file['feats'])
+
+        # speaker_feats = utils.input_to_feats('./bellaciao.wav', mode = 1)
+
+        speaker_f0 = speaker_feats[:,-2]
+
+        # import pdb;pdb.set_trace()
+
+        med = np.median(speaker_f0[speaker_f0 > 0])
+
+        speaker_f0[speaker_f0==0] = med
+
+        # import pdb;pdb.set_trace()
+
+        speaker_f0_nor = (speaker_f0 - min_feat[-2])/(max_feat[-2]-min_feat[-2])
+
+        speaker_f0_quant = np.rint(speaker_f0_nor*176) + 1
+
+        speaker_f0_quant = speaker_f0_quant * (1-speaker_feats[:,-1]) 
+
+        # import pdb;pdb.set_trace()
+
+        speaker_featies = np.concatenate(((np.array(speaker_feats[:,:-2])-min_feat[:-2])/(max_feat[:-2]-min_feat[:-2]), one_hotize(speaker_f0_quant,max_index=256)), axis = -1)
+
+        speaker_featies = np.repeat(speaker_featies, int(np.ceil(featies.shape[0]/speaker_featies.shape[0])),0)
+
+        speaker_featies = speaker_featies[:featies.shape[0]]
+        
+
         pho_target = np.array(voc_file["phonemes"])
+
 
 
 
         in_batches_voc_stft, nchunks_in = utils.generate_overlapadd(voc_stft)
 
-        in_batches_speaker_stft, nchunks_in_speaker = utils.generate_overlapadd(speaker_stft)
+        in_batches_speaker_feats, nchunks_in_speaker = utils.generate_overlapadd(speaker_featies)
 
         # import pdb;pdb.set_trace()
 
@@ -667,9 +704,9 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         in_batches_f0_quant, nchunks_in = utils.generate_overlapadd(f0_quant.reshape(-1,1))
 
-        in_batches_pho, nchunks_in = utils.generate_overlapadd(pho_target.reshape(-1,1))
+        in_batches_pho, nchunks_in_pho = utils.generate_overlapadd(pho_target.reshape(-1,1))
 
-        in_batches_feat, kaka = utils.generate_overlapadd(feats)
+        in_batches_feat, kaka = utils.generate_overlapadd(featies)
 
         # import pdb;pdb.set_trace()
 
@@ -686,7 +723,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         out_embeddings = []
 
-        voc_stft_mag, voc_stft_phase = utils.file_to_stft(config.wav_dir_nus+'KENN/sing/04.wav', mode = 3)
+        # voc_stft_mag, voc_stft_phase = utils.file_to_stft(config.wav_dir_nus+'KENN/sing/04.wav', mode = 3)
 
         # for in_batch_speaker_stft in in_batches_speaker_stft:
         #     s_embed = sess.run(singer_embedding, feed_dict={speaker_input_placeholder: in_batch_speaker_stft})
@@ -698,22 +735,23 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
 
-        for in_batch_voc_stft, in_batch_f0_midi, in_batch_f0_quant, in_batch_pho_target, in_batch_speaker_stft  in zip(in_batches_voc_stft, in_batches_f0_midi, in_batches_f0_quant, in_batches_pho, in_batches_speaker_stft):
+        for in_batch_voc_stft, in_batch_f0_midi, in_batch_f0_quant, in_batch_pho_target, in_batch_speaker_feat, in_batch_feat  in zip(in_batches_voc_stft, in_batches_f0_midi, in_batches_f0_quant, in_batches_pho, in_batches_speaker_feats, in_batches_feat):
         # for in_batch_voc_stft, in_batch_f0_midi, in_batch_f0_quant in zip(in_batches_voc_stft, in_batches_f0_midi, in_batches_f0_quant):
 
             # in_batch_voc_stft = in_batch_voc_stft/(in_batch_voc_stft.max(axis = 1).max(axis = 0))
             # in_batch_speaker_stft = in_batch_speaker_stft/(in_batch_speaker_stft.max(axis = 1).max(axis = 0))
-            in_batch_voc_stft = in_batch_voc_stft/max_voc
-            in_batch_speaker_stft = in_batch_speaker_stft/max_voc
+            # in_batch_voc_stft = in_batch_voc_stft/max_voc
+            # in_batch_speaker_stft = in_batch_speaker_stft/max_voc
 
 
-            s_embed = sess.run(singer_embedding, feed_dict={speaker_input_placeholder: in_batch_speaker_stft})
+
+            s_embed = sess.run(singer_embedding, feed_dict={speaker_input_placeholder: in_batch_speaker_feat})
 
 
 
             # import pdb;pdb.set_trace()
 
-            f0_outputs_1 = sess.run(f0_probs_midi, feed_dict = {input_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed} )
+            f0_outputs_1 = sess.run(f0_probs_midi, feed_dict = {input_placeholder: in_batch_feat,singer_embedding_placeholder: s_embed} )
 
             # in_batch_voc_stft = in_batch_voc_stft.reshape([config.batch_size, config.max_phr_len, 256])
 
@@ -726,17 +764,17 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
 
-            pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: in_batch_voc_stft,f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54)} )
+            pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: in_batch_feat,f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54)} )
 
             f0_outputs_2 = sess.run(f0_probs, feed_dict={singer_embedding_placeholder: s_embed, 
-                f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54), pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41)} )
+                f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54), pho_input_placeholder: pho_outs} )
 
             # output_voc_stft = sess.run(voc_output_decoded, feed_dict={f0_input_placeholder: one_hotize(in_batch_f0_quant, max_index=256),
             #     pho_input_placeholder: pho_outs, output_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed})
 
 
             output_feats = sess.run(voc_output_decoded, feed_dict={f0_input_placeholder: f0_outputs_2,
-                pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41),singer_embedding_placeholder: s_embed})
+                pho_input_placeholder: pho_outs,singer_embedding_placeholder: s_embed})
 
             # output_voc_stft_phase = sess.run(voc_output_phase_decoded, feed_dict={input_placeholder: output_voc_stft, f0_input_placeholder: f0_outputs_2,
             #     pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41), output_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed})
@@ -776,7 +814,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         f0_output= np.argmax(out_batches_f0_quant, axis = -1).astype('float32')
         f0_output[f0_output == 0] = np.nan
 
-        f0_output = (f0_output - 1)/176
+        f0_output = (f0_output - 1)/255
 
         f0_output = f0_output*(max_feat[-2]-min_feat[-2]) + min_feat[-2]
         f0_output = np.nan_to_num(f0_output)
@@ -784,7 +822,8 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         out_batches_feats = out_batches_feats*(max_feat[:-2]-min_feat[:-2])+min_feat[:-2]
 
 
-        haha = np.concatenate((out_batches_feats[:f0.shape[0]], feats[:,-2:]) ,axis=-1)
+        haha = np.concatenate((out_batches_feats[:f0.shape[0]], feats[:,-2:-1], feats[:,-1:]) ,axis=-1)
+        # import pdb;pdb.set_trace()
         haha = np.ascontiguousarray(haha)
 
         jaja = np.concatenate((out_batches_feats[:f0.shape[0]], f0_output[:f0.shape[0]].reshape(-1,1)) ,axis=-1)
@@ -802,6 +841,13 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         # import pdb;pdb.set_trace()
 
+
+
+
+        # import pdb;pdb.set_trace()
+
+
+        utils.feats_to_audio(haha[:5000,:],'_test_brunobilly.wav')
 
         plt.figure(1)
 
@@ -832,11 +878,6 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         plt.show()
 
         import pdb;pdb.set_trace()
-
-        # import pdb;pdb.set_trace()
-
-
-        utils.feats_to_audio(haha[:5000,:],'_test_brunobilly.wav')
 
         # utils.feats_to_audio(jaja[:5000,:],'_test_ADIZ_01_SAMF.wav')
 
