@@ -61,10 +61,10 @@ phonemas = ['t', 'y', 'l', 'k', 'aa', 'jh', 'ae', 'ng', 'ah', 'hh', 'z', 'ey', '
 
 phonemas_weights = np.ones(41)
 phonemas_weights[19] = 0.5
-phonemas_weights[15] = 0.75
-phonemas_weights[8] = 0.75
-phonemas_weights[14] = 0.75
-phonemas_weights[27] = 0.75
+# phonemas_weights[15] = 0.75
+# phonemas_weights[8] = 0.75
+# phonemas_weights[14] = 0.75
+# phonemas_weights[27] = 0.75
 val_files = 30
 
 singers = ['ADIZ', 'JLEE', 'JTAN', 'KENN', 'MCUR', 'MPOL', 'MPUR', 'NJAT', 'PMAR', 'SAMF', 'VKOW' ,'ZHIY']
@@ -74,7 +74,7 @@ split = 0.9
 augment = True
 aug_prob = 0.5
 
-noise_threshold = 0.05
+noise_threshold = 0.0
 pred_mode = 'all'
 
 # Hyperparameters

@@ -47,7 +47,7 @@ def data_gen(mode = 'Train'):
 
     # import pdb;pdb.set_trace()
 
-    stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
+    stat_file = h5py.File(config.stat_dir+'nus_stats.hdf5', mode='r')
 
     max_feat = np.array(stat_file["feats_maximus"])
     min_feat = np.array(stat_file["feats_minimus"])
@@ -125,9 +125,7 @@ def data_gen(mode = 'Train'):
 
                 f0_nor = (f0 - min_feat[-2])/(max_feat[-2]-min_feat[-2])
 
-
-
-                f0_quant = np.rint(f0_nor*255) + 1
+                f0_quant = np.rint(f0_nor*254) + 1
 
                 f0_quant = f0_quant * (1-feats[:,-1]) 
 
@@ -255,7 +253,7 @@ def get_stats():
             if mini_voc_stft[i]<min_mix[i]:
                 min_mix[i] = mini_voc_stft[i]
 
-    hdf5_file = h5py.File(config.stat_dir+'stats.hdf5', mode='w')
+    hdf5_file = h5py.File(config.stat_dir+'nus_stats.hdf5', mode='w')
 
     hdf5_file.create_dataset("feats_maximus", [66], np.float32) 
     hdf5_file.create_dataset("feats_minimus", [66], np.float32)   
@@ -302,12 +300,12 @@ def get_stats_phonems():
 
 def main():
     # gen_train_val()
-    # get_stats_phonems()
-    gen = data_gen('Train')
-    while True :
-        start_time = time.time()
-        inputs, feats_targs, targets_f0_1, targets_f0_2, pho_targs, targets_singers = next(gen)
-        print(time.time()-start_time)
+    get_stats()
+    # gen = data_gen('Train')
+    # while True :
+    #     start_time = time.time()
+    #     inputs, feats_targs, targets_f0_1, targets_f0_2, pho_targs, targets_singers = next(gen)
+    #     print(time.time()-start_time)
 
     #     plt.subplot(411)
     #     plt.imshow(np.log(1+inputs.reshape(-1,513).T),aspect='auto',origin='lower')
@@ -323,7 +321,7 @@ def main():
     #     # gen = get_batches()
 
 
-        import pdb;pdb.set_trace()
+        # import pdb;pdb.set_trace()
 
 
 if __name__ == '__main__':

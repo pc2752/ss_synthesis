@@ -284,8 +284,8 @@ def get_stats():
 
 
 def main():
-    gen_train_val()
-    # get_stats()
+    # gen_train_val()
+    get_stats()
     # gen = data_gen(mode ='val')
     # while True :
     #     inputs, targets, nchunks_in, lent, county, max_count = next(gen)

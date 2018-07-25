@@ -32,12 +32,12 @@ def binary_cross(p,q):
     return -(p * tf.log(q + 1e-12) + (1 - p) * tf.log( 1 - q + 1e-12))
 
 def train(_):
-    stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
+    stat_file = h5py.File(config.stat_dir+'nus_stats.hdf5', mode='r')
     max_feat = np.array(stat_file["feats_maximus"])
     min_feat = np.array(stat_file["feats_minimus"])
     with tf.Graph().as_default():
         
-        input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,64+256),name='input_placeholder')
+        input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,65),name='input_placeholder')
         tf.summary.histogram('inputs', input_placeholder)
 
         output_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,64),name='output_placeholder')
@@ -322,9 +322,15 @@ def train(_):
 
                     # import pdb;pdb.set_trace()
 
-                    featies = np.concatenate((feats_targets, one_hotize(targets_f0_1, max_index=256)),axis=-1)
+                    f0_1_one_hot = one_hotize(targets_f0_1, max_index=256)
 
-                    input_noisy = np.clip(featies + np.random.rand(config.batch_size, config.max_phr_len,64+256)*np.clip(np.random.rand(1),0.0,config.noise_threshold), 0.0, 1.0)
+                    f0_2_one_hot = one_hotize(targets_f0_2, max_index=54)
+
+                    pho_one_hot = one_hotize(pho_targs, max_index=41)
+
+                    featies = np.concatenate((feats_targets, (targets_f0_1/256.0).reshape(config.batch_size, config.max_phr_len, 1)),axis=-1)
+
+                    input_noisy = np.clip(featies + np.random.rand(config.batch_size, config.max_phr_len,65)*np.clip(np.random.rand(1),0.0,config.noise_threshold), 0.0, 1.0)
 
                     _, step_loss_f0_midi, step_acc_f0_midi = sess.run([f0_train_function_midi, f0_loss_midi, f0_acc_midi], feed_dict={input_placeholder: input_noisy,f0_target_placeholder_midi: targets_f0_2})
                     _, step_loss_singer, step_acc_singer, s_embed = sess.run([singer_train_function, singer_loss, singer_acc, singer_embedding], feed_dict={input_placeholder: featies,singer_labels: singer_ids, prob:0.75})
@@ -335,9 +341,9 @@ def train(_):
                     teacher_train = np.random.rand(1)<0.5
 
                     if teacher_train:
-                        _, step_loss_f0, step_acc_f0 = sess.run([f0_train_function, f0_loss, f0_acc], feed_dict={input_placeholder: input_noisy,singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: one_hotize(targets_f0_2, max_index=54), pho_input_placeholder:one_hotize(pho_targs, max_index=41), f0_target_placeholder: targets_f0_1, prob:1.0})
-                        _, step_loss_pho, step_acc_pho = sess.run([pho_train_function, pho_loss, pho_acc], feed_dict={input_placeholder: input_noisy,f0_input_placeholder_midi: one_hotize(targets_f0_2, max_index=54), labels: pho_targs, prob:0.75})
-                        _, step_loss_total = sess.run([re_train_function, reconstruct_loss], feed_dict={f0_input_placeholder: one_hotize(targets_f0_1, max_index=256), pho_input_placeholder: one_hotize(pho_targs, max_index=41), output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8})
+                        _, step_loss_f0, step_acc_f0 = sess.run([f0_train_function, f0_loss, f0_acc], feed_dict={input_placeholder: input_noisy,singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder:pho_one_hot, f0_target_placeholder: targets_f0_1, prob:1.0})
+                        _, step_loss_pho, step_acc_pho = sess.run([pho_train_function, pho_loss, pho_acc], feed_dict={input_placeholder: input_noisy,f0_input_placeholder_midi: f0_2_one_hot, labels: pho_targs, prob:0.75})
+                        _, step_loss_total = sess.run([re_train_function, reconstruct_loss], feed_dict={f0_input_placeholder: f0_1_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8})
                         # _, step_loss_total_phase = sess.run([re_phase_train_function, reconstruct_loss_phase], feed_dict={input_placeholder:input_noisy, f0_input_placeholder: one_hotize(targets_f0_1, max_index=256), pho_input_placeholder: one_hotize(pho_targs, max_index=41),singer_embedding_placeholder: s_embed, prob:0.5, output_phase_placeholder: phase_targets})
                     
                     else:
@@ -396,7 +402,9 @@ def train(_):
                 # epoch_total_loss = epoch_total_loss/(config.batches_per_epoch_train *config.batch_size)
                 # epoch_total_loss_phase = epoch_total_loss_phase/(config.batches_per_epoch_train *config.batch_size)
 
-                summary_str = sess.run(summary, feed_dict={input_placeholder: featies,f0_target_placeholder: targets_f0_1,f0_input_placeholder: one_hotize(targets_f0_1, max_index=256),  labels:pho_targs, singer_labels: singer_ids, singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: one_hotize(targets_f0_2, max_index=54), f0_target_placeholder_midi: targets_f0_2, pho_input_placeholder:one_hotize(pho_targs, max_index=41), f0_input_placeholder: one_hotize(targets_f0_1, max_index=256),output_placeholder: feats_targets, prob:0.5})
+                summary_str = sess.run(summary, feed_dict={input_placeholder: featies,f0_target_placeholder: targets_f0_1,f0_input_placeholder: f0_1_one_hot,  
+                    labels:pho_targs, singer_labels: singer_ids, singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_2_one_hot, f0_target_placeholder_midi: targets_f0_2, pho_input_placeholder:pho_one_hot, 
+                    f0_input_placeholder: f0_1_one_hot,output_placeholder: feats_targets, prob:0.5})
                 train_summary_writer.add_summary(summary_str, epoch)
                 # summary_writer.add_summary(summary_str_val, epoch)
                 train_summary_writer.flush()
@@ -405,15 +413,21 @@ def train(_):
 
                 for inputs, feats_targets, targets_f0_1, targets_f0_2, pho_targs, singer_idss in val_generator:
 
-                    featies = np.concatenate((feats_targets, one_hotize(targets_f0_1, max_index=256)),axis=-1)
+                    f0_1_one_hot = one_hotize(targets_f0_1, max_index=256)
+
+                    f0_2_one_hot = one_hotize(targets_f0_2, max_index=54)
+
+                    pho_one_hot = one_hotize(pho_targs, max_index=41)
+
+                    featies = np.concatenate((feats_targets, (targets_f0_1/256.0).reshape(config.batch_size, config.max_phr_len, 1)),axis=-1)
 
                     step_loss_f0_midi, step_acc_f0_midi = sess.run([f0_loss_midi, f0_acc_midi_val], feed_dict={input_placeholder: featies,f0_target_placeholder_midi: targets_f0_2})
                     step_loss_singer, step_acc_singer, s_embed = sess.run([singer_loss, singer_acc_val, singer_embedding], feed_dict={input_placeholder: featies,singer_labels: singer_ids})
                     
 
-                    step_loss_f0, step_acc_f0 = sess.run([f0_loss, f0_acc_val], feed_dict={input_placeholder: featies,singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: one_hotize(targets_f0_2, max_index=54), pho_input_placeholder:one_hotize(pho_targs, max_index=41), f0_target_placeholder: targets_f0_1})
-                    step_loss_pho, step_acc_pho = sess.run([pho_loss, pho_acc_val], feed_dict={input_placeholder: featies,f0_input_placeholder_midi: one_hotize(targets_f0_2, max_index=54), labels: pho_targs})
-                    step_loss_total = sess.run(reconstruct_loss, feed_dict={f0_input_placeholder: one_hotize(targets_f0_1, max_index=256), pho_input_placeholder: one_hotize(pho_targs, max_index=41), output_placeholder: feats_targets,singer_embedding_placeholder: s_embed})
+                    step_loss_f0, step_acc_f0 = sess.run([f0_loss, f0_acc_val], feed_dict={input_placeholder: featies,singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder:pho_one_hot, f0_target_placeholder: targets_f0_1})
+                    step_loss_pho, step_acc_pho = sess.run([pho_loss, pho_acc_val], feed_dict={input_placeholder: featies,f0_input_placeholder_midi:f0_2_one_hot, labels: pho_targs})
+                    step_loss_total = sess.run(reconstruct_loss, feed_dict={f0_input_placeholder: f0_1_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed})
                     # step_loss_total_phase = sess.run(reconstruct_loss_phase, feed_dict={input_placeholder:inputs, f0_input_placeholder: one_hotize(targets_f0_1, max_index=256), pho_input_placeholder: one_hotize(pho_targs, max_index=41),singer_embedding_placeholder: s_embed, prob:0.5, output_phase_placeholder: phase_targets})
 
 
@@ -459,7 +473,9 @@ def train(_):
                 # epoch_total_loss_val = epoch_total_loss_val/(config.batches_per_epoch_val *config.batch_size)
                 # epoch_total_loss_phase_val = epoch_total_loss_phase_val/(config.batches_per_epoch_val *config.batch_size)
 
-                summary_str = sess.run(summary_val, feed_dict={input_placeholder: featies,f0_target_placeholder: targets_f0_1,f0_input_placeholder: one_hotize(targets_f0_1, max_index=256),  labels:pho_targs, singer_labels: singer_ids, singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: one_hotize(targets_f0_2, max_index=54), f0_target_placeholder_midi: targets_f0_2, pho_input_placeholder:one_hotize(pho_targs, max_index=41), f0_input_placeholder: one_hotize(targets_f0_1, max_index=256),output_placeholder: feats_targets, prob:0.5})
+                summary_str = sess.run(summary_val, feed_dict={input_placeholder: featies,f0_target_placeholder: targets_f0_1,f0_input_placeholder: f0_1_one_hot,  
+                    labels:pho_targs, singer_labels: singer_ids, singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_2_one_hot, f0_target_placeholder_midi: targets_f0_2, pho_input_placeholder:pho_one_hot, 
+                    f0_input_placeholder: f0_1_one_hot,output_placeholder: feats_targets, prob:0.5})
                 val_summary_writer.add_summary(summary_str, epoch)
                 # summary_writer.add_summary(summary_str_val, epoch)
                 val_summary_writer.flush()
