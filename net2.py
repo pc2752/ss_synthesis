@@ -45,9 +45,9 @@ def train(_):
         # output_phase_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.input_features),name='output_phase_placeholder')
 
         f0_target_placeholder_midi = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len),name='f0_target_midi_placeholder')
-        onehot_labels_f0_midi = tf.one_hot(indices=tf.cast(f0_target_placeholder_midi, tf.int32), depth=54)
+        onehot_labels_f0_midi = tf.one_hot(indices=tf.cast(f0_target_placeholder_midi, tf.int32), depth=55)
 
-        f0_input_placeholder_midi = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 54),name='f0_input_placeholder')
+        f0_input_placeholder_midi = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 55),name='f0_input_placeholder')
 
         f0_target_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len),name='f0_target_placeholder')
         onehot_labels_f0 = tf.one_hot(indices=tf.cast(f0_target_placeholder, tf.int32), depth=256)
@@ -330,7 +330,7 @@ def train(_):
 
                     f0_1_one_hot = one_hotize(targets_f0_1, max_index=256)
 
-                    f0_2_one_hot = one_hotize(targets_f0_2, max_index=54)
+                    f0_2_one_hot = one_hotize(targets_f0_2, max_index=55)
 
                     if Flag:
                         pho_one_hot = one_hotize(pho_targs, max_index=41)
@@ -430,7 +430,7 @@ def train(_):
 
                     f0_1_one_hot = one_hotize(targets_f0_1, max_index=256)
 
-                    f0_2_one_hot = one_hotize(targets_f0_2, max_index=54)
+                    f0_2_one_hot = one_hotize(targets_f0_2, max_index=55)
 
                     pho_one_hot = one_hotize(pho_targs, max_index=41)
 
