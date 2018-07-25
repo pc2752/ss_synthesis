@@ -555,10 +555,10 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
     with tf.Graph().as_default():
 
-        speaker_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,64+256),name='speaker_input_placeholder')
+        speaker_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,65),name='speaker_input_placeholder')
 
         
-        input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,64+256),name='input_placeholder')
+        input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,65),name='input_placeholder')
         tf.summary.histogram('inputs', input_placeholder)
 
         output_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,64),name='output_placeholder')
@@ -566,9 +566,9 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         # output_phase_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.input_features),name='output_phase_placeholder')
 
         f0_target_placeholder_midi = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len),name='f0_target_midi_placeholder')
-        onehot_labels_f0_midi = tf.one_hot(indices=tf.cast(f0_target_placeholder_midi, tf.int32), depth=54)
+        onehot_labels_f0_midi = tf.one_hot(indices=tf.cast(f0_target_placeholder_midi, tf.int32), depth=55)
 
-        f0_input_placeholder_midi = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 54),name='f0_input_placeholder')
+        f0_input_placeholder_midi = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 55),name='f0_input_placeholder')
 
         f0_target_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len),name='f0_target_placeholder')
         onehot_labels_f0 = tf.one_hot(indices=tf.cast(f0_target_placeholder, tf.int32), depth=256)
@@ -629,7 +629,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         sess.run(init_op)
 
-        ckpt = tf.train.get_checkpoint_state('./log_feat_to_feat/')
+        ckpt = tf.train.get_checkpoint_state('./log_feat_to_feat_dropout/')
 
         if ckpt and ckpt.model_checkpoint_path:
             print("Using the model in %s"%ckpt.model_checkpoint_path)
@@ -687,7 +687,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         f0_midi = f0_midi * (1-feats[:,-1]) 
 
-        featies = np.concatenate(((np.array(feats[:,:-2])-min_feat[:-2])/(max_feat[:-2]-min_feat[:-2]), one_hotize(f0_quant,max_index=256)), axis = -1)
+        featies = np.concatenate(((np.array(feats[:,:-2])-min_feat[:-2])/(max_feat[:-2]-min_feat[:-2]), (f0_quant/256.0).reshape(-1, 1)), axis = -1)
 
 
 
@@ -713,7 +713,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         # import pdb;pdb.set_trace()
 
-        speaker_featies = np.concatenate(((np.array(speaker_feats[:,:-2])-min_feat[:-2])/(max_feat[:-2]-min_feat[:-2]), one_hotize(speaker_f0_quant,max_index=256)), axis = -1)
+        speaker_featies = np.concatenate(((np.array(speaker_feats[:,:-2])-min_feat[:-2])/(max_feat[:-2]-min_feat[:-2]), (speaker_f0_quant/256.0).reshape(-1 , 1)), axis = -1)
 
         speaker_featies = np.repeat(speaker_featies, int(np.ceil(featies.shape[0]/speaker_featies.shape[0])),0)
 
@@ -795,10 +795,10 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
 
-            pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: in_batch_feat,f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54)} )
+            pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: in_batch_feat,f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=55)} )
 
             f0_outputs_2 = sess.run(f0_probs, feed_dict={singer_embedding_placeholder: s_embed, 
-                f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=54), pho_input_placeholder: pho_outs} )
+                f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=55), pho_input_placeholder: pho_outs} )
 
             # output_voc_stft = sess.run(voc_output_decoded, feed_dict={f0_input_placeholder: one_hotize(in_batch_f0_quant, max_index=256),
             #     pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41), output_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed})

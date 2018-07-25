@@ -353,7 +353,7 @@ def f0_network(inputs, prob):
 
     output_1 = bi_static_stacked_RNN(embed_1, scope = 'RNN_1')
 
-    f0_1 = tf.layers.dense(output_1, 54)
+    f0_1 = tf.layers.dense(output_1, 55)
 
     return f0_1
 
