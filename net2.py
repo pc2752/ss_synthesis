@@ -45,9 +45,9 @@ def train(_):
         # output_phase_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.input_features),name='output_phase_placeholder')
 
         f0_target_placeholder_midi = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len),name='f0_target_midi_placeholder')
-        onehot_labels_f0_midi = tf.one_hot(indices=tf.cast(f0_target_placeholder_midi, tf.int32), depth=54)
+        onehot_labels_f0_midi = tf.one_hot(indices=tf.cast(f0_target_placeholder_midi, tf.int32), depth=55)
 
-        f0_input_placeholder_midi = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 54),name='f0_input_placeholder')
+        f0_input_placeholder_midi = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 55),name='f0_input_placeholder')
 
         f0_target_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len),name='f0_target_placeholder')
         onehot_labels_f0 = tf.one_hot(indices=tf.cast(f0_target_placeholder, tf.int32), depth=256)
@@ -267,7 +267,7 @@ def train(_):
         for epoch in xrange(start_epoch, config.num_epochs):
             val_f0_accs = []
 
-            if epoch>30:
+            if epoch>-1:
                 sec_mode = 1
             else:
                 sec_mode = 0
@@ -330,7 +330,7 @@ def train(_):
 
                     f0_1_one_hot = one_hotize(targets_f0_1, max_index=256)
 
-                    f0_2_one_hot = one_hotize(targets_f0_2, max_index=54)
+                    f0_2_one_hot = one_hotize(targets_f0_2, max_index=55)
 
                     if Flag:
                         pho_one_hot = one_hotize(pho_targs, max_index=41)
@@ -352,11 +352,16 @@ def train(_):
                     teacher_train = np.random.rand(1)<0.5
 
                     if teacher_train:
-                        _, step_loss_f0, step_acc_f0 = sess.run([f0_train_function, f0_loss, f0_acc], feed_dict={input_placeholder: input_noisy,singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder:pho_one_hot, f0_target_placeholder: targets_f0_1, prob:1.0})
                         if Flag:
+                            _, step_loss_f0, step_acc_f0 = sess.run([f0_train_function, f0_loss, f0_acc], feed_dict={input_placeholder: input_noisy,singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder:pho_one_hot, f0_target_placeholder: targets_f0_1, prob:1.0})
                             _, step_loss_pho, step_acc_pho = sess.run([pho_train_function, pho_loss, pho_acc], feed_dict={input_placeholder: input_noisy,f0_input_placeholder_midi: f0_2_one_hot, labels: pho_targs, prob:0.75})
                             _, step_loss_total = sess.run([re_train_function, reconstruct_loss], feed_dict={f0_input_placeholder: f0_1_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8})
                         # _, step_loss_total_phase = sess.run([re_phase_train_function, reconstruct_loss_phase], feed_dict={input_placeholder:input_noisy, f0_input_placeholder: one_hotize(targets_f0_1, max_index=256), pho_input_placeholder: one_hotize(pho_targs, max_index=41),singer_embedding_placeholder: s_embed, prob:0.5, output_phase_placeholder: phase_targets})
+                        else:
+                            pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: input_noisy,f0_input_placeholder_midi: f0_2_one_hot} )
+                            _, step_loss_f0, step_acc_f0 = sess.run([f0_train_function, f0_loss, f0_acc], feed_dict={input_placeholder: input_noisy,singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder:pho_outs, f0_target_placeholder: targets_f0_1, prob:1.0})
+                            _, step_loss_total = sess.run([re_train_function, reconstruct_loss], feed_dict={f0_input_placeholder: f0_1_one_hot, pho_input_placeholder: pho_outs, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8})
+
                     
                     else:
 
@@ -430,7 +435,7 @@ def train(_):
 
                     f0_1_one_hot = one_hotize(targets_f0_1, max_index=256)
 
-                    f0_2_one_hot = one_hotize(targets_f0_2, max_index=54)
+                    f0_2_one_hot = one_hotize(targets_f0_2, max_index=55)
 
                     pho_one_hot = one_hotize(pho_targs, max_index=41)
 

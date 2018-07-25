@@ -53,6 +53,10 @@ def data_gen(mode = 'Train', sec_mode = 0):
 
     max_feat = np.array(stat_file["feats_maximus"])
     min_feat = np.array(stat_file["feats_minimus"])
+
+    # import pdb;pdb.set_trace()
+
+
     max_voc = np.array(stat_file["voc_stft_maximus"])
     min_voc = np.array(stat_file["voc_stft_minimus"])
     max_back = np.array(stat_file["back_stft_maximus"])
@@ -76,7 +80,7 @@ def data_gen(mode = 'Train', sec_mode = 0):
         file_list = val_list
 
     for k in range(num_batches):
-        if sec_mode == 1:
+        if mode == "Train" and sec_mode == 1:
             if np.random.rand(1)<config.aug_prob:
                 file_list = all_list
             else:
@@ -193,7 +197,7 @@ def data_gen(mode = 'Train', sec_mode = 0):
 
 
 def get_stats():
-    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and x.startswith('nus') and not x.startswith('nus_KENN') and not x == 'nus_MCUR_sing_04.hdf5' and not x == 'nus_MCUR_read_04.hdf5']
+    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir')]
 
     back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('med')]
 
@@ -270,7 +274,7 @@ def get_stats():
             if mini_voc_stft[i]<min_mix[i]:
                 min_mix[i] = mini_voc_stft[i]
 
-    hdf5_file = h5py.File(config.stat_dir+'nus_stats.hdf5', mode='w')
+    hdf5_file = h5py.File(config.stat_dir+'stats.hdf5', mode='w')
 
     hdf5_file.create_dataset("feats_maximus", [66], np.float32) 
     hdf5_file.create_dataset("feats_minimus", [66], np.float32)   
