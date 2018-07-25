@@ -32,7 +32,7 @@ def binary_cross(p,q):
     return -(p * tf.log(q + 1e-12) + (1 - p) * tf.log( 1 - q + 1e-12))
 
 def train(_):
-    stat_file = h5py.File(config.stat_dir+'nus_stats.hdf5', mode='r')
+    stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
     max_feat = np.array(stat_file["feats_maximus"])
     min_feat = np.array(stat_file["feats_minimus"])
     with tf.Graph().as_default():
@@ -267,8 +267,13 @@ def train(_):
         for epoch in xrange(start_epoch, config.num_epochs):
             val_f0_accs = []
 
+            if epoch>30:
+                sec_mode = 1
+            else:
+                sec_mode = 0
 
-            data_generator = data_gen()
+
+            data_generator = data_gen(sec_mode = sec_mode)
             start_time = time.time()
 
 
@@ -313,12 +318,13 @@ def train(_):
 
             pho_count = 0
             pho_count_val = 0
+            flag_count = 0
 
             # val_generator = get_batches(train_filename=config.h5py_file_val, batches_per_epoch=config.batches_per_epoch_val)
 
             with tf.variable_scope('Training'):
 
-                for inputs, feats_targets, targets_f0_1, targets_f0_2, pho_targs, singer_ids in data_generator:
+                for inputs, feats_targets, targets_f0_1, targets_f0_2, pho_targs, singer_ids, Flag in data_generator:
 
                     # import pdb;pdb.set_trace()
 
@@ -326,15 +332,20 @@ def train(_):
 
                     f0_2_one_hot = one_hotize(targets_f0_2, max_index=54)
 
-                    pho_one_hot = one_hotize(pho_targs, max_index=41)
+                    if Flag:
+                        pho_one_hot = one_hotize(pho_targs, max_index=41)
 
                     featies = np.concatenate((feats_targets, (targets_f0_1/256.0).reshape(config.batch_size, config.max_phr_len, 1)),axis=-1)
 
                     input_noisy = np.clip(featies + np.random.rand(config.batch_size, config.max_phr_len,65)*np.clip(np.random.rand(1),0.0,config.noise_threshold), 0.0, 1.0)
 
                     _, step_loss_f0_midi, step_acc_f0_midi = sess.run([f0_train_function_midi, f0_loss_midi, f0_acc_midi], feed_dict={input_placeholder: input_noisy,f0_target_placeholder_midi: targets_f0_2})
-                    _, step_loss_singer, step_acc_singer, s_embed = sess.run([singer_train_function, singer_loss, singer_acc, singer_embedding], feed_dict={input_placeholder: featies,singer_labels: singer_ids, prob:0.75})
-                    
+                    if Flag:
+                        flag_count+=1
+                        _, step_loss_singer, step_acc_singer, s_embed = sess.run([singer_train_function, singer_loss, singer_acc, singer_embedding], feed_dict={input_placeholder: featies,singer_labels: singer_ids, prob:0.75})
+                    else:
+                         s_embed = sess.run(singer_embedding, feed_dict={input_placeholder: featies})
+
 
 
 
@@ -342,15 +353,17 @@ def train(_):
 
                     if teacher_train:
                         _, step_loss_f0, step_acc_f0 = sess.run([f0_train_function, f0_loss, f0_acc], feed_dict={input_placeholder: input_noisy,singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder:pho_one_hot, f0_target_placeholder: targets_f0_1, prob:1.0})
-                        _, step_loss_pho, step_acc_pho = sess.run([pho_train_function, pho_loss, pho_acc], feed_dict={input_placeholder: input_noisy,f0_input_placeholder_midi: f0_2_one_hot, labels: pho_targs, prob:0.75})
-                        _, step_loss_total = sess.run([re_train_function, reconstruct_loss], feed_dict={f0_input_placeholder: f0_1_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8})
+                        if Flag:
+                            _, step_loss_pho, step_acc_pho = sess.run([pho_train_function, pho_loss, pho_acc], feed_dict={input_placeholder: input_noisy,f0_input_placeholder_midi: f0_2_one_hot, labels: pho_targs, prob:0.75})
+                            _, step_loss_total = sess.run([re_train_function, reconstruct_loss], feed_dict={f0_input_placeholder: f0_1_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8})
                         # _, step_loss_total_phase = sess.run([re_phase_train_function, reconstruct_loss_phase], feed_dict={input_placeholder:input_noisy, f0_input_placeholder: one_hotize(targets_f0_1, max_index=256), pho_input_placeholder: one_hotize(pho_targs, max_index=41),singer_embedding_placeholder: s_embed, prob:0.5, output_phase_placeholder: phase_targets})
                     
                     else:
 
                         f0_outputs_1 = sess.run(f0_probs_midi, feed_dict = {input_placeholder: input_noisy,singer_embedding_placeholder: s_embed} )
-                        _, step_loss_pho, step_acc_pho = sess.run([pho_train_function, pho_loss, pho_acc], feed_dict={input_placeholder: input_noisy,f0_input_placeholder_midi: f0_outputs_1, labels: pho_targs, prob:1.0})
-                        pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: input_noisy,f0_input_placeholder_midi: one_hotize(targets_f0_2, max_index=54)} )
+                        if Flag:
+                            _, step_loss_pho, step_acc_pho = sess.run([pho_train_function, pho_loss, pho_acc], feed_dict={input_placeholder: input_noisy,f0_input_placeholder_midi: f0_outputs_1, labels: pho_targs, prob:1.0})
+                        pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: input_noisy,f0_input_placeholder_midi: f0_2_one_hot} )
                         _, step_loss_f0, step_acc_f0 = sess.run([f0_train_function, f0_loss, f0_acc], feed_dict={input_placeholder: input_noisy,singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_outputs_1, f0_target_placeholder: targets_f0_1, pho_input_placeholder: pho_outs, prob:1.0})
                         f0_outputs_2 = sess.run(f0_probs, feed_dict={input_placeholder: input_noisy,singer_embedding_placeholder: s_embed, 
                             f0_input_placeholder_midi: f0_outputs_1, pho_input_placeholder: pho_outs} )
@@ -360,8 +373,9 @@ def train(_):
 
                     #     # import pdb;pdb.set_trace()
 
-                    epoch_loss_pho+=step_loss_pho
-                    epoch_acc+=step_acc_pho[0]
+                    if Flag:
+                        epoch_loss_pho+=step_loss_pho
+                        epoch_acc+=step_acc_pho[0]
                     pho_count+=1
 
                     
@@ -372,8 +386,9 @@ def train(_):
                     epoch_loss_f0_midi+=step_loss_f0_midi
                     epoch_acc_f0_midi+=step_acc_f0_midi[0]
 
-                    epoch_loss_singer+=step_loss_singer
-                    epoch_acc_singer+=step_acc_singer[0]
+                    if Flag:
+                        epoch_loss_singer+=step_loss_singer
+                        epoch_acc_singer+=step_acc_singer[0]
                     epoch_total_loss+=step_loss_total
                     # epoch_total_loss_phase=step_loss_total_phase
 
@@ -387,7 +402,7 @@ def train(_):
 
                 # epoch_initial_loss = epoch_initial_loss/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len*60)
                 epoch_loss_pho = epoch_loss_pho/(config.batches_per_epoch_train*config.batch_size*config.max_phr_len)
-                epoch_acc = epoch_acc/(pho_count)
+                epoch_acc = epoch_acc/(flag_count)
                 # epoch_loss_harm = epoch_loss_harm/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len*60)
                 # epoch_loss_ap = epoch_loss_ap/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len*4)
                 epoch_loss_f0 = epoch_loss_f0/(config.batches_per_epoch_train*config.batch_size*config.max_phr_len)
@@ -397,7 +412,7 @@ def train(_):
                 epoch_acc_f0_midi = epoch_acc_f0_midi/pho_count
 
                 epoch_loss_singer = epoch_loss_singer/(config.batches_per_epoch_train*config.batch_size)
-                epoch_acc_singer = epoch_acc_singer/pho_count
+                epoch_acc_singer = epoch_acc_singer/flag_count
                 # epoch_loss_vuv = epoch_loss_vuv/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len)
                 # epoch_total_loss = epoch_total_loss/(config.batches_per_epoch_train *config.batch_size)
                 # epoch_total_loss_phase = epoch_total_loss_phase/(config.batches_per_epoch_train *config.batch_size)
@@ -411,7 +426,7 @@ def train(_):
 
             with tf.variable_scope('Validation'):
 
-                for inputs, feats_targets, targets_f0_1, targets_f0_2, pho_targs, singer_idss in val_generator:
+                for inputs, feats_targets, targets_f0_1, targets_f0_2, pho_targs, singer_idss, Flag in val_generator:
 
                     f0_1_one_hot = one_hotize(targets_f0_1, max_index=256)
 

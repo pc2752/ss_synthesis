@@ -524,11 +524,11 @@ def final_net(encoded, f0, phones, prob):
 
 def phone_network(inputs, f0, prob):
 
-    embed_pho = tf.layers.dense(inputs, 32)
+    embed_pho = tf.layers.dense(tf.nn.dropout(inputs, prob), 32)
 
-    inputs_2 = tf.nn.dropout(tf.concat([inputs, embed_pho], axis = -1), prob)
+    # inputs_2 = tf.nn.dropout(tf.concat([inputs,embed_pho], axis = -1), prob)
 
-    embed_1 = tf.nn.dropout(tf.layers.dense(inputs_2, 256), prob)
+    embed_1 = tf.layers.dense(embed_pho, 64)
 
     output_1 = bi_static_stacked_RNN(embed_1, scope = 'RNN_2')
 

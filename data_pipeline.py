@@ -23,7 +23,7 @@ def gen_train_val():
 
 
 
-def data_gen(mode = 'Train'):
+def data_gen(mode = 'Train', sec_mode = 0):
 
 
 
@@ -34,6 +34,8 @@ def data_gen(mode = 'Train'):
     back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('med')]
 
     mix_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('med') ]
+
+    all_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('nus')]
 
     # train_list = mix_list[:int(len(mix_list)*config.split)]
 
@@ -47,7 +49,7 @@ def data_gen(mode = 'Train'):
 
     # import pdb;pdb.set_trace()
 
-    stat_file = h5py.File(config.stat_dir+'nus_stats.hdf5', mode='r')
+    stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
 
     max_feat = np.array(stat_file["feats_maximus"])
     min_feat = np.array(stat_file["feats_minimus"])
@@ -66,12 +68,20 @@ def data_gen(mode = 'Train'):
 
     if mode == "Train":
         num_batches = config.batches_per_epoch_train
-        file_list = voc_list
+        if sec_mode == 0:
+            file_list = voc_list
+
     else: 
         num_batches = config.batches_per_epoch_val
         file_list = val_list
 
     for k in range(num_batches):
+        if sec_mode == 1:
+            if np.random.rand(1)<config.aug_prob:
+                file_list = all_list
+            else:
+                file_list = voc_list
+
 
         inputs = []
         feats_targs = []
@@ -81,82 +91,83 @@ def data_gen(mode = 'Train'):
         pho_targs = []
 
         # start_time = time.time()
+        if k == num_batches-1 and mode =="Train":
+            file_list = voc_list
 
         for i in range(max_files_to_process):
 
 
-                voc_index = np.random.randint(0,len(file_list))
-                voc_to_open = file_list[voc_index]
+            voc_index = np.random.randint(0,len(file_list))
+            voc_to_open = file_list[voc_index]
 
-                singer_name = voc_to_open.split('_')[1]
 
-                # print(voc_to_open)
-
-                singer_index = config.singers.index(singer_name)
+            voc_file = h5py.File(config.voice_dir+voc_to_open, "r")
 
 
 
-                voc_file = h5py.File(config.voice_dir+voc_to_open, "r")
+            # print("Vocal file: %s" % voc_file)
+
+            voc_stft = np.array(voc_file['voc_stft'])
+
+            # voc_stft_phase = np.array(voc_file['voc_stft_phase'])
+
+            # import pdb;pdb.set_trace()
+
+            # plt.imshow(np.log(voc_stft.T), aspect = 'auto', origin = 'lower')
+            # plt.show()
+
+            feats = np.array(voc_file['feats'])
+
+            f0 = feats[:,-2]
+
+            med = np.median(f0[f0 > 0])
+
+            f0[f0==0] = med
+
+            # import pdb;pdb.set_trace()
+
+            f0_midi = np.rint(f0) - 30
+
+            f0_nor = (f0 - min_feat[-2])/(max_feat[-2]-min_feat[-2])
+
+            f0_quant = np.rint(f0_nor*254) + 1
+
+            f0_quant = f0_quant * (1-feats[:,-1]) 
+
+            f0_midi = f0_midi * (1-feats[:,-1]) 
 
 
+            back_index = np.random.randint(0,len(back_list))
 
-                # print("Vocal file: %s" % voc_file)
+            back_to_open = back_list[back_index]
 
-                voc_stft = np.array(voc_file['voc_stft'])
-
-                voc_stft_phase = np.array(voc_file['voc_stft_phase'])
-
-                # import pdb;pdb.set_trace()
-
-                # plt.imshow(np.log(voc_stft.T), aspect = 'auto', origin = 'lower')
-                # plt.show()
-
-                feats = np.array(voc_file['feats'])
-
-                f0 = feats[:,-2]
-
-                med = np.median(f0[f0 > 0])
-
-                f0[f0==0] = med
-
-                # import pdb;pdb.set_trace()
-
-                f0_midi = np.rint(f0) - 30
-
-                f0_nor = (f0 - min_feat[-2])/(max_feat[-2]-min_feat[-2])
-
-                f0_quant = np.rint(f0_nor*254) + 1
-
-                f0_quant = f0_quant * (1-feats[:,-1]) 
-
-                f0_midi = f0_midi * (1-feats[:,-1]) 
-
-
-                back_index = np.random.randint(0,len(back_list))
-
-                back_to_open = back_list[back_index]
-
-                # back_file = h5py.File(config.backing_dir+back_to_open, "r")
-
+            # back_file = h5py.File(config.backing_dir+back_to_open, "r")
+            if voc_to_open.startswith('nus'):
+                Flag = True
                 pho_target = np.array(voc_file["phonemes"])
+                singer_name = voc_to_open.split('_')[1]
+                singer_index = config.singers.index(singer_name)
+            else:
+                Flag = False
 
 
-                # print("Backing file: %s" % back_file)
+            # print("Backing file: %s" % back_file)
 
-                # back_stft = back_file['back_stft']
+            # back_stft = back_file['back_stft']
 
 
-                for j in range(config.samples_per_file):
-                        voc_idx = np.random.randint(0,len(voc_stft)-config.max_phr_len)
-                        # bac_idx = np.random.randint(0,len(back_stft)-config.max_phr_len)
-                        mix_stft = voc_stft[voc_idx:voc_idx+config.max_phr_len,:]
-                        # *np.clip(np.random.rand(1),0.5,0.9) + back_stft[bac_idx:bac_idx+config.max_phr_len,:]*np.clip(np.random.rand(1),0.0,0.9)+ np.random.rand(config.max_phr_len,config.input_features)*np.clip(np.random.rand(1),0.0,config.noise_threshold)
-                        targets_f0_1.append(f0_quant[voc_idx:voc_idx+config.max_phr_len])
-                        targets_f0_2.append(f0_midi[voc_idx:voc_idx+config.max_phr_len])
-                        targets_singers.append(singer_index)
+            for j in range(config.samples_per_file):
+                    voc_idx = np.random.randint(0,len(voc_stft)-config.max_phr_len)
+                    # bac_idx = np.random.randint(0,len(back_stft)-config.max_phr_len)
+                    mix_stft = voc_stft[voc_idx:voc_idx+config.max_phr_len,:]
+                    # *np.clip(np.random.rand(1),0.5,0.9) + back_stft[bac_idx:bac_idx+config.max_phr_len,:]*np.clip(np.random.rand(1),0.0,0.9)+ np.random.rand(config.max_phr_len,config.input_features)*np.clip(np.random.rand(1),0.0,config.noise_threshold)
+                    targets_f0_1.append(f0_quant[voc_idx:voc_idx+config.max_phr_len])
+                    targets_f0_2.append(f0_midi[voc_idx:voc_idx+config.max_phr_len])
+                    if Flag:
                         pho_targs.append(pho_target[voc_idx:voc_idx+config.max_phr_len])
-                        inputs.append(mix_stft)
-                        feats_targs.append(feats[voc_idx:voc_idx+config.max_phr_len,:-2])
+                        targets_singers.append(singer_index)
+                    inputs.append(mix_stft)
+                    feats_targs.append(feats[voc_idx:voc_idx+config.max_phr_len,:-2])
 
         targets_f0_1 = np.array(targets_f0_1)
 
@@ -168,9 +179,15 @@ def data_gen(mode = 'Train'):
 
         # inputs_norm = inputs/(inputs.max(axis = 1).max(axis = 0))
 
+        # import pdb;pdb.set_trace()
+
         inputs_norm = inputs/max_voc
 
-        yield inputs_norm, feats_targs, targets_f0_1, targets_f0_2, np.array(pho_targs), np.array(targets_singers)
+        if Flag:
+
+            yield inputs_norm, feats_targs, targets_f0_1, targets_f0_2, np.array(pho_targs), np.array(targets_singers), Flag
+        else:
+            yield inputs_norm, feats_targs, targets_f0_1, targets_f0_2, None, None, Flag
 
 
 
@@ -300,12 +317,12 @@ def get_stats_phonems():
 
 def main():
     # gen_train_val()
-    get_stats()
-    # gen = data_gen('Train')
-    # while True :
-    #     start_time = time.time()
-    #     inputs, feats_targs, targets_f0_1, targets_f0_2, pho_targs, targets_singers = next(gen)
-    #     print(time.time()-start_time)
+    # get_stats()
+    gen = data_gen('Train', sec_mode = 0)
+    while True :
+        start_time = time.time()
+        inputs, feats_targs, targets_f0_1, targets_f0_2, pho_targs, targets_singers, Flag = next(gen)
+        print(time.time()-start_time)
 
     #     plt.subplot(411)
     #     plt.imshow(np.log(1+inputs.reshape(-1,513).T),aspect='auto',origin='lower')
@@ -321,7 +338,7 @@ def main():
     #     # gen = get_batches()
 
 
-        # import pdb;pdb.set_trace()
+        import pdb;pdb.set_trace()
 
 
 if __name__ == '__main__':
