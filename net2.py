@@ -633,7 +633,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         if ckpt and ckpt.model_checkpoint_path:
             print("Using the model in %s"%ckpt.model_checkpoint_path)
-            saver.restore(sess, ckpt.model_checkpoint_path)
+            saver.restore(sess, './log_feat_to_feat_dropout/model.ckpt-59')
 
 
 
