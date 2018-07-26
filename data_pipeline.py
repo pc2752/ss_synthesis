@@ -309,6 +309,7 @@ def get_stats_phonems():
     phonemas_weights = np.zeros(41)
     for pho in phon:
         phonemas_weights[pho] = phon[pho]
+    haha = [str(config.phonemas[x])+';'+str(phon[x]) for x in phon]
 
     phonemas_above_threshold = [config.phonemas[x[0]] for x in np.argwhere(phonemas_weights>70000)]
 
@@ -321,7 +322,7 @@ def get_stats_phonems():
 
 def main():
     # gen_train_val()
-    # get_stats()
+    get_stats_phonems()
     gen = data_gen('Train', sec_mode = 0)
     while True :
         start_time = time.time()

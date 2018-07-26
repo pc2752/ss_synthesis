@@ -35,6 +35,7 @@ def train(_):
     stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
     max_feat = np.array(stat_file["feats_maximus"])
     min_feat = np.array(stat_file["feats_minimus"])
+    import pdb;pdb.set_trace()
     with tf.Graph().as_default():
         
         input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,65),name='input_placeholder')
@@ -634,7 +635,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         sess.run(init_op)
 
-        ckpt = tf.train.get_checkpoint_state('./log_feat_to_feat/')
+        ckpt = tf.train.get_checkpoint_state('./log_feat_to_feat_dropout_1/')
 
         if ckpt and ckpt.model_checkpoint_path:
             print("Using the model in %s"%ckpt.model_checkpoint_path)
@@ -692,7 +693,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         f0_midi = f0_midi * (1-feats[:,-1]) 
 
-        featies = np.concatenate(((np.array(feats[:,:-2])-min_feat[:-2])/(max_feat[:-2]-min_feat[:-2]), one_hotize(f0_quant,max_index=256)), axis = -1)
+        featies = np.concatenate(((np.array(feats[:,:-2])-min_feat[:-2])/(max_feat[:-2]-min_feat[:-2]), (f0_quant/256.0).reshape(-1, 1)), axis = -1)
 
 
 
@@ -718,7 +719,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         # import pdb;pdb.set_trace()
 
-        speaker_featies = np.concatenate(((np.array(speaker_feats[:,:-2])-min_feat[:-2])/(max_feat[:-2]-min_feat[:-2]), (speaker_f0_quant/255.0).reshape(config.batch_size, config.max_phr_len, 1)), axis = -1)
+        speaker_featies = np.concatenate(((np.array(speaker_feats[:,:-2])-min_feat[:-2])/(max_feat[:-2]-min_feat[:-2]), (speaker_f0_quant/256.0).reshape(-1 , 1)), axis = -1)
 
         speaker_featies = np.repeat(speaker_featies, int(np.ceil(featies.shape[0]/speaker_featies.shape[0])),0)
 
