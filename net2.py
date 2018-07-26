@@ -344,7 +344,7 @@ def train(_):
                         flag_count+=1
                         _, step_loss_singer, step_acc_singer, s_embed = sess.run([singer_train_function, singer_loss, singer_acc, singer_embedding], feed_dict={input_placeholder: featies,singer_labels: singer_ids, prob:0.75})
                     else:
-                         s_embed = sess.run(singer_embedding, feed_dict={input_placeholder: featies})
+                         s_embed = sess.run(singer_embedding, feed_dict={input_placeholder: input_noisy})
 
 
 
