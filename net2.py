@@ -117,7 +117,7 @@ def train(_):
 
         weighted_losses = unweighted_losses * pho_weights
 
-        pho_loss = tf.reduce_mean(weighted_losses)
+        pho_loss = tf.reduce_sum(weighted_losses)
 
         singer_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels_singer, logits=singer_logits))
 
@@ -537,11 +537,11 @@ def train(_):
 
 def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
-    file_name = "nus_NJAT_sing_15.hdf5"
+    file_name = "nus_MPOL_sing_05.hdf5"
 
 
 
-    speaker_file = "nus_NJAT_sing_15.hdf5"
+    speaker_file = "nus_MPOL_sing_05.hdf5"
 
     stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
 
@@ -629,11 +629,11 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         sess.run(init_op)
 
-        ckpt = tf.train.get_checkpoint_state('./log_feat_to_feat_dropout/')
+        ckpt = tf.train.get_checkpoint_state('./log_feat_to_feat_sim_noise_phoweights/')
 
         if ckpt and ckpt.model_checkpoint_path:
             print("Using the model in %s"%ckpt.model_checkpoint_path)
-            saver.restore(sess, './log_feat_to_feat_dropout/model.ckpt-59')
+            saver.restore(sess, ckpt.model_checkpoint_path)
 
 
 
@@ -659,9 +659,9 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         # speaker_file.close()
         # import pdb;pdb.set_trace()
 
-        # feats = np.array(voc_file['feats'])
+        feats = np.array(voc_file['feats'])
 
-        feats = utils.input_to_feats('./franky.wav', mode = 1)
+        # feats = utils.input_to_feats('./franky.wav', mode = 1)
 
         
 
@@ -691,9 +691,9 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
 
-        # speaker_feats = np.array(speaker_file['feats'])
+        speaker_feats = np.array(speaker_file['feats'])
 
-        speaker_feats = utils.input_to_feats('./franky.wav', mode = 1)
+        # speaker_feats = utils.input_to_feats('./bellaciao.wav', mode = 1)
 
         speaker_f0 = speaker_feats[:,-2]
 

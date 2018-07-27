@@ -145,6 +145,12 @@ def data_gen(mode = 'Train', sec_mode = 0):
             if voc_to_open.startswith('nus'):
                 Flag = True
                 pho_target = np.array(voc_file["phonemes"])
+                # haha = np.diff(pho_target)
+                # baba = haha/41
+                # baba[baba==0]=np.nan
+                # baba = np.nan_to_num(baba)
+                # baba = np.pad(baba, (0,1), mode = 'constant')
+                # import pdb;pdb.set_trace()
                 singer_name = voc_to_open.split('_')[1]
                 singer_index = config.singers.index(singer_name)
             else:
