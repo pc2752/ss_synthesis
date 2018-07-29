@@ -117,7 +117,7 @@ def train(_):
 
         weighted_losses = unweighted_losses * pho_weights
 
-        pho_loss = tf.reduce_sum(weighted_losses)
+        pho_loss = tf.reduce_mean(weighted_losses)
 
         singer_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels_singer, logits=singer_logits))
 
