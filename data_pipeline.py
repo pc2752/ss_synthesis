@@ -90,6 +90,8 @@ def data_gen(mode = 'Train', sec_mode = 0):
         targets_singers = []
         pho_targs = []
 
+        pho_targs_2 = []
+
         # start_time = time.time()
         if k == num_batches-1 and mode =="Train":
             file_list = voc_list
@@ -145,7 +147,7 @@ def data_gen(mode = 'Train', sec_mode = 0):
             if voc_to_open.startswith('nus'):
                 Flag = True
                 pho_target = np.array(voc_file["phonemes"])
-                # haha = np.diff(pho_target)
+                haha = np.diff(pho_target)
                 # baba = haha/41
                 # baba[baba==0]=np.nan
                 # baba = np.nan_to_num(baba)
@@ -171,6 +173,7 @@ def data_gen(mode = 'Train', sec_mode = 0):
                     targets_f0_2.append(f0_midi[voc_idx:voc_idx+config.max_phr_len])
                     if Flag:
                         pho_targs.append(pho_target[voc_idx:voc_idx+config.max_phr_len])
+                        # pho_targs_2.append(baba[voc_idx:voc_idx+config.max_phr_len])
                         targets_singers.append(singer_index)
                     inputs.append(mix_stft)
                     feats_targs.append(feats[voc_idx:voc_idx+config.max_phr_len,:-2])

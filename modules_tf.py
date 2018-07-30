@@ -522,13 +522,15 @@ def final_net(encoded, f0, phones, prob):
 
 #     return final_voc_phase
 
-def phone_network(inputs, f0, prob):
+def phone_network(inputs, f0, prob, regularizer = None):
 
-    embed_pho = tf.layers.dense(tf.nn.dropout(inputs, prob), 32)
+    # regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
+
+    embed_pho = tf.layers.dense(tf.nn.dropout(inputs, prob), 32, kernel_regularizer=regularizer)
 
     # inputs_2 = tf.nn.dropout(tf.concat([inputs,embed_pho], axis = -1), prob)
 
-    embed_1 = tf.layers.dense(embed_pho, 64)
+    embed_1 = tf.layers.dense(embed_pho, 64, kernel_regularizer=regularizer)
 
     output_1 = bi_static_stacked_RNN(embed_1, scope = 'RNN_2')
 

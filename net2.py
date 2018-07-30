@@ -91,7 +91,8 @@ def train(_):
         #     voc_output_phase_decoded = tf.nn.sigmoid(voc_output_phase)
 
         with tf.variable_scope('phone_Model') as scope:
-            pho_logits = modules.phone_network(input_placeholder, f0_input_placeholder_midi, prob)
+            regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
+            pho_logits = modules.phone_network(input_placeholder, f0_input_placeholder_midi, prob, regularizer = regularizer)
             pho_classes = tf.argmax(pho_logits, axis=-1)
             pho_probs = tf.nn.softmax(pho_logits)
 
@@ -118,6 +119,14 @@ def train(_):
         weighted_losses = unweighted_losses * pho_weights
 
         pho_loss = tf.reduce_mean(weighted_losses)
+
+        reg_variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+
+        reg_term = tf.contrib.layers.apply_regularization(regularizer, reg_variables)
+
+        pho_loss+=reg_term
+
+        # import pdb;pdb.set_trace()
 
         singer_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels_singer, logits=singer_logits))
 
