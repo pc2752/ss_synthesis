@@ -37,7 +37,7 @@ def train(_):
     min_feat = np.array(stat_file["feats_minimus"])
     with tf.Graph().as_default():
         
-        input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,65),name='input_placeholder')
+        input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,513),name='input_placeholder')
         tf.summary.histogram('inputs', input_placeholder)
 
         output_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,64),name='output_placeholder')
@@ -346,12 +346,12 @@ def train(_):
 
                     featies = np.concatenate((feats_targets, (targets_f0_1/256.0).reshape(config.batch_size, config.max_phr_len, 1)),axis=-1)
 
-                    input_noisy = np.clip(featies + np.random.rand(config.batch_size, config.max_phr_len,65)*np.clip(np.random.rand(1),0.0,config.noise_threshold), 0.0, 1.0)
+                    input_noisy = np.clip(inputs + np.random.rand(config.batch_size, config.max_phr_len,513)*np.clip(np.random.rand(1),0.0,config.noise_threshold), 0.0, 1.0)
 
                     _, step_loss_f0_midi, step_acc_f0_midi = sess.run([f0_train_function_midi, f0_loss_midi, f0_acc_midi], feed_dict={input_placeholder: input_noisy,f0_target_placeholder_midi: targets_f0_2})
                     if Flag:
                         flag_count+=1
-                        _, step_loss_singer, step_acc_singer, s_embed = sess.run([singer_train_function, singer_loss, singer_acc, singer_embedding], feed_dict={input_placeholder: featies,singer_labels: singer_ids, prob:0.75})
+                        _, step_loss_singer, step_acc_singer, s_embed = sess.run([singer_train_function, singer_loss, singer_acc, singer_embedding], feed_dict={input_placeholder: input_noisy,singer_labels: singer_ids, prob:0.75})
                     else:
                          s_embed = sess.run(singer_embedding, feed_dict={input_placeholder: input_noisy})
 
@@ -426,7 +426,7 @@ def train(_):
                 # epoch_total_loss = epoch_total_loss/(config.batches_per_epoch_train *config.batch_size)
                 # epoch_total_loss_phase = epoch_total_loss_phase/(config.batches_per_epoch_train *config.batch_size)
 
-                summary_str = sess.run(summary, feed_dict={input_placeholder: featies,f0_target_placeholder: targets_f0_1,f0_input_placeholder: f0_1_one_hot,  
+                summary_str = sess.run(summary, feed_dict={input_placeholder: inputs,f0_target_placeholder: targets_f0_1,f0_input_placeholder: f0_1_one_hot,  
                     labels:pho_targs, singer_labels: singer_ids, singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_2_one_hot, f0_target_placeholder_midi: targets_f0_2, pho_input_placeholder:pho_one_hot, 
                     f0_input_placeholder: f0_1_one_hot,output_placeholder: feats_targets, prob:0.5})
                 train_summary_writer.add_summary(summary_str, epoch)
@@ -445,12 +445,12 @@ def train(_):
 
                     featies = np.concatenate((feats_targets, (targets_f0_1/256.0).reshape(config.batch_size, config.max_phr_len, 1)),axis=-1)
 
-                    step_loss_f0_midi, step_acc_f0_midi = sess.run([f0_loss_midi, f0_acc_midi_val], feed_dict={input_placeholder: featies,f0_target_placeholder_midi: targets_f0_2})
-                    step_loss_singer, step_acc_singer, s_embed = sess.run([singer_loss, singer_acc_val, singer_embedding], feed_dict={input_placeholder: featies,singer_labels: singer_ids})
+                    step_loss_f0_midi, step_acc_f0_midi = sess.run([f0_loss_midi, f0_acc_midi_val], feed_dict={input_placeholder: inputs,f0_target_placeholder_midi: targets_f0_2})
+                    step_loss_singer, step_acc_singer, s_embed = sess.run([singer_loss, singer_acc_val, singer_embedding], feed_dict={input_placeholder: inputs,singer_labels: singer_ids})
                     
 
-                    step_loss_f0, step_acc_f0 = sess.run([f0_loss, f0_acc_val], feed_dict={input_placeholder: featies,singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder:pho_one_hot, f0_target_placeholder: targets_f0_1})
-                    step_loss_pho, step_acc_pho = sess.run([pho_loss, pho_acc_val], feed_dict={input_placeholder: featies,f0_input_placeholder_midi:f0_2_one_hot, labels: pho_targs})
+                    step_loss_f0, step_acc_f0 = sess.run([f0_loss, f0_acc_val], feed_dict={input_placeholder: inputs,singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder:pho_one_hot, f0_target_placeholder: targets_f0_1})
+                    step_loss_pho, step_acc_pho = sess.run([pho_loss, pho_acc_val], feed_dict={input_placeholder: inputs,f0_input_placeholder_midi:f0_2_one_hot, labels: pho_targs})
                     step_loss_total = sess.run(reconstruct_loss, feed_dict={f0_input_placeholder: f0_1_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed})
                     # step_loss_total_phase = sess.run(reconstruct_loss_phase, feed_dict={input_placeholder:inputs, f0_input_placeholder: one_hotize(targets_f0_1, max_index=256), pho_input_placeholder: one_hotize(pho_targs, max_index=41),singer_embedding_placeholder: s_embed, prob:0.5, output_phase_placeholder: phase_targets})
 
@@ -497,7 +497,7 @@ def train(_):
                 # epoch_total_loss_val = epoch_total_loss_val/(config.batches_per_epoch_val *config.batch_size)
                 # epoch_total_loss_phase_val = epoch_total_loss_phase_val/(config.batches_per_epoch_val *config.batch_size)
 
-                summary_str = sess.run(summary_val, feed_dict={input_placeholder: featies,f0_target_placeholder: targets_f0_1,f0_input_placeholder: f0_1_one_hot,  
+                summary_str = sess.run(summary_val, feed_dict={input_placeholder: inputs,f0_target_placeholder: targets_f0_1,f0_input_placeholder: f0_1_one_hot,  
                     labels:pho_targs, singer_labels: singer_ids, singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_2_one_hot, f0_target_placeholder_midi: targets_f0_2, pho_input_placeholder:pho_one_hot, 
                     f0_input_placeholder: f0_1_one_hot,output_placeholder: feats_targets, prob:0.5})
                 val_summary_writer.add_summary(summary_str, epoch)
@@ -564,10 +564,10 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
     with tf.Graph().as_default():
 
-        speaker_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,65),name='speaker_input_placeholder')
+        speaker_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,513),name='speaker_input_placeholder')
 
         
-        input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,65),name='input_placeholder')
+        input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,513),name='input_placeholder')
         tf.summary.histogram('inputs', input_placeholder)
 
         output_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,64),name='output_placeholder')
@@ -638,7 +638,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         sess.run(init_op)
 
-        ckpt = tf.train.get_checkpoint_state('./log_feat_to_feat_sim_noise_phoweights/')
+        ckpt = tf.train.get_checkpoint_state('./log_spec_to_feat_sim_noiseback_phoweights_reg/')
 
         if ckpt and ckpt.model_checkpoint_path:
             print("Using the model in %s"%ckpt.model_checkpoint_path)
@@ -652,12 +652,12 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         speaker_file = h5py.File(config.voice_dir+speaker_file, "r")
 
-        voc_stft = np.array(voc_file['voc_stft'])
+        # voc_stft = np.array(voc_file['voc_stft'])
 
-        # voc_stft = utils.file_to_stft('./billy.wav', mode =1)
+        voc_stft = utils.file_to_stft('./billy.wav', mode =1)
 
-        speaker_stft = np.array(speaker_file['voc_stft'])
-        # speaker_stft = utils.file_to_stft('./bellaciao.wav', mode =1)
+        # speaker_stft = np.array(speaker_file['voc_stft'])
+        speaker_stft = utils.file_to_stft('./edu.wav', mode =1)
 
         speaker_stft = np.repeat(speaker_stft, int(np.ceil(voc_stft.shape[0]/speaker_stft.shape[0])),0)
 
@@ -668,9 +668,9 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         # speaker_file.close()
         # import pdb;pdb.set_trace()
 
-        feats = np.array(voc_file['feats'])
+        # feats = np.array(voc_file['feats'])
 
-        # feats = utils.input_to_feats('./franky.wav', mode = 1)
+        feats = utils.input_to_feats('./billy.wav', mode = 1)
 
         
 
@@ -736,7 +736,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         in_batches_voc_stft, nchunks_in = utils.generate_overlapadd(voc_stft)
 
-        in_batches_speaker_feats, nchunks_in_speaker = utils.generate_overlapadd(speaker_featies)
+        in_batches_speaker_feats, nchunks_in_speaker = utils.generate_overlapadd(speaker_stft)
 
         # import pdb;pdb.set_trace()
 
@@ -780,8 +780,8 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
             # in_batch_voc_stft = in_batch_voc_stft/(in_batch_voc_stft.max(axis = 1).max(axis = 0))
             # in_batch_speaker_stft = in_batch_speaker_stft/(in_batch_speaker_stft.max(axis = 1).max(axis = 0))
-            # in_batch_voc_stft = in_batch_voc_stft/max_voc
-            # in_batch_speaker_stft = in_batch_speaker_stft/max_voc
+            in_batch_voc_stft = in_batch_voc_stft/max_mix
+            in_batch_speaker_feat = in_batch_speaker_stft/max_mix
 
 
 
@@ -791,7 +791,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
             # import pdb;pdb.set_trace()
 
-            f0_outputs_1 = sess.run(f0_probs_midi, feed_dict = {input_placeholder: in_batch_feat,singer_embedding_placeholder: s_embed} )
+            f0_outputs_1 = sess.run(f0_probs_midi, feed_dict = {input_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed} )
 
             # in_batch_voc_stft = in_batch_voc_stft.reshape([config.batch_size, config.max_phr_len, 256])
 
@@ -804,7 +804,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
 
-            pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: in_batch_feat,f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=55)} )
+            pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: in_batch_voc_stft,f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=55)} )
 
             f0_outputs_2 = sess.run(f0_probs, feed_dict={singer_embedding_placeholder: s_embed, 
                 f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=55), pho_input_placeholder: pho_outs} )
@@ -887,7 +887,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         # import pdb;pdb.set_trace()
 
 
-        utils.feats_to_audio(haha[:5000,:],'_test_brunobilly.wav')
+        utils.feats_to_audio(haha[:5000,:],'_test.wav')
 
         plt.figure(1)
 

@@ -143,7 +143,7 @@ def data_gen(mode = 'Train', sec_mode = 0):
 
             back_to_open = back_list[back_index]
 
-            # back_file = h5py.File(config.backing_dir+back_to_open, "r")
+            back_file = h5py.File(config.backing_dir+back_to_open, "r")
             if voc_to_open.startswith('nus'):
                 Flag = True
                 pho_target = np.array(voc_file["phonemes"])
@@ -161,14 +161,17 @@ def data_gen(mode = 'Train', sec_mode = 0):
 
             # print("Backing file: %s" % back_file)
 
-            # back_stft = back_file['back_stft']
+            back_stft = back_file['back_stft']
 
 
             for j in range(config.samples_per_file):
                     voc_idx = np.random.randint(0,len(voc_stft)-config.max_phr_len)
-                    # bac_idx = np.random.randint(0,len(back_stft)-config.max_phr_len)
-                    mix_stft = voc_stft[voc_idx:voc_idx+config.max_phr_len,:]
-                    # *np.clip(np.random.rand(1),0.5,0.9) + back_stft[bac_idx:bac_idx+config.max_phr_len,:]*np.clip(np.random.rand(1),0.0,0.9)+ np.random.rand(config.max_phr_len,config.input_features)*np.clip(np.random.rand(1),0.0,config.noise_threshold)
+                    bac_idx = np.random.randint(0,len(back_stft)-config.max_phr_len)
+                    if mode == "Train":
+                        mix_stft = voc_stft[voc_idx:voc_idx+config.max_phr_len,:]*np.clip(np.random.rand(1),0.7,0.9) + back_stft[bac_idx:bac_idx+config.max_phr_len,:]*np.clip(np.random.rand(1),0.0,0.7)
+                    else: 
+                        mix_stft = voc_stft[voc_idx:voc_idx+config.max_phr_len,:]
+
                     targets_f0_1.append(f0_quant[voc_idx:voc_idx+config.max_phr_len])
                     targets_f0_2.append(f0_midi[voc_idx:voc_idx+config.max_phr_len])
                     if Flag:
@@ -190,7 +193,7 @@ def data_gen(mode = 'Train', sec_mode = 0):
 
         # import pdb;pdb.set_trace()
 
-        inputs_norm = inputs/max_voc
+        inputs_norm = inputs/max_mix
 
         if Flag:
 
