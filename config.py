@@ -7,7 +7,8 @@ wav_dir_nus = '../datasets/nus-smc-corpus_48/'
 wav_dir_mus = '../datasets/musdb18/train/'
 wav_dir_mir = '../datasets/MIR1k/'
 wav_dir_med = '../datasets/medleydB/'
-wav_dir_timit = '../datasets/TIMIT/TIMIT/'
+wav_dir_vctk = '../datasets/VCTK/VCTK_files/VCTK-Corpus/wav48/'
+wav_dir_vctk_lab = '../datasets/VCTK/VCTK_files/VCTK-Corpus/forPritish/'
 
 
 voice_dir = './voice/'
@@ -45,7 +46,7 @@ def get_teacher_prob(epoch):
 
 
 
-phonemas = ['t', 'y', 'l', 'k', 'aa', 'jh', 'ae', 'ng', 'ah', 'hh', 'z', 'ey', 'f', 'uw', 'iy', 'ay', 'b', 's', 'd', 'sil', 'p', 'n', 'sh', 'ao', 'g', 'ch', 'ih', 'eh', 'aw', 'sp', 'oy', 'th', 'w', 'ow', 'v', 'uh', 'm', 'er', 'zh', 'r', 'dh']
+phonemas = ['t', 'y', 'l', 'k', 'aa', 'jh', 'ae', 'ng', 'ah', 'hh', 'z', 'ey', 'f', 'uw', 'iy', 'ay', 'b', 's', 'd', 'sil', 'p', 'n', 'sh', 'ao', 'g', 'ch', 'ih', 'eh', 'aw', 'sp', 'oy', 'th', 'w', 'ow', 'v', 'uh', 'm', 'er', 'zh', 'r', 'dh', 'ax']
 
 # phonemas_weights = [1.91694048e-03, 3.13983774e-03, 2.37052131e-03, 3.88045684e-03,
 #        1.41986299e-03, 1.12648565e-02, 3.30023014e-03, 5.00321922e-03,
