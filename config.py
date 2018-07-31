@@ -12,7 +12,7 @@ wav_dir_timit = '../datasets/TIMIT/TIMIT/'
 
 voice_dir = './voice/'
 backing_dir = './backing/'
-log_dir = './log_spec_to_feat_sim_noiseback_phoweights_reg/'
+log_dir = './log_spec_to_feat_sim_noiseback_phoweights_reg_ext/'
 log_dir_m1 = './log_m1_old/'
 # log_dir = './log_mfsc_6_best_so_far/'
 data_log = './log/data_log.log'

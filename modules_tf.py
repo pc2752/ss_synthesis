@@ -534,9 +534,15 @@ def phone_network(inputs, f0, prob, regularizer = None):
 
     output_1 = bi_static_stacked_RNN(embed_1, scope = 'RNN_2')
 
-    phonemes = tf.layers.dense(output_1, 41)
+    output_side = tf.layers.dense(output_1, 1, activation=tf.nn.relu)
 
-    return phonemes
+    output_2 = tf.concat([output_1, output_side], axis = -1)
+
+    output_2 = bi_static_stacked_RNN(output_2, scope = 'RNN_3')
+
+    phonemes = tf.layers.dense(output_2, 41)
+
+    return output_side, phonemes
 
 def singer_network(inputs, prob):
 
