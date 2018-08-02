@@ -13,7 +13,7 @@ wav_dir_vctk_lab = '../datasets/VCTK/VCTK_files/VCTK-Corpus/forPritish/'
 
 voice_dir = './voice/'
 backing_dir = './backing/'
-log_dir = './log_feat_to_feat_sim_noise_phoweights_reg/'
+log_dir = './log_feat_to_feat_speech/'
 log_dir_m1 = './log_m1_old/'
 # log_dir = './log_mfsc_6_best_so_far/'
 data_log = './log/data_log.log'
@@ -60,32 +60,32 @@ phonemas = ['t', 'y', 'l', 'k', 'aa', 'jh', 'ae', 'ng', 'ah', 'hh', 'z', 'ey', '
 #        2.42758721e-03, 1.96789743e-03, 5.61834716e-01, 2.38381211e-03,
 #        8.39230304e-03]
 
-phonemas_weights = np.ones(41)*0.9
-phonemas_weights[19] = 0.5
-phonemas_weights[15] = 0.75
-phonemas_weights[8] = 0.75
-phonemas_weights[14] = 0.75
-phonemas_weights[27] = 0.8
-phonemas_weights[33] = 0.8
-phonemas_weights[11] = 0.8
-phonemas_weights[17] = 0.85
-phonemas_weights[21] = 0.85
-phonemas_weights[13] = 0.85
-phonemas_weights[4] = 0.85
-phonemas_weights[34] = 0.95
-phonemas_weights[16] = 0.95
-phonemas_weights[22] = 0.95
-phonemas_weights[40] = 0.95
-phonemas_weights[24] = 0.95
-phonemas_weights[20] = 0.95
-phonemas_weights[5] = 0.95
-phonemas_weights[25] = 0.95
-phonemas_weights[30] = 0.95
-phonemas_weights[35] = 0.95
-phonemas_weights[10] = 0.95
-phonemas_weights[31] = 0.95
-phonemas_weights[29] = 1.0
-phonemas_weights[38] = 1.0
+phonemas_weights = np.ones(42)
+phonemas_weights[19] = 0.75
+# phonemas_weights[15] = 0.75
+# phonemas_weights[8] = 0.75
+# phonemas_weights[14] = 0.75
+# phonemas_weights[27] = 0.8
+# phonemas_weights[33] = 0.8
+# phonemas_weights[11] = 0.8
+# phonemas_weights[17] = 0.85
+# phonemas_weights[21] = 0.85
+# phonemas_weights[13] = 0.85
+# phonemas_weights[4] = 0.85
+# phonemas_weights[34] = 0.95
+# phonemas_weights[16] = 0.95
+# phonemas_weights[22] = 0.95
+# phonemas_weights[40] = 0.95
+# phonemas_weights[24] = 0.95
+# phonemas_weights[20] = 0.95
+# phonemas_weights[5] = 0.95
+# phonemas_weights[25] = 0.95
+# phonemas_weights[30] = 0.95
+# phonemas_weights[35] = 0.95
+# phonemas_weights[10] = 0.95
+# phonemas_weights[31] = 0.95
+# phonemas_weights[29] = 1.0
+# phonemas_weights[38] = 1.0
 
 val_files = 30
 

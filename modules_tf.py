@@ -357,17 +357,17 @@ def f0_network(inputs, prob):
 
     return f0_1
 
-def f0_network_2(encoded, f0, phones, prob):
+def f0_network_2(encoded, phones, prob):
 
     encoded_embedding = tf.layers.dense(encoded, 32)
 
 
     
-    embed_1 = tf.layers.dense(f0, 64)
+    # embed_1 = tf.layers.dense(f0, 64)
 
     embed_ph = tf.layers.dense(phones, 64)
 
-    inputs_2 = tf.nn.dropout(tf.concat([embed_1, embed_ph], axis = -1), prob)
+    inputs_2 = tf.nn.dropout(embed_ph, prob)
 
     conv1 = tf.layers.conv1d(inputs=inputs_2, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu)
 
@@ -407,7 +407,7 @@ def f0_network_2(encoded, f0, phones, prob):
 
     output_1 = tf.nn.dropout(tf.layers.dense(output_1, 256), prob)
 
-    f0_1 = tf.layers.dense(output_1, 256)
+    f0_1 = tf.layers.dense(output_1, 1)
 
     return f0_1
 
@@ -522,7 +522,7 @@ def final_net(encoded, f0, phones, prob):
 
 #     return final_voc_phase
 
-def phone_network(inputs, f0, prob, regularizer = None):
+def phone_network(inputs, prob, regularizer = None):
 
     # regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
 
@@ -534,7 +534,7 @@ def phone_network(inputs, f0, prob, regularizer = None):
 
     output_1 = bi_static_stacked_RNN(embed_1, scope = 'RNN_2')
 
-    phonemes = tf.layers.dense(output_1, 41)
+    phonemes = tf.layers.dense(output_1, 42)
 
     return phonemes
 
@@ -559,7 +559,7 @@ def singer_network(inputs, prob):
 
     encoded_1= tf.nn.dropout(tf.layers.dense(encoded, 64), prob)
 
-    singer = tf.layers.dense(encoded_1, 12)
+    singer = tf.layers.dense(encoded_1, 109)
 
     return encoded_1, singer
 
