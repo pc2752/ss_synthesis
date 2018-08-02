@@ -256,6 +256,7 @@ def stft_to_feats(vocals, fs, mode=config.comp_mode):
     f0 = pitch.extract_f0_sac(vocals, fs, 0.00580498866)
 
     y=69+12*np.log2(f0/440)
+    # import pdb;pdb.set_trace()
     # y = hertz_to_new_base(f0)
     nans, x= nan_helper(y)
     naners=np.isinf(y)
