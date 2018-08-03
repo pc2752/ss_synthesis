@@ -29,7 +29,7 @@ def data_gen(mode = 'Train', sec_mode = 0):
 
     # voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('ikala') and not x.startswith('nus_KENN') and not x == 'nus_MCUR_read_17.hdf5']
 
-    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and x.startswith('nus') and not x.startswith('nus_KENN') and not x == 'nus_MCUR_sing_04.hdf5' and not x == 'nus_MCUR_read_04.hdf5']
+    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and x.startswith('nus')  and not x.startswith('nus_KENN') and not x == 'nus_MCUR_sing_04.hdf5' and not x == 'nus_MCUR_read_04.hdf5' or x.startswith('vctk')]
 
     back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('med')]
 
@@ -144,17 +144,21 @@ def data_gen(mode = 'Train', sec_mode = 0):
             back_to_open = back_list[back_index]
 
             # back_file = h5py.File(config.backing_dir+back_to_open, "r")
-            if voc_to_open.startswith('nus'):
-                Flag = True
-                pho_target = np.array(voc_file["phonemes"])
-                haha = np.diff(pho_target)
-                # baba = haha/41
-                # baba[baba==0]=np.nan
-                # baba = np.nan_to_num(baba)
-                # baba = np.pad(baba, (0,1), mode = 'constant')
-                # import pdb;pdb.set_trace()
-                singer_name = voc_to_open.split('_')[1]
-                singer_index = config.singers.index(singer_name)
+            if voc_to_open.startswith('nus') or voc_to_open.startswith('vctk') :
+                if not  "phonemes" in voc_file:
+                    print(voc_file)
+                    Flag = False
+                else: 
+                    Flag = True
+                    pho_target = np.array(voc_file["phonemes"])
+                    haha = np.diff(pho_target)
+                    # baba = haha/41
+                    # baba[baba==0]=np.nan
+                    # baba = np.nan_to_num(baba)
+                    # baba = np.pad(baba, (0,1), mode = 'constant')
+                    # import pdb;pdb.set_trace()
+                    singer_name = voc_to_open.split('_')[1]
+                    singer_index = config.singers.index(singer_name)
             else:
                 Flag = False
 
@@ -202,7 +206,7 @@ def data_gen(mode = 'Train', sec_mode = 0):
 
 
 def get_stats():
-    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and x.startswith('nus') and not x.startswith('nus_KENN') and not x == 'nus_MCUR_sing_04.hdf5' and not x == 'nus_MCUR_read_04.hdf5']
+    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and x.startswith('nus') or x.startswith('vctk') and not x.startswith('nus_KENN') and not x == 'nus_MCUR_sing_04.hdf5' and not x == 'nus_MCUR_read_04.hdf5']
 
     back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('med')]
 
@@ -279,7 +283,7 @@ def get_stats():
             if mini_voc_stft[i]<min_mix[i]:
                 min_mix[i] = mini_voc_stft[i]
 
-    hdf5_file = h5py.File(config.stat_dir+'nus_stats.hdf5', mode='w')
+    hdf5_file = h5py.File(config.stat_dir+'stats.hdf5', mode='w')
 
     hdf5_file.create_dataset("feats_maximus", [66], np.float32) 
     hdf5_file.create_dataset("feats_minimus", [66], np.float32)   

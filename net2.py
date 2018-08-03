@@ -45,26 +45,26 @@ def train(_):
         # output_phase_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.input_features),name='output_phase_placeholder')
 
         f0_target_placeholder_midi = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len),name='f0_target_midi_placeholder')
-        onehot_labels_f0_midi = tf.one_hot(indices=tf.cast(f0_target_placeholder_midi, tf.int32), depth=55)
+        onehot_labels_f0_midi = tf.one_hot(indices=tf.cast(f0_target_placeholder_midi, tf.int32), depth=57)
 
-        f0_input_placeholder_midi = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 55),name='f0_input_placeholder')
+        f0_input_placeholder_midi = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 57),name='f0_input_placeholder')
 
         f0_target_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len),name='f0_target_placeholder')
         onehot_labels_f0 = tf.one_hot(indices=tf.cast(f0_target_placeholder, tf.int32), depth=256)
 
         f0_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 256),name='f0_input_placeholder')
 
-        pho_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 41),name='pho_input_placeholder')
+        pho_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 42),name='pho_input_placeholder')
 
         prob = tf.placeholder_with_default(1.0, shape=())
 
         # tf.summary.histogram('targets', target_placeholder)
         
         labels = tf.placeholder(tf.int32, shape=(config.batch_size,config.max_phr_len),name='phoneme_placeholder')
-        onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=41)
+        onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=42)
 
         singer_labels = tf.placeholder(tf.int32, shape=(config.batch_size),name='singer_id_placeholder')
-        onehot_labels_singer = tf.one_hot(indices=tf.cast(singer_labels, tf.int32), depth=12)
+        onehot_labels_singer = tf.one_hot(indices=tf.cast(singer_labels, tf.int32), depth=121)
 
         singer_embedding_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,64),name='singer_embedding_placeholder')
 
@@ -339,10 +339,10 @@ def train(_):
 
                     f0_1_one_hot = one_hotize(targets_f0_1, max_index=256)
 
-                    f0_2_one_hot = one_hotize(targets_f0_2, max_index=55)
+                    f0_2_one_hot = one_hotize(targets_f0_2, max_index=57)
 
                     if Flag:
-                        pho_one_hot = one_hotize(pho_targs, max_index=41)
+                        pho_one_hot = one_hotize(pho_targs, max_index=42)
 
                     featies = np.concatenate((feats_targets, (targets_f0_1/256.0).reshape(config.batch_size, config.max_phr_len, 1)),axis=-1)
 
@@ -439,9 +439,9 @@ def train(_):
 
                     f0_1_one_hot = one_hotize(targets_f0_1, max_index=256)
 
-                    f0_2_one_hot = one_hotize(targets_f0_2, max_index=55)
+                    f0_2_one_hot = one_hotize(targets_f0_2, max_index=57)
 
-                    pho_one_hot = one_hotize(pho_targs, max_index=41)
+                    pho_one_hot = one_hotize(pho_targs, max_index=42)
 
                     featies = np.concatenate((feats_targets, (targets_f0_1/256.0).reshape(config.batch_size, config.max_phr_len, 1)),axis=-1)
 
@@ -594,7 +594,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=41)
 
         singer_labels = tf.placeholder(tf.int32, shape=(config.batch_size),name='singer_id_placeholder')
-        onehot_labels_singer = tf.one_hot(indices=tf.cast(singer_labels, tf.int32), depth=12)
+        onehot_labels_singer = tf.one_hot(indices=tf.cast(singer_labels, tf.int32), depth=121)
 
         singer_embedding_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,64),name='singer_embedding_placeholder')
 
@@ -937,7 +937,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         out_batches_pho_target = np.array(out_batches_pho_target)
         out_batches_pho_target = utils.overlapadd(out_batches_pho_target, nchunks_in)   
 
-        pho_target_oh = one_hotize(pho_target, max_index=41)
+        pho_target_oh = one_hotize(pho_target, max_index=42)
 
         f0_midi_oh = one_hotize(f0_midi, max_index=54)
 
