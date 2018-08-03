@@ -288,18 +288,18 @@ def get_stats_phonems():
 
     phon=collections.Counter([])
 
-    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and x.startswith('nus') and not x.startswith('nus_KENN') and not x == 'nus_MCUR_read_17.hdf5']
+    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and x.startswith('vctk') ]
 
     for voc_to_open in voc_list:
 
         voc_file = h5py.File(config.voice_dir+voc_to_open, "r")
         pho_target = np.array(voc_file["phonemes"])
         phon += collections.Counter(pho_target)
-    phonemas_weights = np.zeros(41)
+    phonemas_weights = np.zeros(42)
     for pho in phon:
         phonemas_weights[pho] = phon[pho]
 
-    phonemas_above_threshold = [config.phonemas[x[0]] for x in np.argwhere(phonemas_weights>70000)]
+    # phonemas_above_threshold = [config.phonemas[x[0]] for x in np.argwhere(phonemas_weights>70000)]
 
     pho_order = phonemas_weights.argsort()
 
@@ -310,7 +310,7 @@ def get_stats_phonems():
 
 def main():
     # gen_train_val()
-    # get_stats()
+    get_stats_phonems()
     gen = data_gen('Val', sec_mode = 0)
     while True :
         start_time = time.time()
