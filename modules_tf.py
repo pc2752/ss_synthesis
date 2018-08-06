@@ -459,7 +459,7 @@ def final_net(encoded, f0, phones, prob):
 
     output_1 = tf.nn.dropout(tf.layers.dense(output_1, 256), prob)
 
-    final_voc = tf.layers.dense(output_1, 64)
+    final_voc = tf.layers.dense(output_1, 66)
 
     return final_voc
 
@@ -491,28 +491,32 @@ def phone_network(inputs, prob, regularizer = None):
 
 def singer_network(inputs, prob):
 
-    embed_1 = tf.nn.dropout(tf.layers.dense(inputs, 32), prob)
 
 
-    conv1 = tf.layers.conv1d(inputs=embed_1, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu)
+    embed_1 = tf.layers.dense(inputs, 32, name = "s1")
 
-    maxpool1 = tf.layers.max_pooling1d(conv1, pool_size=2, strides=2, padding='same')
 
-    conv2 = tf.nn.dropout(tf.layers.conv1d(inputs=maxpool1, filters=64, kernel_size=4, padding='same', activation=tf.nn.relu), prob)
+    conv1 = tf.layers.conv1d(inputs=embed_1, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu, name = "s2")
 
-    maxpool2 = tf.layers.max_pooling1d(conv2, pool_size=2, strides=2, padding='same')
+    # maxpool1 = tf.layers.max_pooling1d(conv1, pool_size=2, strides=2, padding='same', name = "s3")
 
-    conv3 = tf.nn.dropout(tf.layers.conv1d(inputs=maxpool2, filters=32, kernel_size=4, padding='same', activation=tf.nn.relu), prob)
+    conv2 = tf.layers.conv1d(inputs=conv1, filters=64, kernel_size=4, padding='same', activation=tf.nn.relu, name = "s4")
 
-    encoded = tf.layers.max_pooling1d(conv3, pool_size=2, strides=2, padding='same')
+    # maxpool2 = tf.layers.max_pooling1d(conv2, pool_size=2, strides=2, padding='same', name = "s5")
 
-    encoded = tf.reshape(encoded, [config.batch_size, -1])
+    conv3 = tf.layers.conv1d(inputs=conv2, filters=32, kernel_size=4, padding='same', activation=tf.nn.relu, name = "s6")
 
-    encoded_1= tf.layers.dense(encoded, 256)
+    # encoded = tf.layers.max_pooling1d(conv3, pool_size=2, strides=2, padding='same', name = "s7")
 
-    singer = tf.layers.dense(encoded_1, 121)
+    encoded = tf.reshape(conv3, [config.batch_size, -1], name = "s8")
+
+    encoded_1= tf.layers.dense(encoded, 256, name = "s9")
+
+    singer = tf.layers.dense(encoded_1, 121, name = "s10")
 
     return encoded_1, singer
+
+
 
 
 
