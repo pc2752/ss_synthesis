@@ -41,6 +41,12 @@ def griffinlim(spectrogram, n_iter = 50, window = 'hann', n_fft = 1024, hop_leng
     return inverse
 
 
+def shuffle_two(a,b):
+    c = np.c_[a.reshape(len(a), -1), b.reshape(len(b), -1)]
+    np.random.shuffle(c)
+    a2 = c[:, :a.size//len(a)].reshape(a.shape)
+    b2 = c[:, a.size//len(a):].reshape(b.shape)
+    return a2, b2
 
 
 def stft(data, window=np.hanning(1024),
