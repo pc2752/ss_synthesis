@@ -465,7 +465,7 @@ def final_net(encoded, f0, phones, prob):
 
 
 
-def phone_network(inputs, f0, prob, regularizer = None):
+def phone_network(inputs, prob, regularizer = None):
 
     # regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
 
@@ -498,17 +498,17 @@ def singer_network(inputs, prob):
 
     maxpool1 = tf.layers.max_pooling1d(conv1, pool_size=2, strides=2, padding='same')
 
-    conv2 = tf.layers.conv1d(inputs=maxpool1, filters=64, kernel_size=4, padding='same', activation=tf.nn.relu)
+    conv2 = tf.nn.dropout(tf.layers.conv1d(inputs=maxpool1, filters=64, kernel_size=4, padding='same', activation=tf.nn.relu), prob)
 
     maxpool2 = tf.layers.max_pooling1d(conv2, pool_size=2, strides=2, padding='same')
 
-    conv3 = tf.layers.conv1d(inputs=maxpool2, filters=32, kernel_size=4, padding='same', activation=tf.nn.relu)
+    conv3 = tf.nn.dropout(tf.layers.conv1d(inputs=maxpool2, filters=32, kernel_size=4, padding='same', activation=tf.nn.relu), prob)
 
     encoded = tf.layers.max_pooling1d(conv3, pool_size=2, strides=2, padding='same')
 
     encoded = tf.reshape(encoded, [config.batch_size, -1])
 
-    encoded_1= tf.nn.dropout(tf.layers.dense(encoded, 64), prob)
+    encoded_1= tf.layers.dense(encoded, 256)
 
     singer = tf.layers.dense(encoded_1, 121)
 

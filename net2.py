@@ -37,10 +37,10 @@ def train(_):
     min_feat = np.array(stat_file["feats_minimus"])
     with tf.Graph().as_default():
         
-        input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,65),name='input_placeholder')
+        input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,66),name='input_placeholder')
         tf.summary.histogram('inputs', input_placeholder)
 
-        output_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,64),name='output_placeholder')
+        output_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,66),name='output_placeholder')
 
         # output_phase_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.input_features),name='output_phase_placeholder')
 
@@ -49,10 +49,10 @@ def train(_):
 
         f0_input_placeholder_midi = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 57),name='f0_input_placeholder')
 
-        f0_target_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len),name='f0_target_placeholder')
-        onehot_labels_f0 = tf.one_hot(indices=tf.cast(f0_target_placeholder, tf.int32), depth=256)
+        # f0_target_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len),name='f0_target_placeholder')
+        # onehot_labels_f0 = tf.one_hot(indices=tf.cast(f0_target_placeholder, tf.int32), depth=256)
 
-        f0_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 256),name='f0_input_placeholder')
+        # f0_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 256),name='f0_input_placeholder')
 
         pho_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 42),name='pho_input_placeholder')
 
@@ -69,7 +69,7 @@ def train(_):
         singer_labels_2 = tf.placeholder(tf.int32, shape=(config.batch_size),name='singer_id_placeholder_2')
         onehot_labels_singer_2 = tf.one_hot(indices=tf.cast(singer_labels_2, tf.int32), depth=121)
 
-        singer_embedding_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,64),name='singer_embedding_placeholder')
+        singer_embedding_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,256),name='singer_embedding_placeholder')
 
 
 
@@ -80,13 +80,13 @@ def train(_):
             f0_classes_midi = tf.argmax(f0_logits_midi, axis=-1)
             f0_probs_midi = tf.nn.softmax(f0_logits_midi)
 
-        with tf.variable_scope('F0_Model_256') as scope:
-            f0_logits = modules.f0_network_2(singer_embedding_placeholder, f0_input_placeholder_midi, pho_input_placeholder, prob)
-            f0_classes = tf.argmax(f0_logits, axis=-1)
-            f0_probs = tf.nn.softmax(f0_logits)
+        # with tf.variable_scope('F0_Model_256') as scope:
+        #     f0_logits = modules.f0_network_2(singer_embedding_placeholder, f0_input_placeholder_midi, pho_input_placeholder, prob)
+        #     f0_classes = tf.argmax(f0_logits, axis=-1)
+        #     f0_probs = tf.nn.softmax(f0_logits)
 
         with tf.variable_scope('Final_Model') as scope:
-            voc_output = modules.final_net(singer_embedding_placeholder, f0_input_placeholder, pho_input_placeholder, prob)
+            voc_output = modules.final_net(singer_embedding_placeholder, f0_input_placeholder_midi, pho_input_placeholder, prob)
             voc_output_decoded = tf.nn.sigmoid(voc_output)
 
         # with tf.variable_scope('Final_Model_Phase') as scope:
@@ -95,7 +95,7 @@ def train(_):
 
         with tf.variable_scope('phone_Model') as scope:
             regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
-            pho_logits = modules.phone_network(input_placeholder, f0_input_placeholder_midi, prob, regularizer = regularizer)
+            pho_logits = modules.phone_network(input_placeholder, prob, regularizer = regularizer)
             pho_classes = tf.argmax(pho_logits, axis=-1)
             pho_probs = tf.nn.softmax(pho_logits)
 
@@ -108,16 +108,8 @@ def train(_):
 
         final_vars = [x for x in varys if x.name.startswith('Final_Model')]
 
-        # import pdb;pdb.set_trace()
 
-        # initial_loss = tf.reduce_sum(tf.abs(op - target_placeholder[:,:,:60])*np.linspace(1.0,0.7,60)*(1-target_placeholder[:,:,-1:]))
-
-        # harm_loss = tf.reduce_sum(tf.abs(harm - target_placeholder[:,:,:60])*np.linspace(1.0,0.7,60))
-
-        # ap_loss = tf.reduce_sum(tf.abs(ap - target_placeholder[:,:,60:-2]))
-
-        # f0_loss = tf.reduce_sum(tf.abs(f0 - target_placeholder[:,:,-2:-1])*(1-target_placeholder[:,:,-1:])) 
-        f0_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels_f0, logits=f0_logits))
+        # f0_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels_f0, logits=f0_logits))
 
         f0_loss_midi = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels_f0_midi, logits=f0_logits_midi))
 

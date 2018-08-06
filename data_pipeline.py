@@ -180,7 +180,7 @@ def data_gen(mode = 'Train', sec_mode = 0):
                         # pho_targs_2.append(baba[voc_idx:voc_idx+config.max_phr_len])
                         targets_singers.append(singer_index)
                     inputs.append(mix_stft)
-                    feats_targs.append(feats[voc_idx:voc_idx+config.max_phr_len,:-2])
+                    feats_targs.append(feats[voc_idx:voc_idx+config.max_phr_len])
 
         targets_f0_1 = np.array(targets_f0_1)
 
@@ -188,7 +188,7 @@ def data_gen(mode = 'Train', sec_mode = 0):
         
         inputs = np.array(inputs)
 
-        feats_targs = (np.array(feats_targs)-min_feat[:-2])/(max_feat[:-2]-min_feat[:-2])
+        feats_targs = (np.array(feats_targs)-min_feat)/(max_feat-min_feat)
 
         # inputs_norm = inputs/(inputs.max(axis = 1).max(axis = 0))
 
