@@ -643,13 +643,13 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
     with tf.Graph().as_default():
 
-        speaker_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,65),name='speaker_input_placeholder')
+        speaker_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,66),name='speaker_input_placeholder')
 
         
-        input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,65),name='input_placeholder')
+        input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,66),name='input_placeholder')
         tf.summary.histogram('inputs', input_placeholder)
 
-        output_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,64),name='output_placeholder')
+        output_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,66),name='output_placeholder')
 
         # output_phase_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.input_features),name='output_phase_placeholder')
 
@@ -658,10 +658,10 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         f0_input_placeholder_midi = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 57),name='f0_input_placeholder')
 
-        f0_target_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len),name='f0_target_placeholder')
-        onehot_labels_f0 = tf.one_hot(indices=tf.cast(f0_target_placeholder, tf.int32), depth=256)
+        # f0_target_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len),name='f0_target_placeholder')
+        # onehot_labels_f0 = tf.one_hot(indices=tf.cast(f0_target_placeholder, tf.int32), depth=256)
 
-        f0_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 256),name='f0_input_placeholder')
+        # f0_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 256),name='f0_input_placeholder')
 
         pho_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 42),name='pho_input_placeholder')
 
@@ -675,7 +675,11 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         singer_labels = tf.placeholder(tf.int32, shape=(config.batch_size),name='singer_id_placeholder')
         onehot_labels_singer = tf.one_hot(indices=tf.cast(singer_labels, tf.int32), depth=121)
 
-        singer_embedding_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,64),name='singer_embedding_placeholder')
+        singer_labels_2 = tf.placeholder(tf.int32, shape=(config.batch_size),name='singer_id_placeholder_2')
+        onehot_labels_singer_2 = tf.one_hot(indices=tf.cast(singer_labels_2, tf.int32), depth=121)
+
+        singer_embedding_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,256),name='singer_embedding_placeholder')
+
 
 
 
@@ -685,17 +689,22 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
             f0_classes_midi = tf.argmax(f0_logits_midi, axis=-1)
             f0_probs_midi = tf.nn.softmax(f0_logits_midi)
 
-        with tf.variable_scope('F0_Model_256') as scope:
-            f0_logits = modules.f0_network_2(singer_embedding_placeholder, f0_input_placeholder_midi, pho_input_placeholder, prob)
-            f0_classes = tf.argmax(f0_logits, axis=-1)
-            f0_probs = tf.nn.softmax(f0_logits)
+        # with tf.variable_scope('F0_Model_256') as scope:
+        #     f0_logits = modules.f0_network_2(singer_embedding_placeholder, f0_input_placeholder_midi, pho_input_placeholder, prob)
+        #     f0_classes = tf.argmax(f0_logits, axis=-1)
+        #     f0_probs = tf.nn.softmax(f0_logits)
 
         with tf.variable_scope('Final_Model') as scope:
-            voc_output = modules.final_net(singer_embedding_placeholder, f0_input_placeholder, pho_input_placeholder, prob)
+            voc_output = modules.final_net(singer_embedding_placeholder, f0_input_placeholder_midi, pho_input_placeholder, prob)
             voc_output_decoded = tf.nn.sigmoid(voc_output)
 
+        # with tf.variable_scope('Final_Model_Phase') as scope:
+        #     voc_output_phase = modules.final_net_phase(singer_embedding_placeholder, f0_input_placeholder, pho_input_placeholder, input_placeholder, prob)
+        #     voc_output_phase_decoded = tf.nn.sigmoid(voc_output_phase)
+
         with tf.variable_scope('phone_Model') as scope:
-            pho_logits = modules.phone_network(input_placeholder, f0_input_placeholder_midi, prob)
+            regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
+            pho_logits = modules.phone_network(input_placeholder, prob, regularizer = regularizer)
             pho_classes = tf.argmax(pho_logits, axis=-1)
             pho_probs = tf.nn.softmax(pho_logits)
 
@@ -703,7 +712,6 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
             singer_embedding, singer_logits = modules.singer_network(speaker_input_placeholder, prob)
             singer_classes = tf.argmax(singer_logits, axis=-1)
             singer_probs = tf.nn.softmax(singer_logits)
-
         # with tf.variable_scope('Final_Model_Phase') as scope:
         #     voc_output_phase = modules.final_net_phase(singer_embedding_placeholder, f0_input_placeholder, pho_input_placeholder, input_placeholder, prob)
         #     voc_output_phase_decoded = tf.nn.sigmoid(voc_output_phase)
@@ -717,7 +725,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         sess.run(init_op)
 
-        ckpt = tf.train.get_checkpoint_state('./log_feat_to_feat_sim_wavenet/')
+        ckpt = tf.train.get_checkpoint_state(config.log_dir)
 
         if ckpt and ckpt.model_checkpoint_path:
             print("Using the model in %s"%ckpt.model_checkpoint_path)
@@ -775,7 +783,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         f0_midi = f0_midi * (1-feats[:,-1]) 
 
-        featies = np.concatenate(((np.array(feats[:,:-2])-min_feat[:-2])/(max_feat[:-2]-min_feat[:-2]), (f0_quant/256.0).reshape(-1, 1)), axis = -1)
+        featies = feats
 
 
 
@@ -801,7 +809,9 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         # import pdb;pdb.set_trace()
 
-        speaker_featies = np.concatenate(((np.array(speaker_feats[:,:-2])-min_feat[:-2])/(max_feat[:-2]-min_feat[:-2]), (speaker_f0_quant/256.0).reshape(-1 , 1)), axis = -1)
+        # speaker_featies = np.concatenate(((np.array(speaker_feats[:,:-2])-min_feat[:-2])/(max_feat[:-2]-min_feat[:-2]), (speaker_f0_quant/256.0).reshape(-1 , 1)), axis = -1)
+        
+        speaker_featies = (np.array(speaker_feats)-min_feat)/(max_feat-min_feat)
 
         speaker_featies = np.repeat(speaker_featies, int(np.ceil(featies.shape[0]/speaker_featies.shape[0])),0)
 
@@ -821,7 +831,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         in_batches_f0_midi, nchunks_in = utils.generate_overlapadd(f0_midi.reshape(-1,1))
 
-        in_batches_f0_quant, nchunks_in = utils.generate_overlapadd(f0_quant.reshape(-1,1))
+        # in_batches_f0_quant, nchunks_in = utils.generate_overlapadd(f0_quant.reshape(-1,1))
 
         in_batches_pho, nchunks_in_pho = utils.generate_overlapadd(pho_target.reshape(-1,1))
 
@@ -854,7 +864,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
 
-        for in_batch_voc_stft, in_batch_f0_midi, in_batch_f0_quant, in_batch_pho_target, in_batch_speaker_feat, in_batch_feat  in zip(in_batches_voc_stft, in_batches_f0_midi, in_batches_f0_quant, in_batches_pho, in_batches_speaker_feats, in_batches_feat):
+        for in_batch_voc_stft, in_batch_f0_midi,  in_batch_pho_target, in_batch_speaker_feat, in_batch_feat  in zip(in_batches_voc_stft, in_batches_f0_midi, in_batches_pho, in_batches_speaker_feats, in_batches_feat):
         # for in_batch_voc_stft, in_batch_f0_midi, in_batch_f0_quant in zip(in_batches_voc_stft, in_batches_f0_midi, in_batches_f0_quant):
 
             # in_batch_voc_stft = in_batch_voc_stft/(in_batch_voc_stft.max(axis = 1).max(axis = 0))
@@ -874,7 +884,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
             # in_batch_voc_stft = in_batch_voc_stft.reshape([config.batch_size, config.max_phr_len, 256])
 
-            in_batch_f0_quant = in_batch_f0_quant.reshape([config.batch_size, config.max_phr_len])
+            # in_batch_f0_quant = in_batch_f0_quant.reshape([config.batch_size, config.max_phr_len])
 
             in_batch_f0_midi = in_batch_f0_midi.reshape([config.batch_size, config.max_phr_len])
 
@@ -885,14 +895,14 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
             pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: in_batch_feat,f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=57)} )
 
-            f0_outputs_2 = sess.run(f0_probs, feed_dict={singer_embedding_placeholder: s_embed, 
-                f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=57), pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=42)} )
+            # f0_outputs_2 = sess.run(f0_probs, feed_dict={singer_embedding_placeholder: s_embed, 
+            #     f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=57), pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=42)} )
 
             # output_voc_stft = sess.run(voc_output_decoded, feed_dict={f0_input_placeholder: one_hotize(in_batch_f0_quant, max_index=256),
             #     pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41), output_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed})
 
 
-            output_feats = sess.run(voc_output_decoded, feed_dict={f0_input_placeholder: f0_outputs_2,
+            output_feats = sess.run(voc_output_decoded, feed_dict={f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=57),
                 pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=42),singer_embedding_placeholder: s_embed})
 
             # output_voc_stft_phase = sess.run(voc_output_phase_decoded, feed_dict={input_placeholder: output_voc_stft, f0_input_placeholder: f0_outputs_2,
@@ -904,7 +914,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
             out_batches_f0_midi.append(f0_outputs_1)
 
-            out_batches_f0_quant.append(f0_outputs_2)
+            # out_batches_f0_quant.append(f0_outputs_2)
 
             out_batches_pho_target.append(pho_outs)
 
@@ -927,36 +937,39 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         out_batches_f0_midi = np.array(out_batches_f0_midi)
         out_batches_f0_midi = utils.overlapadd(out_batches_f0_midi, nchunks_in)    
 
-        out_batches_f0_quant = np.array(out_batches_f0_quant)
-        out_batches_f0_quant = utils.overlapadd(out_batches_f0_quant, nchunks_in) 
+        # out_batches_f0_quant = np.array(out_batches_f0_quant)
+        # out_batches_f0_quant = utils.overlapadd(out_batches_f0_quant, nchunks_in) 
 
-        f0_output= np.argmax(out_batches_f0_quant, axis = -1).astype('float32')
-        f0_output[f0_output == 0] = np.nan
+        # f0_output= np.argmax(out_batches_f0_quant, axis = -1).astype('float32')
+        # f0_output[f0_output == 0] = np.nan
 
-        f0_output = (f0_output - 1)/255
+        # f0_output = (f0_output - 1)/255
 
-        f0_output = f0_output*(max_feat[-2]-min_feat[-2]) + min_feat[-2]
-        f0_output = np.nan_to_num(f0_output)
+        # f0_output = f0_output*(max_feat[-2]-min_feat[-2]) + min_feat[-2]
+        # f0_output = np.nan_to_num(f0_output)
 
-        out_batches_feats = out_batches_feats*(max_feat[:-2]-min_feat[:-2])+min_feat[:-2]
+        out_batches_feats = out_batches_feats*(max_feat-min_feat)+min_feat
 
 
-        haha = np.concatenate((out_batches_feats[:f0.shape[0]], feats[:,-2:-1], feats[:,-1:]) ,axis=-1)
+        # haha = np.concatenate((out_batches_feats[:f0.shape[0]], feats[:,-2:-1], feats[:,-1:]) ,axis=-1)
+        haha = out_batches_feats[:f0.shape[0]]
+        # import pdb;pdb.set_trace()
+        haha[:,-2:] = feats[:,-2:]
         # import pdb;pdb.set_trace()
         haha = np.ascontiguousarray(haha)
 
-        jaja = np.concatenate((out_batches_feats[:f0.shape[0]], f0_output[:f0.shape[0]].reshape(-1,1)) ,axis=-1)
+        # jaja = np.concatenate((out_batches_feats[:f0.shape[0]], f0_output[:f0.shape[0]].reshape(-1,1)) ,axis=-1)
 
-        # import pdb;pdb.set_trace()
+        # # import pdb;pdb.set_trace()
 
-        jaja = np.concatenate((jaja,feats[:,-1:]) ,axis=-1)
+        # jaja = np.concatenate((jaja,feats[:,-1:]) ,axis=-1)
 
 
         
-        jaja = np.ascontiguousarray(jaja)
+        # jaja = np.ascontiguousarray(jaja)
 
-        hehe = np.concatenate((out_batches_feats[:f0.shape[0],:60], feats[:,60:]) ,axis=-1)
-        hehe = np.ascontiguousarray(hehe)
+        # hehe = np.concatenate((out_batches_feats[:f0.shape[0],:60], feats[:,60:]) ,axis=-1)
+        # hehe = np.ascontiguousarray(hehe)
 
         # import pdb;pdb.set_trace()
 
@@ -987,11 +1000,11 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         plt.subplot(212)
 
-        plt.imshow(out_batches_feats[:,60:].T,aspect='auto',origin='lower')
+        plt.imshow(out_batches_feats[:,60:-2].T,aspect='auto',origin='lower')
 
         plt.figure(3)
         plt.plot((feats[:,-2:-1]-69+(12*np.log2(440))-(12*np.log2(10)))*100)
-        plt.plot((f0_output-69+(12*np.log2(440))-(12*np.log2(10)))*100)
+        plt.plot((out_batches_feats[:,-2:-1]-69+(12*np.log2(440))-(12*np.log2(10)))*100)
         # plt.plot(f0_output)
 
         plt.show()
