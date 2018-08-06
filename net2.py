@@ -487,6 +487,8 @@ def train(_):
                 epoch_loss_singer = epoch_loss_singer/(config.batches_per_epoch_train*config.batch_size)
                 epoch_acc_singer = epoch_acc_singer/flag_count
 
+                epoch_total_loss = epoch_total_loss/(config.batches_per_epoch_train*config.batch_size)
+
                 epoch_loss_re_real = epoch_loss_re_real/(config.batches_per_epoch_train*config.batch_size)
                 epoch_loss_re_false = epoch_loss_re_false/(config.batches_per_epoch_train*config.batch_size)
                 epoch_loss_cg_real = epoch_loss_cg_real/(config.batches_per_epoch_train*config.batch_size)
@@ -567,6 +569,8 @@ def train(_):
                 epoch_acc_f0_midi_val = epoch_acc_f0_midi_val/pho_count_val
 
                 epoch_loss_singer_val = epoch_loss_singer_val/(config.batches_per_epoch_val*config.batch_size)
+
+                epoch_total_loss_val = epoch_total_loss_val/(config.batches_per_epoch_val*config.batch_size)
                 epoch_acc_singer_val = epoch_acc_singer_val/pho_count_val
                 # epoch_loss_vuv = epoch_loss_vuv/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len)
                 # epoch_total_loss_val = epoch_total_loss_val/(config.batches_per_epoch_val *config.batch_size)
