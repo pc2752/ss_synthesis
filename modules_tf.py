@@ -205,37 +205,37 @@ def nr_wavenet_block(conditioning, dilation_rate = 2, scope = 'nr_wavenet_block'
 
 
 # def nr_wavenet(inputs, num_block = config.wavenet_layers):
-def phone_network(inputs, f0, prob, regularizer = None, num_block = config.wavenet_layers):
+# def phone_network(inputs, f0, prob, regularizer = None, num_block = config.wavenet_layers):
 
-    prenet_out = tf.nn.dropout(tf.layers.dense(inputs, config.lstm_size*2,kernel_regularizer=regularizer), prob)
-    prenet_out = tf.nn.dropout(tf.layers.dense(prenet_out, config.lstm_size, kernel_regularizer=regularizer), prob)
+#     prenet_out = tf.nn.dropout(tf.layers.dense(inputs, config.lstm_size*2,kernel_regularizer=regularizer), prob)
+#     prenet_out = tf.nn.dropout(tf.layers.dense(prenet_out, config.lstm_size, kernel_regularizer=regularizer), prob)
 
-    receptive_field = 2**num_block
+#     receptive_field = 2**num_block
 
-    first_conv = tf.layers.conv1d(prenet_out, config.wavenet_filters, 1, kernel_regularizer=regularizer)
-    skips = []
-    skip, residual = nr_wavenet_block(first_conv, dilation_rate=1, scope = "nr_wavenet_block_0")
-    output = skip
-    for i in range(num_block):
-        skip, residual = nr_wavenet_block(residual, dilation_rate=2**(i+1), scope = "nr_wavenet_block_"+str(i+1))
-        skips.append(skip)
-    for skip in skips:
-        output+=skip
-    output = output+first_conv
+#     first_conv = tf.layers.conv1d(prenet_out, config.wavenet_filters, 1, kernel_regularizer=regularizer)
+#     skips = []
+#     skip, residual = nr_wavenet_block(first_conv, dilation_rate=1, scope = "nr_wavenet_block_0")
+#     output = skip
+#     for i in range(num_block):
+#         skip, residual = nr_wavenet_block(residual, dilation_rate=2**(i+1), scope = "nr_wavenet_block_"+str(i+1))
+#         skips.append(skip)
+#     for skip in skips:
+#         output+=skip
+#     output = output+first_conv
 
-    output = tf.nn.relu(output)
+#     output = tf.nn.relu(output)
 
-    output = tf.nn.dropout(tf.layers.conv1d(output,config.wavenet_filters,1, kernel_regularizer=regularizer), prob)
+#     output = tf.nn.dropout(tf.layers.conv1d(output,config.wavenet_filters,1, kernel_regularizer=regularizer), prob)
 
-    output = tf.nn.relu(output)
+#     output = tf.nn.relu(output)
 
-    output = tf.nn.dropout(tf.layers.conv1d(output,config.wavenet_filters,1, kernel_regularizer=regularizer), prob)
+#     output = tf.nn.dropout(tf.layers.conv1d(output,config.wavenet_filters,1, kernel_regularizer=regularizer), prob)
 
-    output = tf.nn.relu(output)
+#     output = tf.nn.relu(output)
 
-    phonemes = tf.layers.dense(output, 42)
+#     phonemes = tf.layers.dense(output, 42)
 
-    return phonemes
+#     return phonemes
 
 def f0_pho_network(inputs):
     embed_1 = tf.layers.dense(inputs, 256)
@@ -465,27 +465,29 @@ def final_net(encoded, f0, phones, prob):
 
 
 
-# def phone_network(inputs, f0, prob, regularizer = None):
+def phone_network(inputs, f0, prob, regularizer = None):
 
-#     # regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
+    # regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
 
-#     embed_pho = tf.layers.dense(tf.nn.dropout(inputs, prob), 64, kernel_regularizer=regularizer)
+    embed_pho = tf.layers.dense(tf.nn.dropout(inputs, prob), 64, kernel_regularizer=regularizer)
 
-#     # inputs_2 = tf.nn.dropout(tf.concat([inputs,embed_pho], axis = -1), prob)
+    # inputs_2 = tf.nn.dropout(tf.concat([inputs,embed_pho], axis = -1), prob)
 
-#     embed_1 = tf.nn.dropout(tf.layers.dense(embed_pho, 128, kernel_regularizer=regularizer), prob)
+    embed_1 = tf.nn.dropout(tf.layers.dense(embed_pho, 128, kernel_regularizer=regularizer), prob)
 
-#     conv1 = tf.layers.conv1d(inputs=embed_1, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu)
+    conv1 = tf.nn.dropout(tf.layers.conv1d(inputs=embed_1, filters=64, kernel_size=2, padding='same', activation=tf.nn.relu, kernel_regularizer=regularizer), prob)
 
-#     conv2 = tf.layers.conv1d(inputs=embed_1, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu)
+    conv2 = tf.nn.dropout(tf.layers.conv1d(inputs=conv1, filters=64, kernel_size=4, padding='same', activation=tf.nn.relu, kernel_regularizer=regularizer), prob)
 
+    conv3 = tf.nn.dropout(tf.layers.conv1d(inputs=conv2, filters=64, kernel_size=8, padding='same', activation=tf.nn.relu, kernel_regularizer=regularizer), prob)
 
+    embed = tf.concat([embed_1, conv1, conv2, conv3], axis = -1)
 
-#     output_1 = bi_static_stacked_RNN(embed_1, scope = 'RNN_2')
+    output_1 = bi_static_stacked_RNN(embed, scope = 'RNN_2')
 
-#     phonemes = tf.layers.dense(output_1, 41)
+    phonemes = tf.layers.dense(output_1, 42)
 
-#     return phonemes
+    return phonemes
 
 def singer_network(inputs, prob):
 
