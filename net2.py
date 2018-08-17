@@ -639,7 +639,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
 
-    speaker_file = "nus_MPOL_sing_05.hdf5"
+    speaker_file = "nus_PMAR_sing_05.hdf5"
 
     stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
 
@@ -799,7 +799,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         speaker_feats = np.array(speaker_file['feats'])
 
-        # speaker_feats = utils.input_to_feats('./bellaciao.wav', mode = 1)
+        #speaker_feats = utils.input_to_feats('./franky.wav', mode = 1)
 
         speaker_f0 = speaker_feats[:,-2]
 
@@ -989,8 +989,6 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         # import pdb;pdb.set_trace()
 
 
-        utils.feats_to_audio(haha[:5000,:],'_test_brunobilly.wav')
-
         plt.figure(1)
 
         plt.subplot(211)
@@ -1013,8 +1011,12 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         plt.imshow(out_batches_feats[:,60:-2].T,aspect='auto',origin='lower')
 
         plt.figure(3)
-        plt.plot((feats[:,-2:-1]-69+(12*np.log2(440))-(12*np.log2(10)))*100)
-        plt.plot((out_batches_feats[:,-2:-1]-69+(12*np.log2(440))-(12*np.log2(10)))*100)
+        plt.plot(((feats[:,-2:-1]*(1-feats[:,-1:]))-69+(12*np.log2(440))-(12*np.log2(10)))*100)
+        plt.plot(((out_batches_feats[:,-2:-1]*(1-out_batches_feats[:,-1:])) -69+(12*np.log2(440))-(12*np.log2(10)))*100)
+
+        utils.feats_to_audio(haha[:5000,:],'_test_MPOL_TO_PMAR.wav')
+
+
         # plt.plot(f0_output)
 
         plt.show()
