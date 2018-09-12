@@ -294,8 +294,10 @@ def write_ori_ikala(input_file, filename):
     audio,fs = sf.read(input_file)
     mixture = (audio[:,0]+audio[:,1])*0.7
     vocals = np.array(audio[:,1])
+    backing = np.array(audio[:,0])
     sf.write(config.val_dir+filename+'_mixture.wav',mixture,fs)
     sf.write(config.val_dir+filename+'_ori_vocals.wav',vocals,fs)
+    sf.write(config.val_dir+filename+'_backing.wav',backing,fs)
 
 def write_ori_med(input_file, filename):
     audio,fs = sf.read(input_file)

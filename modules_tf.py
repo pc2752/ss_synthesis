@@ -204,7 +204,40 @@ def nr_wavenet_block(conditioning, dilation_rate = 2, scope = 'nr_wavenet_block'
     return skip, residual
 
 
-# def nr_wavenet(inputs, num_block = config.wavenet_layers):
+def nr_wavenet(inputs, num_block = config.wavenet_layers):
+    prenet_out = tf.layers.dense(inputs, config.lstm_size*2)
+    prenet_out = tf.layers.dense(prenet_out, config.lstm_size)
+
+    receptive_field = 2**num_block
+
+    first_conv = tf.layers.conv1d(prenet_out, config.wavenet_filters, 1)
+    skips = []
+    skip, residual = nr_wavenet_block(first_conv, dilation_rate=1, scope = "nr_wavenet_block_0")
+    output = skip
+    for i in range(num_block):
+        skip, residual = nr_wavenet_block(residual, dilation_rate=2**(i+1), scope = "nr_wavenet_block_"+str(i+1))
+        skips.append(skip)
+    for skip in skips:
+        output+=skip
+    output = output+first_conv
+
+    output = tf.nn.relu(output)
+
+    output = tf.layers.conv1d(output,config.wavenet_filters,1)
+
+    output = tf.nn.relu(output)
+
+    output = tf.layers.conv1d(output,config.wavenet_filters,1)
+
+    output = tf.nn.relu(output)
+
+    harm = tf.layers.dense(output, 60, activation=tf.nn.relu)
+    ap = tf.layers.dense(output, 4, activation=tf.nn.relu)
+    f0 = tf.layers.dense(output, 64, activation=tf.nn.relu) 
+    f0 = tf.layers.dense(f0, 1, activation=tf.nn.relu)
+    vuv = tf.layers.dense(ap, 1, activation=tf.nn.sigmoid)
+
+    return harm, ap, f0, vuv
 # def phone_network(inputs, f0, prob, regularizer = None, num_block = config.wavenet_layers):
 
 #     prenet_out = tf.nn.dropout(tf.layers.dense(inputs, config.lstm_size*2,kernel_regularizer=regularizer), prob)
