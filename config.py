@@ -13,7 +13,7 @@ wav_dir_vctk_lab = '../datasets/VCTK/VCTK_files/VCTK-Corpus/forPritish/'
 
 voice_dir = './voice/'
 backing_dir = './backing/'
-log_dir = './log_feat_to_feat_sim_cgan_3/'
+log_dir = './log_feat_to_feat_sim_cgan_4/'
 log_dir_m1 = './log_m1_old/'
 # log_dir = './log_mfsc_6_best_so_far/'
 data_log = './log/data_log.log'
@@ -23,7 +23,7 @@ dir_npy = './data_npy/'
 stat_dir = './stats/'
 h5py_file_train = './data_h5py/train.hdf5'
 h5py_file_val = './data_h5py/val.hdf5'
-val_dir = './val_dir/'
+val_dir = './val_dir_synth/'
 
 in_mode = 'mix'
 norm_mode_out = "max_min"

@@ -33,19 +33,19 @@ def data_gen(mode = 'Train', sec_mode = 0):
 
     back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('med')]
 
-    mix_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('med') ]
+    mix_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and x.startswith('nus')  and not x.startswith('nus_KENN_read')]
 
-    all_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('nus') and not x.startswith('vctk')]
+    # all_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('nus') and not x.startswith('vctk')]
 
-    # train_list = mix_list[:int(len(mix_list)*config.split)]
+    all_list = mix_list[:int(len(mix_list)*config.split)]
 
-    # val_list = mix_list[int(len(mix_list)*config.split):]
+    val_list = mix_list[int(len(mix_list)*config.split):]
 
     # import pdb;pdb.set_trace()
 
-    train_list = mix_list
+    # train_list = mix_list
 
-    val_list = [x for x in os.listdir(config.voice_dir) if x.startswith('nus_KENN_sing') or x == 'nus_MCUR_sing_04.hdf5' or x == 'nus_MCUR_read_04.hdf5']
+    # val_list = [x for x in os.listdir(config.voice_dir) if x.startswith('nus_KENN_sing') or x == 'nus_MCUR_sing_04.hdf5' or x == 'nus_MCUR_read_04.hdf5']
 
     # import pdb;pdb.set_trace()
 
@@ -69,7 +69,7 @@ def data_gen(mode = 'Train', sec_mode = 0):
     if mode == "Train":
         num_batches = config.batches_per_epoch_train
         if sec_mode == 0:
-            file_list = voc_list
+            file_list = all_list
 
     else: 
         num_batches = config.batches_per_epoch_val
