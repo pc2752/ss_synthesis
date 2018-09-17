@@ -389,9 +389,11 @@ def f0_network(inputs, prob):
 
 def f0_network_2(encoded, f0, phones, prob):
 
-    encoded_embedding = tf.layers.dense(encoded, 32)
+    speaker_embeddings = tf.get_variable("speaker_embeddings", [12, 64])
 
+    embedded_speaker_ids = tf.nn.embedding_lookup(speaker_embeddings, encoded)
 
+    encoded_embedding = tf.layers.dense(embedded_speaker_ids, 32)
     
     embed_1 = tf.layers.dense(f0, 64)
 
@@ -444,9 +446,11 @@ def f0_network_2(encoded, f0, phones, prob):
 
 def final_net(encoded, f0, phones, prob):
 
-    encoded_embedding = tf.layers.dense(encoded, 32)
+    speaker_embeddings = tf.get_variable("speaker_embeddings", [12, 64])
 
+    embedded_speaker_ids = tf.nn.embedding_lookup(speaker_embeddings, encoded)
 
+    encoded_embedding = tf.layers.dense(embedded_speaker_ids, 32)
     
     embed_1 = tf.layers.dense(f0, 64)
 
@@ -466,7 +470,9 @@ def final_net(encoded, f0, phones, prob):
 
     encoded = tf.layers.max_pooling1d(conv3, pool_size=2, strides=2, padding='same')
 
-    encoded = tf.concat([tf.reshape(encoded, [config.batch_size, -1]), encoded_embedding], axis = -1)
+    # import pdb;pdb.set_trace()
+
+    encoded = tf.concat([tf.reshape(encoded, [config.batch_size, -1]), tf.reshape(encoded_embedding, [config.batch_size, -1])], axis = -1)
 
     upsample1 = tf.image.resize_images(tf.reshape(encoded, [30,4,1,-1]), size=(16,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 

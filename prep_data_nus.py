@@ -8,6 +8,7 @@ import pyworld as pw
 import matplotlib.pyplot as plt
 import sys
 import h5py
+import vamp
 
 import config
 import utils
@@ -37,10 +38,14 @@ def main():
             # if not os.path.exists(config.voice_dir+'nus_'+singer+'_sing_'+lf[:-4]+'.hdf5'):
 
             audio,fs = sf.read(os.path.join(sing_dir,lf))
+            jaja = vamp.collect(audio, fs, "pyin:pyin", step_size=256, output="notes")
+            import pdb;pdb.set_trace()
+            
             if fs !=config.fs:
                 command = "ffmpeg -y -i "+os.path.join(sing_dir,lf)+" -ar "+str(config.fs)+" "+os.path.join(sing_dir,lf)
                 os.system(command)
             audio,fs = sf.read(os.path.join(sing_dir,lf))
+
 
             if len(audio.shape) == 2:
 
@@ -57,6 +62,7 @@ def main():
             # note_f=open(in_dir+lf[:-4]+'.notes')
             phos = lab_f.readlines()
             lab_f.close()
+
 
             phonemes=[]
 
