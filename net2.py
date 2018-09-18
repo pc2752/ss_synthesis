@@ -511,7 +511,7 @@ def train(_):
                 # epoch_total_loss_phase = epoch_total_loss_phase/(config.batches_per_epoch_train *config.batch_size)
 
                 summary_str = sess.run(summary, feed_dict={input_placeholder: featies,  
-                    labels:pho_targs, singer_labels: singer_ids, singer_embedding_placeholder: singer_ids, f0_input_placeholder_midi: f0_2_one_hot, f0_target_placeholder_midi: targets_f0_2, pho_input_placeholder:pho_one_hot, 
+                    labels:pho_targs, singer_labels: singer_ids, singer_embedding_placeholder: singer_ids.reshape(-1,1), f0_input_placeholder_midi: f0_2_one_hot, f0_target_placeholder_midi: targets_f0_2, pho_input_placeholder:pho_one_hot, 
                     output_placeholder: feats_targets, prob:0.5, singer_labels_2: singer_ids})
                 # import pdb;pdb.set_trace()
                 train_summary_writer.add_summary(summary_str, epoch)
@@ -586,7 +586,7 @@ def train(_):
                 # epoch_total_loss_phase_val = epoch_total_loss_phase_val/(config.batches_per_epoch_val *config.batch_size)
 
                 summary_str = sess.run(summary_val, feed_dict={input_placeholder: featies,
-                    labels:pho_targs, singer_labels: singer_ids, singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_2_one_hot, f0_target_placeholder_midi: targets_f0_2, pho_input_placeholder:pho_one_hot, 
+                    labels:pho_targs, singer_labels: singer_ids, singer_embedding_placeholder: singer_ids.reshape(-1,1), f0_input_placeholder_midi: f0_2_one_hot, f0_target_placeholder_midi: targets_f0_2, pho_input_placeholder:pho_one_hot, 
                     output_placeholder: feats_targets, prob:0.5})
                 val_summary_writer.add_summary(summary_str, epoch)
                 # summary_writer.add_summary(summary_str_val, epoch)
@@ -697,7 +697,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         singer_labels_2 = tf.placeholder(tf.int32, shape=(config.batch_size),name='singer_id_placeholder_2')
         onehot_labels_singer_2 = tf.one_hot(indices=tf.cast(singer_labels_2, tf.int32), depth=121)
 
-        singer_embedding_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,256),name='singer_embedding_placeholder')
+        singer_embedding_placeholder = tf.placeholder(tf.int32, shape=(config.batch_size,1),name='singer_embedding_placeholder')
 
 
 
@@ -744,12 +744,12 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         sess.run(init_op)
 
-        ckpt = tf.train.get_checkpoint_state('./log_feat_to_feat_sim_cgan/')
+        ckpt = tf.train.get_checkpoint_state(config.log_dir)
 
         if ckpt and ckpt.model_checkpoint_path:
             print("Using the model in %s"%ckpt.model_checkpoint_path)
-            # saver.restore(sess, ckpt.model_checkpoint_path)
-            saver.restore(sess, './log_feat_to_feat_sim_cgan/model.ckpt-139')
+            saver.restore(sess, ckpt.model_checkpoint_path)
+            # saver.restore(sess, './log_feat_to_feat_sim_cgan/model.ckpt-139')
 
         # import pdb;pdb.set_trace()
 
@@ -902,7 +902,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
             # import pdb;pdb.set_trace()
 
-            f0_outputs_1 = sess.run(f0_probs_midi, feed_dict = {input_placeholder: in_batch_feat,singer_embedding_placeholder: s_embed} )
+            f0_outputs_1 = sess.run(f0_probs_midi, feed_dict = {input_placeholder: in_batch_feat,singer_embedding_placeholder: np.array([2]*30).reshape(-1,1)} )
 
             # in_batch_voc_stft = in_batch_voc_stft.reshape([config.batch_size, config.max_phr_len, 256])
 
@@ -925,7 +925,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
             output_feats = sess.run(voc_output_decoded, feed_dict={f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=57),
-                pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=42),singer_embedding_placeholder: s_embed})
+                pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=42),singer_embedding_placeholder: np.array([2]*30).reshape(-1,1)})
 
             # output_voc_stft_phase = sess.run(voc_output_phase_decoded, feed_dict={input_placeholder: output_voc_stft, f0_input_placeholder: f0_outputs_2,
             #     pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41), output_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed})
