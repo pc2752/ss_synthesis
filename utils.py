@@ -49,8 +49,8 @@ def shuffle_two(a,b):
     return a2, b2
 
 
-def stft(data, window=np.hanning(1024),
-         hopsize=256.0, nfft=1024.0, fs=44100.0):
+def stft(data, window=np.hanning(1200),
+         hopsize=300.0, nfft=1200.0, fs=16000.0):
     """
     X, F, N = stft(data,window=sinebell(2048),hopsize=1024.0,
                    nfft=2048.0,fs=44100)
@@ -124,8 +124,8 @@ def stft(data, window=np.hanning(1024),
     
     return STFT
 
-def istft(mag, phase, window=np.hanning(1024),
-         hopsize=256.0, nfft=1024.0, fs=44100.0,
+def istft(mag, phase, window=np.hanning(1200),
+         hopsize=300.0, nfft=1200.0, fs=16000.0,
           analysisWindow=None):
     """
     data = istft_norm(X,window=sinebell(2048),hopsize=1024.0,nfft=2048.0,fs=44100)

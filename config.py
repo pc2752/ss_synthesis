@@ -9,6 +9,7 @@ wav_dir_mir = '../datasets/MIR1k/'
 wav_dir_med = '../datasets/medleydB/'
 wav_dir_vctk = '../datasets/VCTK/VCTK_files/VCTK-Corpus/wav48/'
 wav_dir_vctk_lab = '../datasets/VCTK/VCTK_files/VCTK-Corpus/forPritish/'
+wav_dir_timit = '../datasets/TIMIT/TIMIT/TRAIN/'
 
 
 voice_dir = './voice/'
