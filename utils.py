@@ -49,8 +49,8 @@ def shuffle_two(a,b):
     return a2, b2
 
 
-def stft(data, window=np.hanning(1200),
-         hopsize=300.0, nfft=1200.0, fs=16000.0):
+def stft(data, window=np.hanning(1024),
+         hopsize=256.0, nfft=1024.0, fs=44100.0):
     """
     X, F, N = stft(data,window=sinebell(2048),hopsize=1024.0,
                    nfft=2048.0,fs=44100)
@@ -124,8 +124,8 @@ def stft(data, window=np.hanning(1200),
     
     return STFT
 
-def istft(mag, phase, window=np.hanning(1200),
-         hopsize=300.0, nfft=1200.0, fs=16000.0,
+def istft(mag, phase, window=np.hanning(1024),
+         hopsize=256.0, nfft=1024.0, fs=44100.0,
           analysisWindow=None):
     """
     data = istft_norm(X,window=sinebell(2048),hopsize=1024.0,nfft=2048.0,fs=44100)
@@ -253,13 +253,15 @@ def input_to_feats(input_file, mode=0):
 
     return feats
 
-def stft_to_feats(vocals, fs, mode=config.comp_mode):
-    feats=pw.wav2world(vocals,fs,frame_period=5.80498866)
+def stft_to_feats(vocals, fs, mode=config.comp_mode, fp = 5.80498866):
+    feats=pw.wav2world(vocals,fs,frame_period=fp)
 
     ap = feats[2].reshape([feats[1].shape[0],feats[1].shape[1]]).astype(np.float32)
     ap = 10.*np.log10(ap**2)
     harm=10*np.log10(feats[1].reshape([feats[2].shape[0],feats[2].shape[1]]))
-    f0 = pitch.extract_f0_sac(vocals, fs, 0.00580498866)
+    # import pdb;pdb.set_trace()
+    # f0 = pitch.extract_f0_sac(vocals, fs, fp/1000.0)
+    f0 = feats[0]
 
     y=69+12*np.log2(f0/440)
     # import pdb;pdb.set_trace()
