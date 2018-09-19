@@ -902,7 +902,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
             # import pdb;pdb.set_trace()
 
-            f0_outputs_1 = sess.run(f0_probs_midi, feed_dict = {input_placeholder: in_batch_feat,singer_embedding_placeholder: np.array([2]*30).reshape(-1,1)} )
+            f0_outputs_1 = sess.run(f0_probs_midi, feed_dict = {input_placeholder: in_batch_feat,singer_embedding_placeholder: np.array([10]*30).reshape(-1,1)} )
 
             # in_batch_voc_stft = in_batch_voc_stft.reshape([config.batch_size, config.max_phr_len, 256])
 
@@ -925,7 +925,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
             output_feats = sess.run(voc_output_decoded, feed_dict={f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=57),
-                pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=42),singer_embedding_placeholder: np.array([2]*30).reshape(-1,1)})
+                pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=42),singer_embedding_placeholder: np.array([10]*30).reshape(-1,1)})
 
             # output_voc_stft_phase = sess.run(voc_output_phase_decoded, feed_dict={input_placeholder: output_voc_stft, f0_input_placeholder: f0_outputs_2,
             #     pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41), output_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed})
