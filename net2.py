@@ -647,11 +647,11 @@ def train(_):
 
 def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
-    file_name = "nus_KENN_sing_10.hdf5"
+    file_name = "nus_VKOW_sing_20.hdf5"
 
 
 
-    speaker_file = "nus_KENN_sing_04.hdf5"
+    speaker_file = "nus_VKOW_sing_20.hdf5"
 
     stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
 
@@ -747,7 +747,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         sess.run(init_op)
 
-        ckpt = tf.train.get_checkpoint_state('./log_feat_to_feat_sim_cgan_2/')
+        ckpt = tf.train.get_checkpoint_state(config.log_dir)
 
         if ckpt and ckpt.model_checkpoint_path:
             print("Using the model in %s"%ckpt.model_checkpoint_path)
@@ -1031,7 +1031,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         plt.plot(((feats[:,-2:-1]*(1-feats[:,-1:]))-69+(12*np.log2(440))-(12*np.log2(10)))*100)
         plt.plot(((out_batches_feats[:,-2:-1]*(1-out_batches_feats[:,-1:])) -69+(12*np.log2(440))-(12*np.log2(10)))*100)
 
-        utils.feats_to_audio(haha[:5000,:],'Test_KENN_sing_10_from_KENN_04.wav')
+        utils.feats_to_audio(haha[:5000,:],'Test_VKOW_sing_20_from_VKOW_20.wav')
 
 
         # plt.plot(f0_output)
