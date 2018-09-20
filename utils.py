@@ -367,8 +367,8 @@ def feats_to_audio(in_feats,filename, fs=config.fs,  mode=config.comp_mode):
     harm = 10**(harm/10)
     ap = 10**(ap/20)
 
-    y=pw.synthesize(f0.astype('double'),harm.astype('double'),ap.astype('double'),fs,config.hoptime)
-    sf.write(config.val_dir+filename+'.wav',y,fs)
+    y=pw.synthesize(f0.astype('double'),harm.astype('double'),ap.astype('double'),16000,18.75)
+    sf.write(config.val_dir+filename+'.wav',y,16000)
 
 def feats_to_audio_test(in_feats,filename, fs=config.fs,  mode=config.comp_mode):
     harm = in_feats[:,:60]

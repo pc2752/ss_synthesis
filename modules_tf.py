@@ -387,17 +387,17 @@ def f0_network(inputs, prob):
 
     return f0_1
 
-def f0_network_2(encoded, f0, phones, prob):
+def f0_network_2(encoded, phones, prob):
 
     encoded_embedding = tf.layers.dense(encoded, 32)
 
 
     
-    embed_1 = tf.layers.dense(f0, 64)
+    # embed_1 = tf.layers.dense(f0, 64)
 
     embed_ph = tf.layers.dense(phones, 64)
 
-    inputs_2 = tf.nn.dropout(tf.concat([embed_1, embed_ph], axis = -1), prob)
+    inputs_2 = tf.nn.dropout(embed_ph, prob)
 
     conv1 = tf.layers.conv1d(inputs=inputs_2, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu)
 
@@ -442,17 +442,15 @@ def f0_network_2(encoded, f0, phones, prob):
     return f0_1
 
 
-def final_net(encoded, f0, phones, prob):
+def final_net(encoded, phones, prob):
 
-    encoded_embedding = tf.layers.dense(encoded, 32)
-
-
+    encoded_embedding = tf.layers.dense(encoded, 64)
     
-    embed_1 = tf.layers.dense(f0, 64)
+    # embed_1 = tf.layers.dense(f0, 64)
 
     embed_ph = tf.layers.dense(phones, 64)
 
-    inputs_2 = tf.nn.dropout(tf.concat([embed_1, embed_ph], axis = -1), prob)
+    inputs_2 = tf.nn.dropout(embed_ph, prob)
 
     conv1 = tf.layers.conv1d(inputs=inputs_2, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu)
 
@@ -518,7 +516,7 @@ def phone_network(inputs, prob, regularizer = None):
 
     output_1 = bi_static_stacked_RNN(embed, scope = 'RNN_2')
 
-    phonemes = tf.layers.dense(output_1, 42)
+    phonemes = tf.layers.dense(output_1, 61)
 
     return phonemes
 
@@ -526,10 +524,10 @@ def singer_network(inputs, prob):
 
 
 
-    embed_1 = tf.layers.dense(inputs, 32, name = "s1")
+    embed_1 = tf.layers.dense(inputs, 128, name = "s1")
 
 
-    conv1 = tf.layers.conv1d(inputs=embed_1, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu, name = "s2")
+    conv1 = tf.layers.conv1d(inputs=embed_1, filters=64, kernel_size=2, padding='same', activation=tf.nn.relu, name = "s2")
 
     # maxpool1 = tf.layers.max_pooling1d(conv1, pool_size=2, strides=2, padding='same', name = "s3")
 
@@ -539,13 +537,16 @@ def singer_network(inputs, prob):
 
     conv3 = tf.layers.conv1d(inputs=conv2, filters=32, kernel_size=4, padding='same', activation=tf.nn.relu, name = "s6")
 
+    
+
     # encoded = tf.layers.max_pooling1d(conv3, pool_size=2, strides=2, padding='same', name = "s7")
 
     encoded = tf.reshape(conv3, [config.batch_size, -1], name = "s8")
+    # import pdb;pdb.set_trace()
 
-    encoded_1= tf.layers.dense(encoded, 256, name = "s9")
+    encoded_1= tf.layers.dense(encoded, 128, name = "s9")
 
-    singer = tf.layers.dense(encoded_1, 121, name = "s10")
+    singer = tf.layers.dense(encoded_1, 192, name = "s10")
 
     return encoded_1, singer
 
