@@ -645,11 +645,11 @@ def train(_):
 
 def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
-    file_name = 'timit_DR2_MJMA0_+SA1.hdf5'
+    file_name = 'timit_DR1_MWAD0_+SX342.hdf5'
 
 
 
-    speaker_file = 'timit_DR2_MJMA0_+SA1.hdf5'
+    speaker_file = 'timit_DR1_MWAD0_+SX342.hdf5'
 
     stat_file = h5py.File(config.stat_dir_timit+'stats.hdf5', mode='r')
 
@@ -1033,7 +1033,9 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         plt.plot(((feats[:,-2:-1]*(1-feats[:,-1:]))-69+(12*np.log2(440))-(12*np.log2(10)))*100)
         plt.plot(((out_batches_feats[:,-2:-1]*(1-out_batches_feats[:,-1:])) -69+(12*np.log2(440))-(12*np.log2(10)))*100)
 
-        utils.feats_to_audio(haha[:5000,:],'Test_set_speaker.wav')
+        utils.feats_to_audio(haha[:5000,:],'Test_set_speaker_MWAD0.wav')
+
+        utils.feats_to_audio(speaker_feats[:5000,:],'Test_set_speaker_MWAD0_ori.wav')
 
 
         # plt.plot(f0_output)

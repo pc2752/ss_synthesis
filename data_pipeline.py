@@ -43,7 +43,7 @@ def data_gen(mode = 'Train', sec_mode = 0):
 
     # all_list_1 = all_list[:int(len(all_list)*config.split)]
 
-    val_list = [x for x in os.listdir(config.voice_dir_timit) if x.endswith('.hdf5') and x.startswith('timit') and x.split('_')[2] in config.speakers_timit[64:192]]
+    val_list = [x for x in os.listdir(config.voice_dir_timit) if x.endswith('.hdf5') and x.startswith('timit') and x.split('_')[2] in config.speakers_timit[128:192]]
 
     # all_list = all_list_1
 
