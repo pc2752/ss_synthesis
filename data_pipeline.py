@@ -37,15 +37,15 @@ def data_gen(mode = 'Train', sec_mode = 0):
 
     # all_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('nus') and not x.startswith('vctk')]
 
-    all_list = mix_list[:int(len(mix_list)*config.split)]
+    all_list = voc_list
 
-    val_list = mix_list[int(len(mix_list)*config.split):]
+    # val_list = mix_list[int(len(mix_list)*config.split):]
 
     # import pdb;pdb.set_trace()
 
     # train_list = mix_list
 
-    # val_list = [x for x in os.listdir(config.voice_dir) if x.startswith('nus_KENN_sing') or x == 'nus_MCUR_sing_04.hdf5' or x == 'nus_MCUR_read_04.hdf5']
+    val_list = [x for x in os.listdir(config.voice_dir) if x.startswith('nus_KENN_sing') or x == 'nus_MCUR_sing_04.hdf5' or x == 'nus_MCUR_read_04.hdf5']
 
     # import pdb;pdb.set_trace()
 
