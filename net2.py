@@ -1028,7 +1028,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         plt.plot(((feats[:,-2:-1]*(1-feats[:,-1:]))-69+(12*np.log2(440))-(12*np.log2(10)))*100)
         plt.plot(((out_batches_feats[:,-2:-1]*(1-out_batches_feats[:,-1:])) -69+(12*np.log2(440))-(12*np.log2(10)))*100)
 
-        utils.feats_to_audio(haha[:5000,:],'Test_VKOW_sing_20_from_VKOW_20.wav')
+        utils.feats_to_audio(haha[:5000,:],'Test_VKOW_sing_20_from_VKOW.wav')
 
 
         # plt.plot(f0_output)
