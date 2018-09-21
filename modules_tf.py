@@ -444,7 +444,7 @@ def f0_network_2(encoded, f0, phones, prob):
 
 def final_net(encoded, f0, phones, prob):
 
-    encoded_embedding = tf.layers.dense(encoded, 32)
+    encoded_embedding = tf.layers.dense(encoded, 128)
 
 
     
@@ -469,6 +469,8 @@ def final_net(encoded, f0, phones, prob):
     encoded = tf.concat([tf.reshape(encoded, [config.batch_size, -1]), encoded_embedding], axis = -1)
 
     upsample1 = tf.image.resize_images(tf.reshape(encoded, [30,4,1,-1]), size=(16,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+
+    # import pdb;pdb.set_trace()
 
     conv4 = tf.layers.conv2d(inputs=upsample1, filters=32, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
     # Now 7x7x16

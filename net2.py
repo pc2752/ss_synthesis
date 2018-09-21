@@ -99,6 +99,8 @@ def train(_):
             pho_classes = tf.argmax(pho_logits, axis=-1)
             pho_probs = tf.nn.softmax(pho_logits)
 
+            
+
         with tf.variable_scope('singer_Model') as scope:
             singer_embedding, singer_logits = modules.singer_network(input_placeholder, prob)
             singer_classes = tf.argmax(singer_logits, axis=-1)
@@ -147,9 +149,9 @@ def train(_):
 
         singer_loss_2 = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels_singer_2, logits=singer_logits_real))
 
-        # reconstruct_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_placeholder, logits=voc_output)* np.concatenate((np.linspace(0.8,1,60), np.ones(6))))
+        reconstruct_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_placeholder, logits=voc_output)* np.concatenate((np.linspace(1.0,5.0,60), np.ones(4)*0.5,np.ones(2))))
 
-        reconstruct_loss = tf.reduce_sum(tf.abs(output_placeholder - voc_output)*np.concatenate((np.linspace(0.8,1,60), np.ones(4)*0.5,np.ones(2))))
+        # reconstruct_loss = tf.reduce_sum(tf.abs(output_placeholder - voc_output)*np.concatenate((np.linspace(0.8,1,60), np.ones(4)*0.5,np.ones(2))))
 
         final_loss = reconstruct_loss+ singer_loss_2
 
