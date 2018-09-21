@@ -478,9 +478,13 @@ def final_net(encoded, f0, phones, prob):
     # Now 14x14x16
     conv5 = tf.layers.conv2d(inputs=upsample2, filters=64, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
     # Now 14x14x32
-    upsample3 = tf.image.resize_images(conv5, size=(config.max_phr_len,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+    upsample3 = tf.image.resize_images(conv5, size=(64,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
     # Now 28x28x32
-    conv6 = tf.layers.conv2d(inputs=upsample3, filters=128, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
+    conv6 = tf.layers.conv2d(inputs=upsample3, filters=64, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
+
+    upsample4 = tf.image.resize_images(conv6, size=(config.max_phr_len,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+    # Now 28x28x32
+    conv7 = tf.layers.conv2d(inputs=upsample4, filters=128, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
 
     # encoded_embedding = tf.reshape(tf.tile(encoded_embedding, [1,config.max_phr_len]), [config.batch_size, config.max_phr_len, 32])
 
@@ -488,7 +492,7 @@ def final_net(encoded, f0, phones, prob):
 # 
     # import pdb;pdb.set_trace()
 
-    output_2 = tf.reshape(conv6, [30, config.max_phr_len, 128])
+    output_2 = tf.reshape(conv7, [30, config.max_phr_len, 128])
 
     output_1 = bi_static_stacked_RNN(output_2, scope = 'RNN_3')
 
