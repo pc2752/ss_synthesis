@@ -506,25 +506,25 @@ def final_net(encoded, f0, phones, prob):
 
 def phone_network(inputs, prob, regularizer = None):
 
-    # regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
+    regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
 
-    embed_pho = tf.layers.dense(tf.nn.dropout(inputs, prob), 64, kernel_regularizer=regularizer)
+    embed_pho = tf.layers.dense(tf.nn.dropout(inputs, prob, name= "a12"), 64, kernel_regularizer=regularizer, name = "a13")
 
     # inputs_2 = tf.nn.dropout(tf.concat([inputs,embed_pho], axis = -1), prob)
 
-    embed_1 = tf.nn.dropout(tf.layers.dense(embed_pho, 128, kernel_regularizer=regularizer), prob)
+    embed_1 = tf.nn.dropout(tf.layers.dense(embed_pho, 128, kernel_regularizer=regularizer, name = "a1"), prob, name = "a2")
 
-    conv1 = tf.nn.dropout(tf.layers.conv1d(inputs=embed_1, filters=64, kernel_size=2, padding='same', activation=tf.nn.relu, kernel_regularizer=regularizer), prob)
+    conv1 = tf.nn.dropout(tf.layers.conv1d(inputs=embed_1, filters=64, kernel_size=2, padding='same', activation=tf.nn.relu, kernel_regularizer=regularizer, name = "a4"), prob, name = "a5")
 
-    conv2 = tf.nn.dropout(tf.layers.conv1d(inputs=conv1, filters=64, kernel_size=4, padding='same', activation=tf.nn.relu, kernel_regularizer=regularizer), prob)
+    conv2 = tf.nn.dropout(tf.layers.conv1d(inputs=conv1, filters=64, kernel_size=4, padding='same', activation=tf.nn.relu, kernel_regularizer=regularizer, name = "a6"), prob, name = "a7")
 
-    conv3 = tf.nn.dropout(tf.layers.conv1d(inputs=conv2, filters=64, kernel_size=8, padding='same', activation=tf.nn.relu, kernel_regularizer=regularizer), prob)
+    conv3 = tf.nn.dropout(tf.layers.conv1d(inputs=conv2, filters=64, kernel_size=8, padding='same', activation=tf.nn.relu, kernel_regularizer=regularizer, name = "a8"), prob, name = "a9")
 
-    embed = tf.concat([embed_1, conv1, conv2, conv3], axis = -1)
+    embed = tf.concat([embed_1, conv1, conv2, conv3], axis = -1, name = "a10")
 
     output_1 = bi_static_stacked_RNN(embed, scope = 'RNN_2')
 
-    phonemes = tf.layers.dense(output_1, 42)
+    phonemes = tf.layers.dense(output_1, 42, name = "a11")
 
     return phonemes
 

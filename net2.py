@@ -99,6 +99,12 @@ def train(_):
             pho_classes = tf.argmax(pho_logits, axis=-1)
             pho_probs = tf.nn.softmax(pho_logits)
 
+            scope.reuse_variables()
+
+
+            pho_logits_2 = modules.phone_network(voc_output, prob, regularizer = regularizer)
+            pho_classes_2 = tf.argmax(pho_logits_2, axis=-1)
+            pho_probs_2 = tf.nn.softmax(pho_logits_2)
             
 
         with tf.variable_scope('singer_Model') as scope:
@@ -143,14 +149,19 @@ def train(_):
 
         pho_loss+=reg_term
 
+        unweighted_losses_2 = tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels, logits=pho_logits_2)
+
+        weighted_losses_2 = unweighted_losses_2 * pho_weights
+
+        pho_loss_2 = tf.reduce_mean(weighted_losses_2)
+
         # import pdb;pdb.set_trace()
 
         singer_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels_singer, logits=singer_logits))
 
-        singer_loss_2 = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels_singer_2, logits=singer_logits_real))
+        singer_loss_2 = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels_singer_2, logits=singer_logits_real)) + pho_loss_2
 
-        reconstruct_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_placeholder, logits=voc_output)* np.concatenate((np.linspace(1.0,5.0,60), np.ones(4)*0.5,np.ones(2))))
-
+        reconstruct_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_placeholder, logits=voc_output))*0.001
         # reconstruct_loss = tf.reduce_sum(tf.abs(output_placeholder - voc_output)*np.concatenate((np.linspace(0.8,1,60), np.ones(4)*0.5,np.ones(2))))
 
         final_loss = reconstruct_loss+ singer_loss_2
@@ -165,6 +176,8 @@ def train(_):
         # pho_loss = tf.reduce_sum(tf.abs(pho_probs - onehot_labels))
 
         pho_acc = tf.metrics.accuracy(labels=labels, predictions=pho_classes)
+
+        pho_acc_2 = tf.metrics.accuracy(labels=labels, predictions=pho_classes_2)
 
         # f0_acc = tf.metrics.accuracy(labels=f0_target_placeholder, predictions=f0_classes)
 
@@ -190,6 +203,8 @@ def train(_):
         pho_summary = tf.summary.scalar('pho_loss', pho_loss)
 
         pho_acc_summary = tf.summary.scalar('pho_accuracy', pho_acc[0])
+
+        pho_acc_summary_2 = tf.summary.scalar('pho_accuracy_2', pho_acc_2[0])
 
         pho_acc_summary_val = tf.summary.scalar('pho_accuracy_val', pho_acc_val[0])
 
@@ -349,6 +364,10 @@ def train(_):
             epoch_loss_pho_val = 0
             epoch_acc_val = 0
 
+            epoch_pho_acc_2 = 0
+
+            epoch_pho_acc_2_false = 0
+
             epoch_loss_singer_val = 0
             epoch_acc_singer_val = 0
 
@@ -402,23 +421,19 @@ def train(_):
 
 
 
-                    teacher_train = np.random.rand(1)<0.0
+                    teacher_train = np.random.rand(1)<1.0
 
                     if teacher_train:
                         # _, step_loss_f0, step_acc_f0 = sess.run([f0_train_function, f0_loss, f0_acc], feed_dict={input_placeholder: input_noisy,singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder:pho_one_hot, f0_target_placeholder: targets_f0_1, prob:1.0})
                         if Flag:
                             _, step_loss_pho, step_acc_pho = sess.run([pho_train_function, pho_loss, pho_acc], feed_dict={input_placeholder: input_noisy,labels: pho_targs, prob:0.75})
-                            # _, step_loss_total = sess.run([re_train_function, reconstruct_loss], feed_dict={f0_input_placeholder: f0_1_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8})
 
-                         
-                           # outs_real = 
-
-                            if epoch > 250:
-                                _,_ ,step_loss_total, step_re_loss, step_singer_loss_real, step_singer_acc_real = sess.run([re_train_function, cgan_train_function, final_loss, reconstruct_loss, singer_loss_2,singer_acc_real], feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8,singer_labels_2: singer_ids})
-                                s_embed_2, singer_ids_2 = utils.shuffle_two(s_embed, singer_ids)
-                                _,_, step_loss_total_2, step_re_loss_2, step_singer_loss_false, step_singer_acc_false = sess.run([re_train_function, cgan_train_function, final_loss, reconstruct_loss, singer_loss_2,singer_acc_false], feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed_2, prob:0.8,singer_labels_2: singer_ids_2})
-                            else:
-                                _,step_loss_total, step_re_loss= sess.run([re_train_function, final_loss, reconstruct_loss], feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8,singer_labels_2: singer_ids})
+                            _,_, step_singer_loss_real, step_singer_acc_real, step_pho_acc_2 = sess.run([re_train_function, cgan_train_function, singer_loss_2,singer_acc_real, pho_acc_2], feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8,singer_labels_2: singer_ids, labels: pho_targs})
+                            
+                            s_embed_2, singer_ids_2 = utils.shuffle_two(s_embed, singer_ids)
+                            _, step_singer_loss_false, step_singer_acc_false, step_pho_acc_2_false  = sess.run([cgan_train_function, singer_loss_2,singer_acc_real, pho_acc_2], feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed_2, prob:0.8,singer_labels_2: singer_ids_2, labels: pho_targs})
+                            # else:
+                            #     _,step_loss_total, step_re_loss= sess.run([re_train_function, final_loss, reconstruct_loss], feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8,singer_labels_2: singer_ids})
                                 
                         # _, step_loss_total_phase = sess.run([re_phase_train_function, reconstruct_loss_phase], feed_dict={input_placeholder:input_noisy, f0_input_placeholder: one_hotize(targets_f0_1, max_index=256), pho_input_placeholder: one_hotize(pho_targs, max_index=41),singer_embedding_placeholder: s_embed, prob:0.5, output_phase_placeholder: phase_targets})
                     
@@ -466,16 +481,19 @@ def train(_):
                         epoch_loss_singer+=step_loss_singer
                         epoch_acc_singer+=step_acc_singer[0]
                     
-                    epoch_loss_re_real += step_re_loss
-                    if epoch>250:
-                        epoch_loss_re_false += step_re_loss_2
-                        epoch_loss_cg_real += step_singer_loss_real
-                        epoch_loss_cg_false += step_singer_loss_false
-                        epoch_acc_real += step_singer_acc_real[0] 
-                        epoch_acc_false += step_singer_acc_false[0]
-                        epoch_total_loss+=(step_loss_total+step_loss_total_2)/2
-                    else: 
-                        epoch_total_loss+=step_loss_total
+                    # epoch_loss_re_real += step_re_loss
+                    # if epoch>250:
+                    # epoch_loss_re_false += step_re_loss_2
+                    epoch_loss_cg_real += step_singer_loss_real
+                    epoch_loss_cg_false += step_singer_loss_false
+                    epoch_acc_real += step_singer_acc_real[0] 
+                    epoch_acc_false += step_singer_acc_false[0]
+                    # epoch_total_loss+=(step_loss_total+step_loss_total_2)/2
+                    epoch_pho_acc_2+=step_pho_acc_2[0]
+
+                    epoch_pho_acc_2_false+=step_pho_acc_2_false[0]
+                    # else: 
+                        # epoch_total_loss+=step_loss_total
                     
                     # epoch_total_loss_phase=step_loss_total_phase
 
@@ -501,14 +519,16 @@ def train(_):
                 epoch_loss_singer = epoch_loss_singer/(config.batches_per_epoch_train*config.batch_size)
                 epoch_acc_singer = epoch_acc_singer/flag_count
 
-                epoch_total_loss = epoch_total_loss/(config.batches_per_epoch_train*config.batch_size)
+                # epoch_total_loss = epoch_total_loss/(config.batches_per_epoch_train*config.batch_size)
 
-                epoch_loss_re_real = epoch_loss_re_real/(config.batches_per_epoch_train*config.batch_size)
-                epoch_loss_re_false = epoch_loss_re_false/(config.batches_per_epoch_train*config.batch_size)
+                # epoch_loss_re_real = epoch_loss_re_real/(config.batches_per_epoch_train*config.batch_size)
+                # epoch_loss_re_false = epoch_loss_re_false/(config.batches_per_epoch_train*config.batch_size)
                 epoch_loss_cg_real = epoch_loss_cg_real/(config.batches_per_epoch_train*config.batch_size)
                 epoch_loss_cg_false = epoch_loss_cg_false/(config.batches_per_epoch_train*config.batch_size)
                 epoch_acc_real = epoch_acc_real/flag_count
                 epoch_acc_false = epoch_acc_false/flag_count
+                epoch_pho_acc_2 = epoch_pho_acc_2/flag_count
+                epoch_pho_acc_2_false = epoch_pho_acc_2_false/flag_count
 
                 # import pdb;pdb.set_trace()
                 # epoch_loss_vuv = epoch_loss_vuv/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len)
@@ -612,9 +632,9 @@ def train(_):
 
                 print('        : Singer Training Loss = %.10f ' % (epoch_loss_singer))
                 print('        : Singer  Accuracy = %.10f ' % (epoch_acc_singer))
-                print('        : Final Loss = %.10f ' % (epoch_total_loss))
-                print('        : Reconstrubtion Loss Real = %.10f ' % (epoch_loss_re_real ))
-                print('        : Reconstrubtion Loss False = %.10f ' % (epoch_loss_re_false ))
+                print('        : Re phoneme accuracy = %.10f ' % (epoch_pho_acc_2))
+                print('        : Re phoneme accuracy_@ = %.10f ' % (epoch_pho_acc_2_false ))
+                # print('        : Reconstrubtion Loss False = %.10f ' % (epoch_loss_re_false ))
                 print('        : CGAN Loss Real = %.10f ' % (epoch_loss_cg_real))
                 print('        : CGAN Loss Fake = %.10f ' % (epoch_loss_cg_false ))
                 print('        : CGAN Accuracy Real = %.10f ' % (epoch_acc_real))
@@ -649,11 +669,11 @@ def train(_):
 
 def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
-    file_name = "nus_VKOW_sing_20.hdf5"
+    file_name = "nus_KENN_sing_17.hdf5"
 
 
 
-    speaker_file = "nus_VKOW_sing_20.hdf5"
+    speaker_file = "nus_KENN_sing_17.hdf5"
 
     stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
 
@@ -1033,7 +1053,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         plt.plot(((feats[:,-2:-1]*(1-feats[:,-1:]))-69+(12*np.log2(440))-(12*np.log2(10)))*100)
         plt.plot(((out_batches_feats[:,-2:-1]*(1-out_batches_feats[:,-1:])) -69+(12*np.log2(440))-(12*np.log2(10)))*100)
 
-        utils.feats_to_audio(haha[:5000,:],'Test_VKOW_sing_20_from_VKOW_20.wav')
+        utils.feats_to_audio(haha[:5000,:],'Test_KENN_sing_17_from_KENN_17.wav')
 
 
         # plt.plot(f0_output)
