@@ -91,11 +91,14 @@ def train(_):
 
         # initial_loss = tf.reduce_sum(tf.abs(op - target_placeholder[:,:,:60])*np.linspace(1.0,0.7,60)*(1-target_placeholder[:,:,-1:]))
 
-        harm_loss = tf.reduce_sum(tf.abs(harm - target_placeholder[:,:,:60])*np.linspace(1.0,0.7,60)*(1-target_placeholder[:,:,-1:]))
+        harm_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= target_placeholder[:,:,:60], logits=harm))
 
-        ap_loss = tf.reduce_sum(tf.abs(ap - target_placeholder[:,:,60:-2])*(1-target_placeholder[:,:,-1:]))
 
-        f0_loss = tf.reduce_sum(tf.abs(f0 - target_placeholder[:,:,-2:-1])*(1-target_placeholder[:,:,-1:])) 
+        ap_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= target_placeholder[:,:,60:-2], logits=ap))
+
+
+        f0_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= target_placeholder[:,:,-2:-1], logits=f0))
+
 
         # vuv_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels=, logits=vuv))
 
@@ -405,7 +408,8 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
 
         sess.run(init_op)
 
-        ckpt = tf.train.get_checkpoint_state('./log_m1_old/')
+        # ckpt = tf.train.get_checkpoint_state('./log_m1_old/')
+        ckpt = tf.train.get_checkpoint_state(config.log_dir_m1)
 
         if ckpt and ckpt.model_checkpoint_path:
             print("Using the model in %s"%ckpt.model_checkpoint_path)
