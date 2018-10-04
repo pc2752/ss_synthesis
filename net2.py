@@ -31,6 +31,19 @@ def one_hotize(inp, max_index=41):
 def binary_cross(p,q):
     return -(p * tf.log(q + 1e-12) + (1 - p) * tf.log( 1 - q + 1e-12))
 
+
+def nll_gaussian(y_pred_mean,y_pred_sd,y_test):
+
+    ## element wise square
+    square = tf.square(y_pred_mean - y_test)## preserve the same shape as y_pred.shape
+    ms = tf.add(tf.divide(square,y_pred_sd), tf.log(y_pred_sd))
+    ## axis = -1 means that we take mean across the last dimension 
+    ## the output keeps all but the last dimension
+    ## ms = tf.reduce_mean(ms,axis=-1)
+    ## return scalar
+    ms = tf.reduce_mean(ms)
+    return(ms)
+
 def train(_):
     stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
     max_feat = np.array(stat_file["feats_maximus"])
@@ -86,8 +99,8 @@ def train(_):
         #     f0_probs = tf.nn.softmax(f0_logits)
 
         with tf.variable_scope('Final_Model') as scope:
-            voc_output = modules.final_net(singer_embedding_placeholder, f0_input_placeholder_midi, pho_input_placeholder, prob)
-            voc_output_decoded = tf.nn.sigmoid(voc_output)
+            final_voc_mean, final_voc_std = modules.final_net(singer_embedding_placeholder, f0_input_placeholder_midi, pho_input_placeholder, prob)
+            # voc_output_decoded = tf.nn.sigmoid(voc_output)
 
         # with tf.variable_scope('Final_Model_Phase') as scope:
         #     voc_output_phase = modules.final_net_phase(singer_embedding_placeholder, f0_input_placeholder, pho_input_placeholder, input_placeholder, prob)
@@ -110,7 +123,7 @@ def train(_):
 
             # import pdb;pdb.set_trace()
 
-            singer_embedding_real, singer_logits_real = modules.singer_network(voc_output, prob)
+            singer_embedding_real, singer_logits_real = modules.singer_network(final_voc_mean, prob)
             singer_classes_real = tf.argmax(singer_logits_real, axis=-1)
             singer_probs_real = tf.nn.softmax(singer_logits_real)
 
@@ -149,11 +162,11 @@ def train(_):
 
         singer_loss_2 = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels_singer_2, logits=singer_logits_real))
 
-        reconstruct_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_placeholder, logits=voc_output)* np.concatenate((np.linspace(1.0,5.0,60), np.ones(4)*0.5,np.ones(2))))
+        # reconstruct_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_placeholder, logits=voc_output)) + tf.reduce_sum(tf.abs(output_placeholder - voc_output_decoded)*np.concatenate((np.linspace(0.8,1,60), np.ones(4)*0.5,np.ones(2))))
 
-        # reconstruct_loss = tf.reduce_sum(tf.abs(output_placeholder - voc_output)*np.concatenate((np.linspace(0.8,1,60), np.ones(4)*0.5,np.ones(2))))
+        reconstruct_loss = nll_gaussian(final_voc_mean, final_voc_std, output_placeholder)
 
-        final_loss = reconstruct_loss+ singer_loss_2
+        final_loss = reconstruct_loss + singer_loss_2
 
         # reconstruct_loss_phase = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_phase_placeholder, logits=voc_output_phase))
 
