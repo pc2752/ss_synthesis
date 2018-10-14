@@ -31,13 +31,17 @@ def data_gen(mode = 'Train', sec_mode = 0):
 
     voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and x.startswith('nus')  and not x.startswith('nus_KENN') and not x == 'nus_MCUR_sing_04.hdf5' and not x == 'nus_MCUR_read_04.hdf5']
 
+    mix_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('nus_KENN') ]
+
+    # import pdb;pdb.set_trace()
+
     back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('med')]
 
-    mix_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and x.startswith('nus')  and not x.startswith('nus_KENN_read')]
+    # mix_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and x.startswith('nus')  and not x.startswith('nus_KENN_read')]
 
     # all_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('nus') and not x.startswith('vctk')]
 
-    all_list = voc_list
+    all_list = mix_list
 
     # val_list = mix_list[int(len(mix_list)*config.split):]
 
@@ -81,6 +85,7 @@ def data_gen(mode = 'Train', sec_mode = 0):
                 file_list = all_list
             else:
                 file_list = voc_list
+        
 
 
         inputs = []
@@ -144,7 +149,7 @@ def data_gen(mode = 'Train', sec_mode = 0):
             back_to_open = back_list[back_index]
 
             # back_file = h5py.File(config.backing_dir+back_to_open, "r")
-            if voc_to_open.startswith('nus') or voc_to_open.startswith('vctk') :
+            if voc_to_open.startswith('nus'):
                 if not  "phonemes" in voc_file:
                     print(voc_file)
                     Flag = False
@@ -206,7 +211,7 @@ def data_gen(mode = 'Train', sec_mode = 0):
 
 
 def get_stats():
-    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and x.startswith('nus') or x.startswith('vctk') and not x.startswith('nus_KENN') and not x == 'nus_MCUR_sing_04.hdf5' and not x == 'nus_MCUR_read_04.hdf5']
+    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('nus_KENN') ]
 
     back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('med')]
 
