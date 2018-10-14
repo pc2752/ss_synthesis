@@ -35,8 +35,8 @@ def binary_cross(p,q):
 def nll_gaussian(y_pred_mean,y_pred_sd,y_test):
 
     ## element wise square
-    square = tf.square(y_pred_mean - y_test)## preserve the same shape as y_pred.shape
-    ms = tf.add(tf.divide(square,y_pred_sd), tf.log(y_pred_sd))
+    square = tf.square(y_pred_mean - y_test + 1e-12)## preserve the same shape as y_pred.shape
+    ms = tf.add(tf.divide(square + 1e-12,y_pred_sd + 1e-12), tf.log(y_pred_sd + 1e-12))
     ## axis = -1 means that we take mean across the last dimension 
     ## the output keeps all but the last dimension
     ## ms = tf.reduce_mean(ms,axis=-1)
@@ -732,8 +732,8 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         #     f0_probs = tf.nn.softmax(f0_logits)
 
         with tf.variable_scope('Final_Model') as scope:
-            voc_output = modules.final_net(singer_embedding_placeholder, f0_input_placeholder_midi, pho_input_placeholder, prob)
-            voc_output_decoded = tf.nn.sigmoid(voc_output)
+            final_voc_mean, final_voc_std = modules.final_net(singer_embedding_placeholder, f0_input_placeholder_midi, pho_input_placeholder, prob)
+            # voc_output_decoded = tf.nn.sigmoid(voc_output)
 
         # with tf.variable_scope('Final_Model_Phase') as scope:
         #     voc_output_phase = modules.final_net_phase(singer_embedding_placeholder, f0_input_placeholder, pho_input_placeholder, input_placeholder, prob)
@@ -745,10 +745,20 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
             pho_classes = tf.argmax(pho_logits, axis=-1)
             pho_probs = tf.nn.softmax(pho_logits)
 
+            
+
         with tf.variable_scope('singer_Model') as scope:
             singer_embedding, singer_logits = modules.singer_network(speaker_input_placeholder, prob)
             singer_classes = tf.argmax(singer_logits, axis=-1)
             singer_probs = tf.nn.softmax(singer_logits)
+
+            # scope.reuse_variables()
+
+            # # import pdb;pdb.set_trace()
+
+            # singer_embedding_real, singer_logits_real = modules.singer_network(final_voc_mean, prob)
+            # singer_classes_real = tf.argmax(singer_logits_real, axis=-1)
+            # singer_probs_real = tf.nn.softmax(singer_logits_real)
         # with tf.variable_scope('Final_Model_Phase') as scope:
         #     voc_output_phase = modules.final_net_phase(singer_embedding_placeholder, f0_input_placeholder, pho_input_placeholder, input_placeholder, prob)
         #     voc_output_phase_decoded = tf.nn.sigmoid(voc_output_phase)
@@ -942,7 +952,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
             #     pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41), output_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed})
 
 
-            output_feats = sess.run(voc_output_decoded, feed_dict={f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=57),
+            output_feats = sess.run(final_voc_mean, feed_dict={f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=57),
                 pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=42),singer_embedding_placeholder: s_embed})
 
             # output_voc_stft_phase = sess.run(voc_output_phase_decoded, feed_dict={input_placeholder: output_voc_stft, f0_input_placeholder: f0_outputs_2,

@@ -498,9 +498,9 @@ def final_net(encoded, f0, phones, prob):
 
     output_1 = tf.nn.dropout(tf.layers.dense(output_1, 256), prob)
 
-    final_voc_mean = tf.layers.dense(output_1, 66)
+    final_voc_mean = tf.nn.relu(tf.layers.dense(output_1, 66))
 
-    final_voc_std = tf.layers.dense(output_1, 66)
+    final_voc_std = tf.nn.relu(tf.layers.dense(output_1, 66))
 
     return final_voc_mean, final_voc_std
 
