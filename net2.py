@@ -313,13 +313,13 @@ def train(_):
         for epoch in xrange(start_epoch, config.num_epochs):
             val_f0_accs = []
 
-            if epoch>30:
-                sec_mode = 0
-            else:
-                sec_mode = 0
+            # if epoch>30:
+            #     sec_mode = 0
+            # else:
+            #     sec_mode = 0
 
 
-            data_generator = data_gen(sec_mode = sec_mode)
+            data_generator = data_gen(sec_mode = 1)
             start_time = time.time()
 
 
