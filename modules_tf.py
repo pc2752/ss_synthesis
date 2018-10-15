@@ -677,7 +677,7 @@ def GAN_discriminator(inputs, f0_input_placeholder_midi, pho_input_placeholder, 
     ops = tf.layers.dense(ops, 256, name = "D_2", activation=tf.nn.relu,)
     ops = tf.layers.dense(ops, 128, name = "D_3", activation=tf.nn.relu,)
     ops = tf.layers.dense(ops, 1, name = "D_4", activation=tf.nn.relu,)
-    ops = tf.nn.sigmoid(ops)
+    ops = ops
     return ops
 
 
