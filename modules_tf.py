@@ -559,6 +559,7 @@ def singer_network(inputs, prob):
 
 
 
+
     # return x
 
 def wavenet_block(inputs, conditioning, dilation_rate = 2, scope = 'wavenet_block'):
@@ -649,28 +650,33 @@ def GAN_generator(inputs, num_block = config.wavenet_layers):
     # import pdb;pdb.set_trace()
 
 
-def GAN_discriminator(inputs, conditioning):
-    ops = tf.concat([inputs, conditioning], 2)
-    ops = tf.layers.dense(ops, config.lstm_size, name = "D_1")
+def GAN_discriminator(inputs, f0_input_placeholder_midi, pho_input_placeholder):
+    # ops = tf.concat([inputs,  f0_input_placeholder_midi, pho_input_placeholder], axis = -1)
+    ops = inputs
+    ops = tf.layers.dense(ops, 256, name = "D_1")
     # ops = tf.layers.dense(ops, 30, name = "D_2")
     # ops = tf.layers.dense(ops, 15, name = "D_3")
 
-    ops = tf.layers.conv1d(ops, config.wavenet_filters, 2, padding = 'valid', name = "D_c1")
-    ops = tf.layers.conv1d(ops, config.wavenet_filters, 4, padding = 'valid', name = "D_c2")
-    ops = tf.layers.conv1d(ops, config.wavenet_filters, 8, padding = 'valid', name = "D_c3")
-    ops = tf.layers.conv1d(ops, config.wavenet_filters, 16, padding = 'valid', name = "D_c4")
-    ops = tf.layers.conv1d(ops, config.wavenet_filters, 32, padding = 'valid', name = "D_c5")
+    ops = tf.layers.conv1d(ops, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu, name = "D_c1")
+    ops = tf.layers.conv1d(ops, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu, name = "D_c2")
+    ops = tf.layers.conv1d(ops, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu, name = "D_c3")
+    # ops = tf.layers.conv1d(ops, 64, 16, padding = 'valid', name = "D_c4")
+    # ops = tf.layers.conv1d(ops, 32, 32, padding = 'valid', name = "D_c5")
     # ops = tf.layers.conv1d(ops, config.wavenet_filters, 25, padding = 'valid')
 
     # import pdb;pdb.set_trace()
 
 
     ops = tf.reshape(ops, [config.batch_size,-1])
-    ops = tf.layers.dense(ops, 30, name = "D_2")
-    ops = tf.layers.dense(ops, 15, name = "D_3")
+    ops = tf.layers.dense(ops, 256, name = "D_2")
+    ops = tf.layers.dense(ops, 128, name = "D_3")
     ops = tf.layers.dense(ops, 1, name = "D_4")
     ops = tf.nn.sigmoid(ops)
     return ops
+
+
+
+
 
 
 

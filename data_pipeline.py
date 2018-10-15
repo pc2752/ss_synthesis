@@ -73,7 +73,7 @@ def data_gen(mode = 'Train', sec_mode = 0):
     if mode == "Train":
         num_batches = config.batches_per_epoch_train
         if sec_mode == 0:
-            file_list = all_list
+            file_list = voc_list
 
     else: 
         num_batches = config.batches_per_epoch_val
@@ -82,7 +82,7 @@ def data_gen(mode = 'Train', sec_mode = 0):
     for k in range(num_batches):
         if sec_mode == 1:
             if np.random.rand(1)<config.aug_prob:
-                file_list = all_list
+                file_list = voc_list
             else:
                 file_list = voc_list
         
