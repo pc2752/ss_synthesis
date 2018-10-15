@@ -650,8 +650,8 @@ def GAN_generator(inputs, num_block = config.wavenet_layers):
     # import pdb;pdb.set_trace()
 
 
-def GAN_discriminator(inputs, f0_input_placeholder_midi, pho_input_placeholder):
-    # ops = tf.concat([inputs,  f0_input_placeholder_midi, pho_input_placeholder], axis = -1)
+def GAN_discriminator(inputs, f0_input_placeholder_midi, pho_input_placeholder, speaker_embed):
+    ops = tf.concat([inputs,  f0_input_placeholder_midi, pho_input_placeholder], axis = -1)
     ops = inputs
     ops = tf.layers.dense(ops, 256, name = "D_1")
     # ops = tf.layers.dense(ops, 30, name = "D_2")
@@ -668,9 +668,15 @@ def GAN_discriminator(inputs, f0_input_placeholder_midi, pho_input_placeholder):
 
 
     ops = tf.reshape(ops, [config.batch_size,-1])
-    ops = tf.layers.dense(ops, 256, name = "D_2")
-    ops = tf.layers.dense(ops, 128, name = "D_3")
-    ops = tf.layers.dense(ops, 1, name = "D_4")
+
+    ops = tf.concat([ops, speaker_embed], axis = -1)
+
+    ops = tf.layers.dense(ops, 512, name = "D_5", activation=tf.nn.relu,)
+
+
+    ops = tf.layers.dense(ops, 256, name = "D_2", activation=tf.nn.relu,)
+    ops = tf.layers.dense(ops, 128, name = "D_3", activation=tf.nn.relu,)
+    ops = tf.layers.dense(ops, 1, name = "D_4", activation=tf.nn.relu,)
     ops = tf.nn.sigmoid(ops)
     return ops
 
