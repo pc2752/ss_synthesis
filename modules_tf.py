@@ -652,14 +652,14 @@ def GAN_generator(inputs, num_block = config.wavenet_layers):
 
 def GAN_discriminator(inputs, f0_input_placeholder_midi, pho_input_placeholder, speaker_embed):
     ops = tf.concat([inputs,  f0_input_placeholder_midi, pho_input_placeholder], axis = -1)
-    ops = inputs
-    ops = tf.layers.dense(ops, 256, name = "D_1")
+    # ops = inputs
+    ops = tf.layers.dense(ops, 256, name = "D_1" , activation = tf.nn.tanh )
     # ops = tf.layers.dense(ops, 30, name = "D_2")
     # ops = tf.layers.dense(ops, 15, name = "D_3")
 
-    ops = tf.layers.conv1d(ops, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu, name = "D_c1")
-    ops = tf.layers.conv1d(ops, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu, name = "D_c2")
-    ops = tf.layers.conv1d(ops, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu, name = "D_c3")
+    ops = tf.layers.conv1d(ops, filters=128, kernel_size=2, padding='same', name = "D_c1", activation = tf.nn.tanh)
+    ops = tf.layers.conv1d(ops, filters=128, kernel_size=2, padding='same', name = "D_c2", activation = tf.nn.tanh)
+    ops = tf.layers.conv1d(ops, filters=128, kernel_size=2, padding='same', name = "D_c3", activation = tf.nn.tanh)
     # ops = tf.layers.conv1d(ops, 64, 16, padding = 'valid', name = "D_c4")
     # ops = tf.layers.conv1d(ops, 32, 32, padding = 'valid', name = "D_c5")
     # ops = tf.layers.conv1d(ops, config.wavenet_filters, 25, padding = 'valid')
@@ -671,12 +671,12 @@ def GAN_discriminator(inputs, f0_input_placeholder_midi, pho_input_placeholder, 
 
     ops = tf.concat([ops, speaker_embed], axis = -1)
 
-    ops = tf.layers.dense(ops, 512, name = "D_5", activation=tf.nn.relu,)
+    ops = tf.layers.dense(ops, 512, name = "D_5", activation = tf.nn.tanh)
 
 
-    ops = tf.layers.dense(ops, 256, name = "D_2", activation=tf.nn.relu,)
-    ops = tf.layers.dense(ops, 128, name = "D_3", activation=tf.nn.relu,)
-    ops = tf.layers.dense(ops, 1, name = "D_4", activation=tf.nn.relu,)
+    ops = tf.layers.dense(ops, 256, name = "D_2", activation = tf.nn.tanh,)
+    ops = tf.layers.dense(ops, 128, name = "D_3", activation = tf.nn.tanh,)
+    ops = tf.layers.dense(ops, 1, name = "D_4", activation = tf.nn.tanh)
     ops = ops
     return ops
 

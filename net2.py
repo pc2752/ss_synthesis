@@ -164,13 +164,13 @@ def train(_):
 
         # D_loss_real = -tf.reduce_mean(tf.log(D_real + 1e-10))
         # D_loss_fake = -tf.reduce_mean(tf.log(1. - (D_fake + 1e-10)))
-        D_loss_real = -tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=D_real+1e-12, logits=real_logs))
-        D_loss_fake = -tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=D_fake+1e-12, logits=fake_logs))
+        D_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=D_real+1e-12, logits=real_logs))
+        D_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=D_fake+1e-12, logits=fake_logs))
 
         D_loss = D_loss_real+D_loss_fake
 
         # G_loss_GAN = -tf.reduce_mean(tf.log(D_fake + 1e-10))
-        G_loss_GAN = -tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=D_fake+1e-12, logits=real_logs)) 
+        G_loss_GAN = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=D_fake+1e-12, logits=real_logs)) 
 
         
 
@@ -444,11 +444,11 @@ def train(_):
 
                     teacher_train = np.random.rand(1)<0.5
 
-                    re_logits = np.clip(np.random.rand(config.batch_size,1), 0.0,0.1)
+                    re_logits = np.clip(np.random.rand(config.batch_size,1), 0.9,1.0)
 
-                    re_logits_gen = np.zeros((config.batch_size,1))
+                    re_logits_gen = np.ones((config.batch_size,1))
 
-                    fa_logits = np.clip(np.random.rand(config.batch_size,1), 0.9,1.0)
+                    fa_logits = np.clip(np.random.rand(config.batch_size,1), 0.0,0.1)
 
                     # import pdb;pdb.set_trace()
 
