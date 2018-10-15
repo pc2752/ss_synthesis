@@ -277,7 +277,7 @@ def train(_):
 
         re_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
-        dis_optimizer = tf.train.GradientDescentOptimizer(learning_rate =  0.001)
+        dis_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
         cgan_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
@@ -455,7 +455,7 @@ def train(_):
                             #     _,_, step_loss_total_2, step_re_loss_2, step_singer_loss_false, step_singer_acc_false = sess.run([re_train_function, cgan_train_function, final_loss, reconstruct_loss, singer_loss_2,singer_acc_false], feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed_2, prob:0.8,singer_labels_2: singer_ids_2})
                             # else:
                             _,step_loss_total, step_re_loss, step_gen_loss = sess.run([re_train_function, final_loss, reconstruct_loss, G_loss_GAN], feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8})
-                            _,step_loss_dis = sess.run([dis_train_function, D_loss], 
+                            step_loss_dis = sess.run( D_loss, 
                                 feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets, prob:0.8,singer_embedding_placeholder: s_embed})
                         else:
                             pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: input_noisy,f0_input_placeholder_midi: f0_2_one_hot} )
