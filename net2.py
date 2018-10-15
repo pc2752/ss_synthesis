@@ -526,13 +526,13 @@ def train(_):
                 # epoch_total_loss = epoch_total_loss/(config.batches_per_epoch_train *config.batch_size)
                 # epoch_total_loss_phase = epoch_total_loss_phase/(config.batches_per_epoch_train *config.batch_size)
 
-                summary_str = sess.run(summary, feed_dict={input_placeholder: featies,  
-                    labels:pho_targs, singer_labels: singer_ids, singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_2_one_hot, f0_target_placeholder_midi: targets_f0_2, pho_input_placeholder:pho_one_hot, 
-                    output_placeholder: feats_targets, prob:0.5, singer_labels_2: singer_ids})
-                # import pdb;pdb.set_trace()
-                train_summary_writer.add_summary(summary_str, epoch)
-                # summary_writer.add_summary(summary_str_val, epoch)
-                train_summary_writer.flush()
+                # summary_str = sess.run(summary, feed_dict={input_placeholder: featies,  
+                #     labels:pho_targs, singer_labels: singer_ids, singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_2_one_hot, f0_target_placeholder_midi: targets_f0_2, pho_input_placeholder:pho_one_hot, 
+                #     output_placeholder: feats_targets, prob:0.5, singer_labels_2: singer_ids})
+                # # import pdb;pdb.set_trace()
+                # train_summary_writer.add_summary(summary_str, epoch)
+                # # summary_writer.add_summary(summary_str_val, epoch)
+                # train_summary_writer.flush()
 
             with tf.variable_scope('Validation'):
 
@@ -601,12 +601,12 @@ def train(_):
                 # epoch_total_loss_val = epoch_total_loss_val/(config.batches_per_epoch_val *config.batch_size)
                 # epoch_total_loss_phase_val = epoch_total_loss_phase_val/(config.batches_per_epoch_val *config.batch_size)
 
-                summary_str = sess.run(summary_val, feed_dict={input_placeholder: featies,
-                    labels:pho_targs, singer_labels: singer_ids, singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_2_one_hot, f0_target_placeholder_midi: targets_f0_2, pho_input_placeholder:pho_one_hot, 
-                    output_placeholder: feats_targets, prob:0.5})
-                val_summary_writer.add_summary(summary_str, epoch)
-                # summary_writer.add_summary(summary_str_val, epoch)
-                val_summary_writer.flush()
+                # summary_str = sess.run(summary_val, feed_dict={input_placeholder: featies,
+                #     labels:pho_targs, singer_labels: singer_ids, singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_2_one_hot, f0_target_placeholder_midi: targets_f0_2, pho_input_placeholder:pho_one_hot, 
+                #     output_placeholder: feats_targets, prob:0.5})
+                # val_summary_writer.add_summary(summary_str, epoch)
+                # # summary_writer.add_summary(summary_str_val, epoch)
+                # val_summary_writer.flush()
 
             duration = time.time() - start_time
 

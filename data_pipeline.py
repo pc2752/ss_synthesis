@@ -78,13 +78,16 @@ def data_gen(mode = 'Train', sec_mode = 0):
     else: 
         num_batches = config.batches_per_epoch_val
         file_list = val_list
+        Flag = True
 
     for k in range(num_batches):
         if sec_mode == 1:
             if np.random.rand(1)<config.aug_prob:
                 file_list = all_list
+                Flag = False
             else:
                 file_list = voc_list
+                Flag = True
         
 
 
@@ -149,12 +152,12 @@ def data_gen(mode = 'Train', sec_mode = 0):
             back_to_open = back_list[back_index]
 
             # back_file = h5py.File(config.backing_dir+back_to_open, "r")
-            if voc_to_open.startswith('nus'):
+            if Flag:
                 if not  "phonemes" in voc_file:
                     print(voc_file)
-                    Flag = False
+                    # Flag = False
                 else: 
-                    Flag = True
+                    # Flag = True
                     pho_target = np.array(voc_file["phonemes"])
                     haha = np.diff(pho_target)
                     # baba = haha/41
@@ -164,8 +167,7 @@ def data_gen(mode = 'Train', sec_mode = 0):
                     # import pdb;pdb.set_trace()
                     singer_name = voc_to_open.split('_')[1]
                     singer_index = config.singers.index(singer_name)
-            else:
-                Flag = False
+
 
 
             # print("Backing file: %s" % back_file)
