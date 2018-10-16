@@ -181,7 +181,7 @@ def train(_):
 
         # reconstruct_loss = tf.reduce_sum(tf.abs(output_placeholder - voc_output)*np.concatenate((np.linspace(0.8,1,60), np.ones(4)*0.5,np.ones(2))))
 
-        final_loss =  G_loss_GAN + reconstruct_loss
+        final_loss =  G_loss_GAN 
 
         # reconstruct_loss_phase = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_phase_placeholder, logits=voc_output_phase))
 
@@ -285,7 +285,7 @@ def train(_):
 
         re_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
-        dis_optimizer = tf.train.MomentumOptimizer(learning_rate = config.init_lr, momentum = 0.1)
+        dis_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
         cgan_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
