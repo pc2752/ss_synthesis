@@ -177,13 +177,13 @@ def train(_):
 
         
 
-        reconstruct_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_placeholder, logits=voc_output)) * config.lamda
+        # reconstruct_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_placeholder, logits=voc_output)) * config.lamda
 
 
 
-        # reconstruct_loss = tf.reduce_sum(tf.abs(output_placeholder - voc_output)*np.concatenate((np.linspace(0.8,1,60), np.ones(4)*0.5,np.ones(2))))
+        reconstruct_loss = tf.reduce_sum(tf.abs(output_placeholder - voc_output)* config.lamda)
 
-        final_loss =  G_loss_GAN 
+        final_loss =  G_loss_GAN +reconstruct_loss
 
         # reconstruct_loss_phase = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_phase_placeholder, logits=voc_output_phase))
 

@@ -13,7 +13,7 @@ wav_dir_vctk_lab = '../datasets/VCTK/VCTK_files/VCTK-Corpus/forPritish/'
 
 voice_dir = './voice/'
 backing_dir = './backing/'
-log_dir = './log_feat_to_feat_just_GAN/'
+log_dir = './log_feat_to_feat_GAN-abs/'
 log_dir_m1 = './log_m1_old/'
 # log_dir = './log_mfsc_6_best_so_far/'
 data_log = './log/data_log.log'
@@ -103,7 +103,7 @@ noise_threshold = 0.005 #0.7 for the unnormalized features
 pred_mode = 'all'
 
 # Hyperparameters
-num_epochs = 500
+num_epochs = 5000
 num_epochs_m1 = 2000
 batches_per_epoch_train = 100
 batches_per_epoch_val = 10
@@ -116,7 +116,7 @@ input_features = 513
 first_embed = 256
 
 
-lamda = 0.00001
+lamda = 0.001
 
 lstm_size = 128
 
