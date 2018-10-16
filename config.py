@@ -116,7 +116,7 @@ input_features = 513
 first_embed = 256
 
 
-lamda = 0.0001
+lamda = 0.00001
 
 lstm_size = 128
 
