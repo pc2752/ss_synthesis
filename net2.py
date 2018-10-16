@@ -43,6 +43,8 @@ def train(_):
 
         output_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,66),name='output_placeholder')
 
+        rand_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,1),name='random_placeholder')
+
         # output_phase_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.input_features),name='output_phase_placeholder')
 
         f0_target_placeholder_midi = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len),name='f0_target_midi_placeholder')
@@ -91,7 +93,7 @@ def train(_):
         #     f0_probs = tf.nn.softmax(f0_logits)
 
         with tf.variable_scope('Final_Model') as scope:
-            voc_output = modules.final_net(singer_embedding_placeholder, f0_input_placeholder_midi, pho_input_placeholder, prob)
+            voc_output = modules.final_net(rand_placeholder, singer_embedding_placeholder, f0_input_placeholder_midi, pho_input_placeholder, prob)
             voc_output_decoded = tf.nn.sigmoid(voc_output)
 
         # with tf.variable_scope('Final_Model_Phase') as scope:
@@ -453,6 +455,8 @@ def train(_):
 
                     re_logits = np.clip(np.random.rand(config.batch_size,1), 0.0,0.1)
 
+                    random_inputs = np.random.rand(config.batch_size, config.max_phr_len, 1)
+
                     re_logits_gen = np.zeros((config.batch_size,1))
 
                     fa_logits = np.clip(np.random.rand(config.batch_size,1), 0.9,1.0)
@@ -477,11 +481,11 @@ def train(_):
                             #     _,_, step_loss_total_2, step_re_loss_2, step_singer_loss_false, step_singer_acc_false = sess.run([re_train_function, cgan_train_function, final_loss, reconstruct_loss, singer_loss_2,singer_acc_false], feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed_2, prob:0.8,singer_labels_2: singer_ids_2})
                             # else:
                             
-                            _,step_loss_total, step_re_loss, step_gen_loss = sess.run([re_train_function, final_loss, reconstruct_loss, G_loss_GAN], feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8, real_logs:re_logits_gen, is_train : True})
+                            _,step_loss_total, step_re_loss, step_gen_loss = sess.run([re_train_function, final_loss, reconstruct_loss, G_loss_GAN], feed_dict={rand_placeholder:random_inputs, f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8, real_logs:re_logits_gen, is_train : True})
                             
 
                             _,step_loss_dis = sess.run( [dis_train_function, D_loss], 
-                                feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets, prob:0.8,singer_embedding_placeholder: s_embed, real_logs:re_logits, fake_logs : fa_logits, is_train : True})
+                                feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets, prob:0.8,singer_embedding_placeholder: s_embed, real_logs:re_logits, fake_logs : fa_logits, is_train : True})
                         else:
                             pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: input_noisy,f0_input_placeholder_midi: f0_2_one_hot} )
                             _, step_re_loss = sess.run([re_train_function, reconstruct_loss], feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_outs, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:1.0, input_placeholder: featies})
@@ -506,9 +510,9 @@ def train(_):
                             #     _,step_loss_dis = sess.run([dis_train_function, D_loss], 
                             #         feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8,singer_labels_2: singer_ids})
                             # else:
-                            _,step_loss_total, step_re_loss, step_gen_loss = sess.run([re_train_function, final_loss, reconstruct_loss, G_loss_GAN], feed_dict={f0_input_placeholder_midi: f0_outputs_1, pho_input_placeholder: pho_outs, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:1.0, input_placeholder: featies,singer_labels_2: singer_ids, real_logs:re_logits_gen, is_train:True})
+                            _,step_loss_total, step_re_loss, step_gen_loss = sess.run([re_train_function, final_loss, reconstruct_loss, G_loss_GAN], feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: f0_outputs_1, pho_input_placeholder: pho_outs, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:1.0, input_placeholder: featies,singer_labels_2: singer_ids, real_logs:re_logits_gen, is_train:True})
                             _,step_loss_dis = sess.run([dis_train_function, D_loss], 
-                                feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8, real_logs:re_logits, fake_logs : fa_logits, is_train:True})
+                                feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8, real_logs:re_logits, fake_logs : fa_logits, is_train:True})
 
 
                         else:
@@ -618,6 +622,8 @@ def train(_):
 
                     pho_one_hot = one_hotize(pho_targs, max_index=42)
 
+                    random_inputs = np.random.rand(config.batch_size, config.max_phr_len, 1)
+
                     featies = feats_targets
 
                     step_loss_f0_midi, step_acc_f0_midi = sess.run([f0_loss_midi, f0_acc_midi_val], feed_dict={input_placeholder: featies,f0_target_placeholder_midi: targets_f0_2})
@@ -627,7 +633,7 @@ def train(_):
 
                     # step_loss_f0, step_acc_f0 = sess.run([f0_loss, f0_acc_val], feed_dict={input_placeholder: featies,singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder:pho_one_hot, f0_target_placeholder: targets_f0_1})
                     step_loss_pho, step_acc_pho = sess.run([pho_loss, pho_acc_val], feed_dict={input_placeholder: featies,f0_input_placeholder_midi:f0_2_one_hot, labels: pho_targs})
-                    step_loss_total = sess.run(reconstruct_loss, feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed})
+                    step_loss_total = sess.run(reconstruct_loss, feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed})
                     # step_loss_total_phase = sess.run(reconstruct_loss_phase, feed_dict={input_placeholder:inputs, f0_input_placeholder: one_hotize(targets_f0_1, max_index=256), pho_input_placeholder: one_hotize(pho_targs, max_index=41),singer_embedding_placeholder: s_embed, prob:0.5, output_phase_placeholder: phase_targets})
 
 
@@ -767,6 +773,8 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         output_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,66),name='output_placeholder')
 
+        rand_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,1),name='random_placeholder')
+
         # output_phase_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.input_features),name='output_phase_placeholder')
 
         f0_target_placeholder_midi = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len),name='f0_target_midi_placeholder')
@@ -811,7 +819,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         #     f0_probs = tf.nn.softmax(f0_logits)
 
         with tf.variable_scope('Final_Model') as scope:
-            voc_output = modules.final_net(singer_embedding_placeholder, f0_input_placeholder_midi, pho_input_placeholder, prob)
+            voc_output = modules.final_net(rand_placeholder, singer_embedding_placeholder, f0_input_placeholder_midi, pho_input_placeholder, prob)
             voc_output_decoded = tf.nn.sigmoid(voc_output)
 
         # with tf.variable_scope('Final_Model_Phase') as scope:
@@ -959,6 +967,8 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         # import pdb;pdb.set_trace()
 
 
+
+
         out_batches_feats = []
 
         out_batches_voc_stft_phase = []
@@ -1009,6 +1019,8 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
             in_batch_pho_target = in_batch_pho_target.reshape([config.batch_size, config.max_phr_len])
 
+            random_inputs = np.random.rand(config.batch_size, config.max_phr_len, 1)
+
 
 
 
@@ -1021,7 +1033,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
             #     pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41), output_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed})
 
 
-            output_feats = sess.run(voc_output_decoded, feed_dict={f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=57),
+            output_feats = sess.run(voc_output_decoded, feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=57),
                 pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=42),singer_embedding_placeholder: s_embed})
 
             # output_voc_stft_phase = sess.run(voc_output_phase_decoded, feed_dict={input_placeholder: output_voc_stft, f0_input_placeholder: f0_outputs_2,

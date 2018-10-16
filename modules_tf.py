@@ -442,9 +442,11 @@ def f0_network_2(encoded, f0, phones, prob):
     return f0_1
 
 
-def final_net(encoded, f0, phones, prob):
+def final_net(randy, encoded, f0, phones, prob):
 
     encoded_embedding = tf.layers.dense(encoded, 128)
+
+    randy = tf.layers.dense(randy, 32)
 
 
     
@@ -452,7 +454,7 @@ def final_net(encoded, f0, phones, prob):
 
     embed_ph = tf.layers.dense(phones, 64)
 
-    inputs_2 = tf.nn.dropout(tf.concat([embed_1, embed_ph], axis = -1), prob)
+    inputs_2 = tf.nn.dropout(tf.concat([embed_1, embed_ph, randy], axis = -1), prob)
 
     conv1 = tf.layers.conv1d(inputs=inputs_2, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu)
 
