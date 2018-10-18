@@ -456,9 +456,9 @@ def final_net(randy, encoded, f0, phones, prob):
 
     inputs_2 = tf.nn.dropout(tf.concat([embed_1, embed_ph, randy], axis = -1), prob)
 
-    inputs_3 = bi_static_stacked_RNN(inputs_2, scope = 'RNN_3')
+    # inputs_3 = bi_static_stacked_RNN(inputs_2, scope = 'RNN_3')
 
-    conv1 = tf.layers.conv1d(inputs=inputs_3, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu)
+    conv1 = tf.layers.conv1d(inputs=inputs_2, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu)
 
     maxpool1 = tf.layers.max_pooling1d(conv1, pool_size=2, strides=2, padding='same')
 
@@ -512,15 +512,15 @@ def final_net(randy, encoded, f0, phones, prob):
 # 
     # import pdb;pdb.set_trace()
 
-    final_conv = tf.concat([tf.layers.conv2d(inputs=uconv5, filters=64, kernel_size=(1,1), padding='same', activation=tf.nn.relu), tf.layers.conv2d(inputs=tf.reshape(inputs_3, [30,128,1,-1]), filters=64, kernel_size=(1,1), padding='same', activation=tf.nn.relu)], axis = -1)
+    final_conv = tf.concat([tf.layers.conv2d(inputs=uconv5, filters=64, kernel_size=(1,1), padding='same', activation=tf.nn.relu), tf.layers.conv2d(inputs=tf.reshape(inputs_2, [30,128,1,-1]), filters=64, kernel_size=(1,1), padding='same', activation=tf.nn.relu)], axis = -1)
 
 
 
     output_2 = tf.reshape(final_conv, [30, config.max_phr_len, 128])
 
-    output_1 = bi_static_stacked_RNN(output_2, scope = 'RNN_4')
+    # output_1 = bi_static_stacked_RNN(output_2, scope = 'RNN_4')
 
-    output_1 = tf.nn.dropout(tf.layers.dense(output_1, 128), prob)
+    output_1 = tf.nn.dropout(tf.layers.dense(output_2, 128), prob)
 
     final_voc = tf.layers.dense(output_1, 66)
 
