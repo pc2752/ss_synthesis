@@ -103,7 +103,7 @@ def train(_):
         with tf.variable_scope('Discriminator') as scope: 
                 D_real = modules.GAN_discriminator(output_placeholder, f0_input_placeholder_midi, pho_input_placeholder, singer_embedding_placeholder, is_train)
                 scope.reuse_variables()
-                D_fake = modules.GAN_discriminator(voc_output, f0_input_placeholder_midi, pho_input_placeholder, singer_embedding_placeholder, is_train)
+                D_fake = modules.GAN_discriminator(voc_output_decoded, f0_input_placeholder_midi, pho_input_placeholder, singer_embedding_placeholder, is_train)
 
         with tf.variable_scope('phone_Model') as scope:
             regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
@@ -177,11 +177,11 @@ def train(_):
 
         
 
-        # reconstruct_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_placeholder, logits=voc_output)) * config.lamda
+        reconstruct_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_placeholder, logits=voc_output)) * config.lamda + tf.reduce_sum(tf.abs(voc_output[:,:-1,:] - voc_output[:,1:,:])* config.lamda*0.01)
 
 
 
-        reconstruct_loss = tf.reduce_sum(tf.abs(output_placeholder - voc_output)* config.lamda)
+        # G_loss_GAN = tf.reduce_sum(tf.abs(voc_output[:,:-1,:] - voc_output[:,1:,:])* config.lamda*0.01)
 
         final_loss =  G_loss_GAN +reconstruct_loss
 
@@ -287,7 +287,7 @@ def train(_):
 
         re_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
-        dis_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
+        dis_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr*10)
 
         cgan_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
@@ -307,9 +307,10 @@ def train(_):
 
         singer_train_function = pho_optimizer.minimize(singer_loss, global_step = global_step_singer)
 
-        re_train_function = re_optimizer.minimize(final_loss, global_step = global_step_re, var_list=final_vars)
+        
 
         with tf.control_dependencies(update_ops):
+            re_train_function = re_optimizer.minimize(final_loss, global_step = global_step_re, var_list=final_vars)
 
             dis_train_function = re_optimizer.minimize(D_loss, global_step = global_step_dis, var_list=d_params)
 

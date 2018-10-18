@@ -13,7 +13,7 @@ wav_dir_vctk_lab = '../datasets/VCTK/VCTK_files/VCTK-Corpus/forPritish/'
 
 voice_dir = './voice/'
 backing_dir = './backing/'
-log_dir = './log_feat_to_feat_GAN-abs/'
+log_dir = './log_feat_to_feat_GAN_diff/'
 log_dir_m1 = './log_m1_old/'
 # log_dir = './log_mfsc_6_best_so_far/'
 data_log = './log/data_log.log'
@@ -110,7 +110,7 @@ batches_per_epoch_val = 10
 batches_per_epoch_val_m1 = 300
 batch_size = 30
 samples_per_file = 5
-max_phr_len = 100
+max_phr_len = 128
 input_features = 513
 
 first_embed = 256
