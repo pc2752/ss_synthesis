@@ -287,7 +287,7 @@ def train(_):
 
         re_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
-        dis_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr*10)
+        dis_optimizer = tf.train.GradientDescentOptimizer(learning_rate = config.init_lr)
 
         cgan_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
@@ -312,7 +312,7 @@ def train(_):
         with tf.control_dependencies(update_ops):
             re_train_function = re_optimizer.minimize(final_loss, global_step = global_step_re, var_list=final_vars)
 
-            dis_train_function = re_optimizer.minimize(D_loss, global_step = global_step_dis, var_list=d_params)
+            dis_train_function = dis_optimizer.minimize(D_loss, global_step = global_step_dis, var_list=d_params)
 
         cgan_train_function = re_optimizer.minimize(singer_loss_2, global_step = global_step_cgan, var_list=final_vars)
 
