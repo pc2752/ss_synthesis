@@ -21,7 +21,7 @@ Once setup, you can run the command <pre><code>python train_tf.py -t</code></pre
 
 <h3>Evaluation</h3> 
 
-Once the file has been synthesized, you can add examples to be evaluated to the *sep_eval* folder. Then to evaluate, please run <pre><code>python sep_eval.pyt</code></pre> to run the evaluation script. The results will be save in csv format in the file *eval.csv*.
+Once the file has been synthesized, you can add examples to be evaluated to the *sep_eval* folder. Then to evaluate, please run <pre><code>python sep_eval.py</code></pre> to run the evaluation script. The results will be save in csv format in the file *eval.csv*.
 
  
 We are currently working on future applications for the methodology and the rest of the files in the repository are for this purpose, please ignore. We will further update the repository in the coming months. 
