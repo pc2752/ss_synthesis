@@ -13,4 +13,4 @@ Once the iKala files have been put in the wav_dir, you can run <pre><code>python
 <h3>Training and inference</h3>
 Once setup, you can run the command <pre><code>python train_tf.py -t</code></pre> to train or <pre><code>python train_tf.py -s &lt;filename&gt; -p (optional, for plots)</code></pre> to synthesize the output. Note that plots are only supported for iKala songs as the ground truth is available for these songs. 
   
-  
+We are currently working on future applications for the methodology and the rest of the files in the repository are for this purpose, please ignore. We will further update the repository in the coming months. 
