@@ -17,7 +17,13 @@ Once the *iKala* files have been put in the *wav_dir*, you can run <pre><code>py
 
 
 Once setup, you can run the command <pre><code>python train_tf.py -t</code></pre> to train or <pre><code>python train_tf.py -s &lt;filename&gt; -p (optional, for plots)</code></pre> to synthesize the output.The output will be saved in the *val_dir* specified in the *config.py* file. Note that plots are only supported for *iKala* songs as the ground truth is available for these songs. 
-  
+ 
+
+<h3>Evaluation</h3> 
+
+Once the file has been synthesized, you can add examples to be evaluated to the *sep_eval* folder. Then to evaluate, please run <pre><code>python sep_eval.pyt</code></pre> to run the evaluation script. The results will be save in csv format in the file *eval.csv*.
+
+ 
 We are currently working on future applications for the methodology and the rest of the files in the repository are for this purpose, please ignore. We will further update the repository in the coming months. 
 
 
