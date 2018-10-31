@@ -29,7 +29,7 @@ def data_gen(mode = 'Train'):
 
     voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and x.startswith('ikala')]
 
-    back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('med')]
+    back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('ikala')]
 
     mix_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('ikala') ]
 
@@ -206,8 +206,8 @@ def get_stats():
 
 
 def main():
-    gen_train_val()
-    # get_stats()
+    # gen_train_val()
+    get_stats()
     # gen = data_gen(mode ='val')
     # while True :
     #     inputs, targets, nchunks_in, lent, county, max_count = next(gen)
