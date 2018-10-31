@@ -177,7 +177,8 @@ def train(_):
 
         
 
-        reconstruct_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_placeholder, logits=voc_output)) * config.lamda - tf.reduce_mean(tf.abs(voc_output[:,:-1,:] - voc_output[:,1:,:]))* config.lamda*0.001
+        reconstruct_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_placeholder, logits=voc_output)) * config.lamda 
+        # - tf.reduce_mean(tf.abs(voc_output[:,:-1,:] - voc_output[:,1:,:]))* config.lamda*0.001
 
 
 

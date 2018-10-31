@@ -482,27 +482,27 @@ def final_net(randy, encoded, f0, phones, prob):
 
     # import pdb;pdb.set_trace()
 
-    upsample1 = tf.image.resize_images(tf.reshape(encoded, [30,4,1,-1]), size=(8,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+    upsample1 = tf.image.resize_images(tf.reshape(encoded, [30,4,1,-1]), size=(8,1), method=tf.image.ResizeMethod.BILINEAR)
 
     # import pdb;pdb.set_trace()
 
     uconv1 = tf.concat([tf.layers.conv2d(inputs=upsample1, filters=128, kernel_size=(2,1), padding='same', activation=tf.nn.relu), tf.reshape(conv5, [30,8,1,-1])], axis = -1)
     # Now 7x7x16
-    upsample2 = tf.image.resize_images(uconv1, size=(16,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+    upsample2 = tf.image.resize_images(uconv1, size=(16,1), method=tf.image.ResizeMethod.BILINEAR)
     # Now 14x14x16
     uconv2 = tf.concat([tf.layers.conv2d(inputs=upsample2, filters=128, kernel_size=(4,1), padding='same', activation=tf.nn.relu), tf.reshape(conv4, [30,16,1,-1])], axis = -1)
     # Now 14x14x32
-    upsample3 = tf.image.resize_images(uconv2, size=(32,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+    upsample3 = tf.image.resize_images(uconv2, size=(32,1), method=tf.image.ResizeMethod.BILINEAR)
     # Now 28x28x32
     uconv3 = tf.concat([tf.layers.conv2d(inputs=upsample3, filters=128, kernel_size=(8,1), padding='same', activation=tf.nn.relu), tf.reshape(conv3, [30,32,1,-1])], axis = -1)
 
-    upsample4 = tf.image.resize_images(uconv3, size=(64,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+    upsample4 = tf.image.resize_images(uconv3, size=(64,1), method=tf.image.ResizeMethod.BILINEAR)
     # Now 28x28x32
     uconv4 = tf.concat([tf.layers.conv2d(inputs=upsample4, filters=128, kernel_size=(16,1), padding='same', activation=tf.nn.relu), tf.reshape(conv2, [30,64,1,-1])], axis = -1)
 
-    upsample5 = tf.image.resize_images(uconv4, size=(config.max_phr_len,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+    upsample5 = tf.image.resize_images(uconv4, size=(config.max_phr_len,1), method=tf.image.ResizeMethod.BILINEAR)
     # Now 28x28x32
-    uconv5 = tf.concat([tf.layers.conv2d(inputs=upsample5, filters=128, kernel_size=(32,1), padding='same', activation=tf.nn.relu), tf.reshape(conv1, [30,128,1,-1])], axis = -1)
+    uconv5 = tf.concat([tf.layers.conv2d(inputs=upsample5, filters=128, kernel_size=(32,1), padding='same', activation=tf.nn.relu), tf.reshape(conv1, [30,config.max_phr_len,1,-1])], axis = -1)
 
     # import pdb;pdb.set_trace()
 
@@ -512,7 +512,7 @@ def final_net(randy, encoded, f0, phones, prob):
 # 
     # import pdb;pdb.set_trace()
 
-    final_conv = tf.concat([tf.layers.conv2d(inputs=uconv5, filters=64, kernel_size=(1,1), padding='same', activation=tf.nn.relu), tf.layers.conv2d(inputs=tf.reshape(inputs_2, [30,128,1,-1]), filters=64, kernel_size=(1,1), padding='same', activation=tf.nn.relu)], axis = -1)
+    final_conv = tf.concat([tf.layers.conv2d(inputs=uconv5, filters=64, kernel_size=(1,1), padding='same', activation=tf.nn.relu), tf.layers.conv2d(inputs=tf.reshape(inputs_2, [30,config.max_phr_len,1,-1]), filters=64, kernel_size=(1,1), padding='same', activation=tf.nn.relu)], axis = -1)
 
 
 
