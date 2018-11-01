@@ -9,7 +9,7 @@ import pyworld as pw
 import matplotlib.pyplot as plt
 from reduce import sp_to_mfsc, mfsc_to_sp, ap_to_wbap,wbap_to_ap, get_warped_freqs, sp_to_mgc, mgc_to_sp, mgc_to_mfsc, mfsc_to_mgc
 from vocoder import extract_sp_world, extract_ap_world, gen_wave_world
-from acoufe import pitch
+# from acoufe import pitch
 import librosa
 from tqdm import tqdm
 
@@ -211,7 +211,11 @@ def file_to_stft(input_file, mode =0):
     
         return mix_stft
     elif mode ==1:
-        mixture = audio
+
+        if len(audio.shape)==1:
+            mixture = audio
+        else:
+            mixture = audio[:,0]
         mix_stft=abs(stft(mixture))
     
         return mix_stft
@@ -253,7 +257,10 @@ def stft_to_feats(vocals, fs, mode=config.comp_mode):
     ap = feats[2].reshape([feats[1].shape[0],feats[1].shape[1]]).astype(np.float32)
     ap = 10.*np.log10(ap**2)
     harm=10*np.log10(feats[1].reshape([feats[2].shape[0],feats[2].shape[1]]))
-    f0 = pitch.extract_f0_sac(vocals, fs, 0.00580498866)
+    f0 = feats[0]
+    # f0_1 = pitch.extract_f0_sac(vocals, fs, 0.00580498866)
+
+    # import pdb;pdb.set_trace()
 
     y=69+12*np.log2(f0/440)
     # y = hertz_to_new_base(f0)

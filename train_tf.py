@@ -366,6 +366,8 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
         file_path = config.wav_dir_med
         utils.write_ori_med(os.path.join(file_path,file_name),file_name)
         mode =2
+    else:
+        mode = 1
 
     stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
 
