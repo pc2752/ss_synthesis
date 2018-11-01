@@ -252,6 +252,8 @@ def input_to_feats(input_file, mode=0):
     return feats
 
 def stft_to_feats(vocals, fs, mode=config.comp_mode):
+    if len(vocals.shape)>1:
+        vocals = vocals[:,0]
     feats=pw.wav2world(vocals,fs,frame_period=5.80498866)
 
     ap = feats[2].reshape([feats[1].shape[0],feats[1].shape[1]]).astype(np.float32)
