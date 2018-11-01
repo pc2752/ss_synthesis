@@ -550,7 +550,7 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
             val_outer = np.ascontiguousarray(val_outer*(max_feat-min_feat)+min_feat)
             targs = np.ascontiguousarray(targs*(max_feat-min_feat)+min_feat)
 
-            import pdb;pdb.set_trace()
+            # import pdb;pdb.set_trace()
 
             # val_outer = np.ascontiguousarray(utils.denormalize(val_outer,'feats', mode=config.norm_mode_out))
             try:
