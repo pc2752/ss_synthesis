@@ -77,7 +77,7 @@ noise_threshold = 0.1
 pred_mode = 'all'
 
 # Hyperparameters
-num_epochs = 500
+num_epochs = 5000
 batches_per_epoch_train = 100
 batches_per_epoch_val = 100
 batches_per_epoch_val_m1 = 100
