@@ -13,7 +13,7 @@ wav_dir_vctk_lab = '../datasets/VCTK/VCTK_files/VCTK-Corpus/forPritish/'
 
 voice_dir = './voice/'
 backing_dir = './backing/'
-log_dir = './log_feat_to_feat_just_sing_random_init/'
+log_dir = './log_feat_to_feat_just_GAN/'
 log_dir_m1 = './log_m1_old/'
 # log_dir = './log_mfsc_6_best_so_far/'
 data_log = './log/data_log.log'
@@ -116,11 +116,12 @@ input_features = 513
 first_embed = 256
 
 
-lamda = 0.001
+lamda = 0
 
 lstm_size = 128
 
 output_features = 66
+
 highway_layers = 4
 highway_units = 128
 init_lr = 0.001

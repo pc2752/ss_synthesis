@@ -71,10 +71,10 @@ def train(_):
         fake_logs = tf.placeholder(tf.float32, shape=(config.batch_size,1),name='fake_logits_placeholder')
 
         singer_labels = tf.placeholder(tf.int32, shape=(config.batch_size),name='singer_id_placeholder')
-        onehot_labels_singer = tf.one_hot(indices=tf.cast(singer_labels, tf.int32), depth=121)
+        onehot_labels_singer = tf.one_hot(indices=tf.cast(singer_labels, tf.int32), depth=12)
 
         singer_labels_2 = tf.placeholder(tf.int32, shape=(config.batch_size),name='singer_id_placeholder_2')
-        onehot_labels_singer_2 = tf.one_hot(indices=tf.cast(singer_labels_2, tf.int32), depth=121)
+        onehot_labels_singer_2 = tf.one_hot(indices=tf.cast(singer_labels_2, tf.int32), depth=12)
 
         singer_embedding_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,256),name='singer_embedding_placeholder')
 
@@ -101,9 +101,9 @@ def train(_):
         #     voc_output_phase_decoded = tf.nn.sigmoid(voc_output_phase)
 
         with tf.variable_scope('Discriminator') as scope: 
-                D_real = modules.GAN_discriminator(output_placeholder, f0_input_placeholder_midi, pho_input_placeholder, singer_embedding_placeholder, is_train)
+                singer_real, phonemes_real, D_real = modules.GAN_discriminator(output_placeholder, f0_input_placeholder_midi, pho_input_placeholder, singer_embedding_placeholder, is_train)
                 scope.reuse_variables()
-                D_fake = modules.GAN_discriminator(voc_output_decoded, f0_input_placeholder_midi, pho_input_placeholder, singer_embedding_placeholder, is_train)
+                singer_fake, phonemes_fake, D_fake = modules.GAN_discriminator(voc_output, f0_input_placeholder_midi, pho_input_placeholder, singer_embedding_placeholder, is_train)
 
         with tf.variable_scope('phone_Model') as scope:
             regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
@@ -170,10 +170,29 @@ def train(_):
         D_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=real_logs, logits=D_real+1e-12))
         D_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=fake_logs, logits=D_fake+1e-12))
 
-        D_loss = D_loss_real+D_loss_fake
+        singer_loss_real = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels_singer, logits=singer_real))
+
+        unweighted_losses_real = tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels, logits=phonemes_real)
+
+        weighted_losses_real = unweighted_losses_real * pho_weights
+
+        pho_loss_real = tf.reduce_mean(weighted_losses_real)
+
+        D_loss = D_loss_real+D_loss_fake + pho_loss_real +singer_loss_real
 
         # G_loss_GAN = -tf.reduce_mean(tf.log(D_fake + 1e-10))
         G_loss_GAN = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=real_logs, logits=D_fake+1e-12)) 
+
+        unweighted_losses_fake = tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels, logits=phonemes_fake)
+
+        weighted_losses_fake = unweighted_losses_fake * pho_weights
+
+        pho_loss_fake = tf.reduce_mean(weighted_losses_fake)
+        singer_loss_fake = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels_singer, logits=singer_fake))
+
+
+        G_loss_GAN+= pho_loss_fake
+        G_loss_GAN+=singer_loss_fake
 
         
 
@@ -288,7 +307,7 @@ def train(_):
 
         re_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
-        dis_optimizer = tf.train.GradientDescentOptimizer(learning_rate = config.init_lr)
+        dis_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
         cgan_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
@@ -307,6 +326,8 @@ def train(_):
         pho_train_function = pho_optimizer.minimize(pho_loss, global_step = global_step_pho)
 
         singer_train_function = pho_optimizer.minimize(singer_loss, global_step = global_step_singer)
+
+        # import pdb;pdb.set_trace()
 
         
 
@@ -455,13 +476,13 @@ def train(_):
 
                     teacher_train = np.random.rand(1)<0.5
 
-                    re_logits = np.clip(np.random.rand(config.batch_size,1), 0.0,0.1)
+                    re_logits = np.clip(np.random.rand(config.batch_size,1), 0.8,1.0)
 
                     random_inputs = np.random.rand(config.batch_size, config.max_phr_len, 1)
 
-                    re_logits_gen = np.zeros((config.batch_size,1))
+                    re_logits_gen = np.ones((config.batch_size,1))
 
-                    fa_logits = np.clip(np.random.rand(config.batch_size,1), 0.9,1.0)
+                    fa_logits = np.clip(np.random.rand(config.batch_size,1), 0.0,0.2)
 
                     # import pdb;pdb.set_trace()
 
@@ -483,11 +504,16 @@ def train(_):
                             #     _,_, step_loss_total_2, step_re_loss_2, step_singer_loss_false, step_singer_acc_false = sess.run([re_train_function, cgan_train_function, final_loss, reconstruct_loss, singer_loss_2,singer_acc_false], feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed_2, prob:0.8,singer_labels_2: singer_ids_2})
                             # else:
                             
-                            _,step_loss_total, step_re_loss, step_gen_loss = sess.run([re_train_function, final_loss, reconstruct_loss, G_loss_GAN], feed_dict={rand_placeholder:random_inputs, f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8, real_logs:re_logits_gen, is_train : True})
-                            
+                            _,step_loss_total, step_re_loss, step_gen_loss = sess.run([re_train_function, final_loss, reconstruct_loss, G_loss_GAN], feed_dict={rand_placeholder:random_inputs, f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8, real_logs:re_logits_gen, is_train : True, labels: pho_targs,singer_labels: singer_ids})
+                
 
+                            # _= sess.run(dis_train_function, 
+                            #     feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: (input_noisy*2)-1, prob:0.8,singer_embedding_placeholder: s_embed, real_logs:re_logits, fake_logs : fa_logits, is_train : True})
+                            
+                            # _= sess.run(dis_train_function, 
+                            #     feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: (input_noisy*2)-1, prob:0.8,singer_embedding_placeholder: s_embed, real_logs:re_logits, fake_logs : fa_logits, is_train : True})
                             _,step_loss_dis = sess.run( [dis_train_function, D_loss], 
-                                feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets, prob:0.8,singer_embedding_placeholder: s_embed, real_logs:re_logits, fake_logs : fa_logits, is_train : True})
+                                feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: (input_noisy*2)-1, prob:0.8,singer_embedding_placeholder: s_embed, real_logs:re_logits, fake_logs : fa_logits, is_train : True, labels: pho_targs,singer_labels: singer_ids})
                         else:
                             pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: input_noisy,f0_input_placeholder_midi: f0_2_one_hot} )
                             _, step_re_loss = sess.run([re_train_function, reconstruct_loss], feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_outs, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:1.0, input_placeholder: featies})
@@ -512,9 +538,17 @@ def train(_):
                             #     _,step_loss_dis = sess.run([dis_train_function, D_loss], 
                             #         feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8,singer_labels_2: singer_ids})
                             # else:
-                            _,step_loss_total, step_re_loss, step_gen_loss = sess.run([re_train_function, final_loss, reconstruct_loss, G_loss_GAN], feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: f0_outputs_1, pho_input_placeholder: pho_outs, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:1.0, input_placeholder: featies,singer_labels_2: singer_ids, real_logs:re_logits_gen, is_train:True})
+
+                            _,step_loss_total, step_re_loss, step_gen_loss = sess.run([re_train_function, final_loss, reconstruct_loss, G_loss_GAN], feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: f0_outputs_1, pho_input_placeholder: pho_outs, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:1.0, input_placeholder: featies,singer_labels_2: singer_ids, real_logs:re_logits_gen, is_train:True,labels: pho_targs,singer_labels: singer_ids})
+
+                            # _ = sess.run(dis_train_function, 
+                            #     feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: (input_noisy*2)-1,singer_embedding_placeholder: s_embed, prob:0.8, real_logs:re_logits, fake_logs : fa_logits, is_train:True})
+
+                            # _ = sess.run(dis_train_function, 
+                            #     feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: (input_noisy*2)-1,singer_embedding_placeholder: s_embed, prob:0.8, real_logs:re_logits, fake_logs : fa_logits, is_train:True})
+
                             _,step_loss_dis = sess.run([dis_train_function, D_loss], 
-                                feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8, real_logs:re_logits, fake_logs : fa_logits, is_train:True})
+                                feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: (input_noisy*2)-1,singer_embedding_placeholder: s_embed, prob:0.8, real_logs:re_logits, fake_logs : fa_logits, is_train:True, labels: pho_targs,singer_labels: singer_ids})
 
 
                         else:
