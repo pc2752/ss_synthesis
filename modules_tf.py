@@ -718,9 +718,9 @@ def GAN_generator(inputs, num_block = config.wavenet_layers):
 
 
 def GAN_discriminator(inputs, f0_input_placeholder_midi, pho_input_placeholder, speaker_embed, training):
-    ops = tf.concat([inputs,  f0_input_placeholder_midi, pho_input_placeholder], axis = -1)
+    # ops = tf.concat([inputs,  f0_input_placeholder_midi, pho_input_placeholder], axis = -1)
     # ops = inputs
-    ops = tf.layers.dense(ops, 256, name = "D_1" , activation = tf.nn.relu ,kernel_initializer = tf.random_normal_initializer(stddev=0.02))
+    ops = tf.layers.dense(inputs, 256, name = "D_1" , activation = tf.nn.relu ,kernel_initializer = tf.random_normal_initializer(stddev=0.02))
     # ops = tf.layers.dense(ops, 30, name = "D_2")
     # ops = tf.layers.dense(ops, 15, name = "D_3")
 

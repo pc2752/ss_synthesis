@@ -307,7 +307,7 @@ def train(_):
 
         re_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
-        dis_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
+        dis_optimizer = tf.train.GradientDescentOptimizer(learning_rate = config.init_lr)
 
         cgan_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
@@ -1069,8 +1069,10 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
             #     pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41), output_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed})
 
 
-            output_feats = sess.run(voc_output_decoded, feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=57),
+            output_feats = sess.run(voc_output, feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: one_hotize(in_batch_f0_midi, max_index=57),
                 pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=42),singer_embedding_placeholder: s_embed})
+
+            output_feats = (output_feats+1)/2.0
 
             # output_voc_stft_phase = sess.run(voc_output_phase_decoded, feed_dict={input_placeholder: output_voc_stft, f0_input_placeholder: f0_outputs_2,
             #     pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41), output_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed})
