@@ -5,9 +5,12 @@
 
 <h2>Music Technology Group, Universitat Pompeu Fabra, Barcelona</h2>
 
-This repository contains the source code for the paper with the same title. The main code is in the *train_tf.py* file.
+This repository contains the source code for the paper with the same title.
 
-To use the file, you will have to download the <a href="https://drive.google.com/file/d/1LhWG6KJcwc51ltDc9IkkZj20SQtWKtey/view?usp=sharing" rel="nofollow"> model weights</a> and place it in the *log_dir_m1* directory, defined in *config.py*. Wave files to be tested should be placed in the *wav_dir*, as defined in *config.py*. You will also require <a href="http://www.tensorflow.org" rel="nofollow">TensorFlow</a> to be installed on the machine. 
+<h3>Installation</h3>
+To install, clone the repository and use <pre><code>pip install requirements.txt </code></pre> to install the packages required.
+
+ The main code is in the *train_tf.py* file.  To use the file, you will have to download the <a href="https://drive.google.com/file/d/1LhWG6KJcwc51ltDc9IkkZj20SQtWKtey/view?usp=sharing" rel="nofollow"> model weights</a> and place it in the *log_dir_m1* directory, defined in *config.py*. Wave files to be tested should be placed in the *wav_dir*, as defined in *config.py*. You will also require <a href="http://www.tensorflow.org" rel="nofollow">TensorFlow</a> to be installed on the machine. 
 
 <h3>Data pre-processing</h3>
 
