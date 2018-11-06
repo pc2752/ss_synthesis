@@ -200,7 +200,7 @@ def train(_):
         pho_loss_fake = tf.reduce_mean(weighted_losses_fake)
         singer_loss_fake = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels_singer, logits=singer_fake))
 
-        feature_match_loss = tf.abs(tf.reduce_mean(opsy_fake) - tf.reduce_mean(opsy_real))
+        feature_match_loss = tf.nn.l2_loss(tf.reduce_mean(opsy_fake) - tf.reduce_mean(opsy_real))
 
 
         G_loss_GAN+= pho_loss_fake
