@@ -741,7 +741,9 @@ def GAN_discriminator(inputs, f0_input_placeholder_midi, pho_input_placeholder, 
     # ops = tf.layers.conv1d(ops, 64, 16, padding = 'valid', name = "D_c4")
     # ops = tf.layers.conv1d(ops, 32, 32, padding = 'valid', name = "D_c5")
     # ops = tf.layers.conv1d(ops, config.wavenet_filters, 25, padding = 'valid')
-    phonemes = tf.layers.dense(ops, 42, name = "D5")
+
+    phonemes = bi_static_stacked_RNN(ops, scope = 'D_RNN_phone')
+    phonemes = tf.layers.dense(phonemes, 42, name = "D5")
 
     # import pdb;pdb.set_trace()
 
