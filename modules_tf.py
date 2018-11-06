@@ -732,8 +732,8 @@ def GAN_discriminator(inputs, f0_input_placeholder_midi, pho_input_placeholder, 
     ops = tf.layers.conv1d(ops, filters=128, kernel_size=6, name = "D_c5", padding = 'same',activation = tf.nn.relu,kernel_initializer = tf.random_normal_initializer(stddev=0.02))
     ops = tf.layers.conv1d(ops, filters=128, kernel_size=6, name = "D_c6", padding = 'same',activation = tf.nn.relu,kernel_initializer = tf.random_normal_initializer(stddev=0.02))
     ops = tf.layers.conv1d(ops, filters=128, kernel_size=8, name = "D_c7", padding = 'same',activation = tf.nn.relu,kernel_initializer = tf.random_normal_initializer(stddev=0.02))
-    ops = tf.layers.conv1d(ops, filters=128, kernel_size=8, name = "D_c8", padding = 'same',activation = tf.nn.relu,kernel_initializer = tf.random_normal_initializer(stddev=0.02))
-    ops = tf.layers.conv1d(ops, filters=128, kernel_size=10, name = "D_c9", padding = 'same',activation = tf.nn.relu,kernel_initializer = tf.random_normal_initializer(stddev=0.02))
+    opsy = tf.layers.conv1d(ops, filters=128, kernel_size=8, name = "D_c8", padding = 'same',activation = tf.nn.relu,kernel_initializer = tf.random_normal_initializer(stddev=0.02))
+    ops = tf.layers.conv1d(opsy, filters=128, kernel_size=10, name = "D_c9", padding = 'same',activation = tf.nn.relu,kernel_initializer = tf.random_normal_initializer(stddev=0.02))
     ops = tf.layers.conv1d(ops, filters=128, kernel_size=10, name = "D_c10", padding = 'same',activation = tf.nn.relu,kernel_initializer = tf.random_normal_initializer(stddev=0.02))
  
     ops = tf.layers.conv1d(ops, filters=128, kernel_size=10, name = "D_c11", padding = 'same',activation = tf.nn.relu,kernel_initializer = tf.random_normal_initializer(stddev=0.02))
@@ -761,7 +761,7 @@ def GAN_discriminator(inputs, f0_input_placeholder_midi, pho_input_placeholder, 
     # refa = tf.layers.dense(ops, 16, name = "D_3", activation = tf.nn.tanh,kernel_initializer = tf.random_normal_initializer(stddev=0.02))
     refa = tf.layers.dense(ops, 1, name = "D_4", activation = None,kernel_initializer = tf.random_normal_initializer(stddev=0.02))
     # ops = ops
-    return singer, phonemes, refa
+    return singer, phonemes, refa, opsy
 
 
 

@@ -101,13 +101,13 @@ def train(_):
         #     voc_output_phase_decoded = tf.nn.sigmoid(voc_output_phase)
 
         with tf.variable_scope('Discriminator') as scope: 
-                singer_real, phonemes_real, D_real = modules.GAN_discriminator(output_placeholder, f0_input_placeholder_midi, pho_input_placeholder, singer_embedding_placeholder, is_train)
+                singer_real, phonemes_real, D_real, opsy_real = modules.GAN_discriminator(output_placeholder, f0_input_placeholder_midi, pho_input_placeholder, singer_embedding_placeholder, is_train)
                 singer_real_classes = tf.argmax(singer_real, axis=-1)
                 pho_real_classes = tf.argmax(phonemes_real, axis=-1)
 
                 scope.reuse_variables()
 
-                singer_fake, phonemes_fake, D_fake = modules.GAN_discriminator(voc_output, f0_input_placeholder_midi, pho_input_placeholder, singer_embedding_placeholder, is_train)
+                singer_fake, phonemes_fake, D_fake, opsy_fake = modules.GAN_discriminator(voc_output, f0_input_placeholder_midi, pho_input_placeholder, singer_embedding_placeholder, is_train)
                 singer_fake_classes = tf.argmax(singer_fake, axis=-1)
                 pho_fake_classes = tf.argmax(phonemes_fake, axis=-1)
 
@@ -200,9 +200,12 @@ def train(_):
         pho_loss_fake = tf.reduce_mean(weighted_losses_fake)
         singer_loss_fake = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels_singer, logits=singer_fake))
 
+        feature_match_loss = tf.reduce_mean(tf.abs(opsy_fake - opsy_real))
+
 
         G_loss_GAN+= pho_loss_fake
         G_loss_GAN+=singer_loss_fake
+        G_loss_GAN+=feature_match_loss
 
         
 
@@ -448,7 +451,7 @@ def train(_):
             epoch_loss_re_real = 0
 
             epoch_loss_re_false = 0
-            
+
 
             # epoch_total_loss_phase_val = 0
 
