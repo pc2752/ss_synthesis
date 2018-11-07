@@ -182,22 +182,23 @@ def train(_):
 
         singer_loss_real = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels_singer, logits=singer_real))
 
-        unweighted_losses_real = tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels, logits=phonemes_real)
+        pho_loss_real = tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels, logits=phonemes_real)
 
-        weighted_losses_real = unweighted_losses_real * pho_weights
+        # weighted_losses_real = unweighted_losses_real * pho_weights
 
-        pho_loss_real = tf.reduce_mean(weighted_losses_real)
+        # pho_loss_real = tf.reduce_mean(weighted_losses_real)
 
         D_loss = D_loss_real+D_loss_fake + pho_loss_real +singer_loss_real
 
         # G_loss_GAN = -tf.reduce_mean(tf.log(D_fake + 1e-10))
         G_loss_GAN = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=real_logs, logits=D_fake+1e-12)) 
 
-        unweighted_losses_fake = tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels, logits=phonemes_fake)
+        pho_loss_fake= tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels, logits=phonemes_fake)
 
-        weighted_losses_fake = unweighted_losses_fake * pho_weights
+        # weighted_losses_fake = unweighted_losses_fake * pho_weights
 
-        pho_loss_fake = tf.reduce_mean(weighted_losses_fake)
+        # pho_loss_fake = tf.reduce_mean(weighted_losses_fake)
+        
         singer_loss_fake = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels_singer, logits=singer_fake))
 
         feature_match_loss = tf.nn.l2_loss(tf.reduce_mean(opsy_fake) - tf.reduce_mean(opsy_real))
