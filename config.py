@@ -13,7 +13,7 @@ wav_dir_vctk_lab = '../datasets/VCTK/VCTK_files/VCTK-Corpus/forPritish/'
 
 voice_dir = './voice/'
 backing_dir = './backing/'
-log_dir = './log_feat_to_feat_just_GAN/'
+log_dir = './log_feat_to_feat_just_GAN_reset/'
 log_dir_m1 = './log_m1_old/'
 # log_dir = './log_mfsc_6_best_so_far/'
 data_log = './log/data_log.log'
@@ -136,9 +136,9 @@ hoptime = 5.80498866
 
 noise = 0.05
 
-wavenet_layers = 5
+wavenet_layers = 4
 rec_field = 2**wavenet_layers
-wavenet_filters = 256
+wavenet_filters = 128
 
 print_every = 1
 save_every = 10

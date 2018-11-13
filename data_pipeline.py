@@ -91,15 +91,10 @@ def data_gen(mode = 'Train', sec_mode = 0):
                 file_list = voc_list
         
 
-
-        inputs = []
         feats_targs = []
         targets_f0_1 = []
-        targets_f0_2 = []
         targets_singers = []
         pho_targs = []
-
-        pho_targs_2 = []
 
         # start_time = time.time()
         if k == num_batches-1 and mode =="Train":
@@ -115,10 +110,7 @@ def data_gen(mode = 'Train', sec_mode = 0):
             voc_file = h5py.File(config.voice_dir+voc_to_open, "r")
 
 
-
-            # print("Vocal file: %s" % voc_file)
-
-            voc_stft = np.array(voc_file['voc_stft'])
+            # voc_stft = np.array(voc_file['voc_stft'])
 
             # voc_stft_phase = np.array(voc_file['voc_stft_phase'])
 
@@ -135,22 +127,23 @@ def data_gen(mode = 'Train', sec_mode = 0):
 
             f0[f0==0] = med
 
+
+
             # import pdb;pdb.set_trace()
 
             f0_midi = np.rint(f0) - 30
 
             f0_nor = (f0 - min_feat[-2])/(max_feat[-2]-min_feat[-2])
 
-            f0_quant = np.rint(f0_nor*254) + 1
+            feats = (feats-min_feat)/(max_feat-min_feat)
 
-            f0_quant = f0_quant * (1-feats[:,-1]) 
-
-            f0_midi = f0_midi * (1-feats[:,-1]) 
+            feats[:,-2] = f0_nor
 
 
-            back_index = np.random.randint(0,len(back_list))
 
-            back_to_open = back_list[back_index]
+            # back_index = np.random.randint(0,len(back_list))
+
+            # back_to_open = back_list[back_index]
 
             # back_file = h5py.File(config.backing_dir+back_to_open, "r")
             if voc_to_open.startswith('nus'):
@@ -178,36 +171,31 @@ def data_gen(mode = 'Train', sec_mode = 0):
 
 
             for j in range(config.samples_per_file):
-                    voc_idx = np.random.randint(0,len(voc_stft)-config.max_phr_len)
+                    voc_idx = np.random.randint(0,len(feats)-config.max_phr_len)
                     # bac_idx = np.random.randint(0,len(back_stft)-config.max_phr_len)
-                    mix_stft = voc_stft[voc_idx:voc_idx+config.max_phr_len,:]
+                    # mix_stft = voc_stft[voc_idx:voc_idx+config.max_phr_len,:]
                     # *np.clip(np.random.rand(1),0.5,0.9) + back_stft[bac_idx:bac_idx+config.max_phr_len,:]*np.clip(np.random.rand(1),0.0,0.9)+ np.random.rand(config.max_phr_len,config.input_features)*np.clip(np.random.rand(1),0.0,config.noise_threshold)
-                    targets_f0_1.append(f0_quant[voc_idx:voc_idx+config.max_phr_len])
-                    targets_f0_2.append(f0_midi[voc_idx:voc_idx+config.max_phr_len])
+                    targets_f0_1.append(f0_nor[voc_idx:voc_idx+config.max_phr_len])
                     if Flag:
                         pho_targs.append(pho_target[voc_idx:voc_idx+config.max_phr_len])
                         # pho_targs_2.append(baba[voc_idx:voc_idx+config.max_phr_len])
                         targets_singers.append(singer_index)
-                    inputs.append(mix_stft)
+                    # inputs.append(mix_stft)
                     feats_targs.append(feats[voc_idx:voc_idx+config.max_phr_len])
 
         targets_f0_1 = np.array(targets_f0_1)
 
-        targets_f0_2 = np.array(targets_f0_2)
+        # targets_f0_2 = np.array(targets_f0_2)
         
-        inputs = np.array(inputs)
+        # inputs = np.array(inputs)
 
-        feats_targs = (np.array(feats_targs)-min_feat)/(max_feat-min_feat)
+        feats_targs = np.array(feats_targs)
 
-        # inputs_norm = inputs/(inputs.max(axis = 1).max(axis = 0))
 
-        # import pdb;pdb.set_trace()
-
-        inputs_norm = inputs/max_voc
 
         if Flag:
 
-            yield inputs_norm, feats_targs, targets_f0_1, targets_f0_2, np.array(pho_targs), np.array(targets_singers), Flag
+            yield feats_targs, targets_f0_1, np.array(pho_targs), np.array(targets_singers)
         else:
             yield inputs_norm, feats_targs, targets_f0_1, targets_f0_2, None, None, Flag
 

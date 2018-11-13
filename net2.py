@@ -39,259 +39,117 @@ def train(_):
         
         input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,66),name='input_placeholder')
         tf.summary.histogram('inputs', input_placeholder)
-        is_train = tf.placeholder(tf.bool, name="is_train")
 
-        output_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,66),name='output_placeholder')
+        output_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,64),name='output_placeholder')
 
-        rand_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,1),name='random_placeholder')
 
-        # output_phase_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.input_features),name='output_phase_placeholder')
+        f0_input_placeholder= tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 1),name='f0_input_placeholder')
 
-        f0_target_placeholder_midi = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len),name='f0_target_midi_placeholder')
-        onehot_labels_f0_midi = tf.one_hot(indices=tf.cast(f0_target_placeholder_midi, tf.int32), depth=57)
 
-        f0_input_placeholder_midi = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 57),name='f0_input_placeholder')
-
-        # f0_target_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len),name='f0_target_placeholder')
-        # onehot_labels_f0 = tf.one_hot(indices=tf.cast(f0_target_placeholder, tf.int32), depth=256)
-
-        # f0_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 256),name='f0_input_placeholder')
-
-        pho_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 42),name='pho_input_placeholder')
+        # pho_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 42),name='pho_input_placeholder')
 
         prob = tf.placeholder_with_default(1.0, shape=())
-
-        # tf.summary.histogram('targets', target_placeholder)
         
-        labels = tf.placeholder(tf.int32, shape=(config.batch_size,config.max_phr_len),name='phoneme_placeholder')
-        onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=42)
+        phoneme_labels = tf.placeholder(tf.int32, shape=(config.batch_size,config.max_phr_len),name='phoneme_placeholder')
+        phone_onehot_labels = tf.one_hot(indices=tf.cast(phoneme_labels, tf.int32), depth=42)
 
-        real_logs = tf.placeholder(tf.float32, shape=(config.batch_size,1),name='real_logits_placeholder')
+        singer_labels = tf.placeholder(tf.float32, shape=(config.batch_size),name='singer_placeholder')
+        singer_onehot_labels = tf.one_hot(indices=tf.cast(singer_labels, tf.int32), depth=12)
 
-        fake_logs = tf.placeholder(tf.float32, shape=(config.batch_size,1),name='fake_logits_placeholder')
-
-        singer_labels = tf.placeholder(tf.int32, shape=(config.batch_size),name='singer_id_placeholder')
-        onehot_labels_singer = tf.one_hot(indices=tf.cast(singer_labels, tf.int32), depth=12)
-
-        singer_labels_2 = tf.placeholder(tf.int32, shape=(config.batch_size),name='singer_id_placeholder_2')
-        onehot_labels_singer_2 = tf.one_hot(indices=tf.cast(singer_labels_2, tf.int32), depth=12)
-
-        singer_embedding_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,256),name='singer_embedding_placeholder')
-
-
-
-
-
-        with tf.variable_scope('F0_Model_midi') as scope:
-            f0_logits_midi = modules.f0_network(input_placeholder, prob)
-            f0_classes_midi = tf.argmax(f0_logits_midi, axis=-1)
-            f0_probs_midi = tf.nn.softmax(f0_logits_midi)
-
-        # with tf.variable_scope('F0_Model_256') as scope:
-        #     f0_logits = modules.f0_network_2(singer_embedding_placeholder, f0_input_placeholder_midi, pho_input_placeholder, prob)
-        #     f0_classes = tf.argmax(f0_logits, axis=-1)
-        #     f0_probs = tf.nn.softmax(f0_logits)
-
-        with tf.variable_scope('Final_Model') as scope:
-            voc_output = modules.final_net(rand_placeholder, singer_embedding_placeholder, f0_input_placeholder_midi, pho_input_placeholder, prob)
-            voc_output_decoded = tf.nn.sigmoid(voc_output)
-
-        # with tf.variable_scope('Final_Model_Phase') as scope:
-        #     voc_output_phase = modules.final_net_phase(singer_embedding_placeholder, f0_input_placeholder, pho_input_placeholder, input_placeholder, prob)
-        #     voc_output_phase_decoded = tf.nn.sigmoid(voc_output_phase)
-
-        with tf.variable_scope('Discriminator') as scope: 
-                singer_real, phonemes_real, D_real, opsy_real = modules.GAN_discriminator(output_placeholder, f0_input_placeholder_midi, pho_input_placeholder, singer_embedding_placeholder, is_train)
-                singer_real_classes = tf.argmax(singer_real, axis=-1)
-                pho_real_classes = tf.argmax(phonemes_real, axis=-1)
-
-                scope.reuse_variables()
-
-                singer_fake, phonemes_fake, D_fake, opsy_fake = modules.GAN_discriminator(voc_output, f0_input_placeholder_midi, pho_input_placeholder, singer_embedding_placeholder, is_train)
-                singer_fake_classes = tf.argmax(singer_fake, axis=-1)
-                pho_fake_classes = tf.argmax(phonemes_fake, axis=-1)
 
         with tf.variable_scope('phone_Model') as scope:
-            regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
-            pho_logits = modules.phone_network(input_placeholder, prob, regularizer = regularizer)
+            # regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
+            pho_logits = modules.phone_network(input_placeholder)
             pho_classes = tf.argmax(pho_logits, axis=-1)
             pho_probs = tf.nn.softmax(pho_logits)
 
+        with tf.variable_scope('Final_Model') as scope:
+            voc_output = modules.final_net(singer_onehot_labels, f0_input_placeholder, phone_onehot_labels)
+            voc_output_decoded = tf.nn.sigmoid(voc_output)
             
+            scope.reuse_variables()
+            
+            voc_output_gen = modules.final_net(singer_onehot_labels, f0_input_placeholder, pho_probs)
+            voc_output_decoded_gen = tf.nn.sigmoid(voc_output_gen)
 
-        with tf.variable_scope('singer_Model') as scope:
-            singer_embedding, singer_logits = modules.singer_network(input_placeholder, prob)
-            singer_classes = tf.argmax(singer_logits, axis=-1)
-            singer_probs = tf.nn.softmax(singer_logits)
+        # with tf.variable_scope('singer_Model') as scope:
+        #     singer_embedding, singer_logits = modules.singer_network(input_placeholder, prob)
+        #     singer_classes = tf.argmax(singer_logits, axis=-1)
+        #     singer_probs = tf.nn.softmax(singer_logits)
 
-            # scope.reuse_variables()
-
-            # # import pdb;pdb.set_trace()
-
-            # singer_embedding_real, singer_logits_real = modules.singer_network(voc_output, prob)
-            # singer_classes_real = tf.argmax(singer_logits_real, axis=-1)
-            # singer_probs_real = tf.nn.softmax(singer_logits_real)
-
-            # singer_embedding_false, singer_logits_real = modules.singer_network(voc_output_decoded, prob)
-            # singer_classes_false = tf.argmax(singer_logits_false, axis=-1)
-            # singer_probs_real = tf.nn.softmax(singer_logits_false)
+        with tf.variable_scope('Discriminator') as scope: 
+            D_real = modules.GAN_discriminator(output_placeholder, singer_onehot_labels)
+            scope.reuse_variables()
+            D_fake = modules.GAN_discriminator(voc_output, singer_onehot_labels)
 
 
+        # Get network parameters
 
-        # varys = tf.trainable_variables()
-
-        # final_vars = [x for x in varys if x.name.startswith('Final_Model')]
-
-        # d_params = [v for v in varys if v.name.startswith('Discriminator/D')]
-
-        final_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope="Final_Model")
+        final_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope="Final_Model")
 
         d_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope="Discriminator")
 
+        phone_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope="phone_Model")
 
 
 
-        # f0_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels_f0, logits=f0_logits))
+        # Phoneme network loss and summary
 
-        f0_loss_midi = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels_f0_midi, logits=f0_logits_midi))
+        pho_weights = tf.reduce_sum(config.phonemas_weights * phone_onehot_labels, axis=-1)
 
-        pho_weights = tf.reduce_sum(config.phonemas_weights * onehot_labels, axis=-1)
-
-        unweighted_losses = tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels, logits=pho_logits)
+        unweighted_losses = tf.nn.softmax_cross_entropy_with_logits(labels=phone_onehot_labels, logits=pho_logits)
 
         weighted_losses = unweighted_losses * pho_weights
 
         pho_loss = tf.reduce_mean(weighted_losses)
 
-        reg_variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+        reconstruct_loss_pho = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels = output_placeholder, logits=voc_output_decoded_gen)) * config.lamda 
 
-        reg_term = tf.contrib.layers.apply_regularization(regularizer, reg_variables)
+        pho_loss+=reconstruct_loss_pho
 
-        pho_loss+=reg_term
-
-        # import pdb;pdb.set_trace()
-
-        singer_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels_singer, logits=singer_logits))
-
-        # singer_loss_2 = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels_singer_2, logits=singer_logits_real))
-
-        # D_loss_real = -tf.reduce_mean(tf.log(D_real + 1e-10))
-        # D_loss_fake = -tf.reduce_mean(tf.log(1. - (D_fake + 1e-10)))
-        D_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=real_logs, logits=D_real+1e-12))
-        D_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=fake_logs, logits=D_fake+1e-12))
-
-        singer_loss_real = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels_singer, logits=singer_real))
-
-        pho_loss_real = tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels, logits=phonemes_real)
-
-        # weighted_losses_real = unweighted_losses_real * pho_weights
-
-        # pho_loss_real = tf.reduce_mean(weighted_losses_real)
-
-        D_loss = D_loss_real+D_loss_fake + pho_loss_real +singer_loss_real
-
-        # G_loss_GAN = -tf.reduce_mean(tf.log(D_fake + 1e-10))
-        G_loss_GAN = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=real_logs, logits=D_fake+1e-12)) 
-
-        pho_loss_fake= tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels, logits=phonemes_fake)
-
-        # weighted_losses_fake = unweighted_losses_fake * pho_weights
-
-        # pho_loss_fake = tf.reduce_mean(weighted_losses_fake)
-        
-        singer_loss_fake = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels_singer, logits=singer_fake))
-
-        feature_match_loss = tf.nn.l2_loss(tf.reduce_mean(opsy_fake) - tf.reduce_mean(opsy_real))
-
-
-        G_loss_GAN+= pho_loss_fake
-        G_loss_GAN+=singer_loss_fake
-        G_loss_GAN+=feature_match_loss
-
-        
-
-        reconstruct_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_placeholder, logits=voc_output)) * config.lamda 
-        # - tf.reduce_mean(tf.abs(voc_output[:,:-1,:] - voc_output[:,1:,:]))* config.lamda*0.001
-
-
-
-        # G_loss_GAN = tf.reduce_sum(tf.abs(voc_output[:,:-1,:] - voc_output[:,1:,:])* config.lamda*0.01)
-
-        final_loss =  G_loss_GAN +reconstruct_loss
-
-        # reconstruct_loss_phase = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_phase_placeholder, logits=voc_output_phase))
-
-
-
-
-        # pho_loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(onehot_labels=onehot_labels, logits=pho_logits)*(1-target_placeholder[:,:,-1:])) *60
-
-        # pho_loss = tf.reduce_sum(tf.abs(pho_probs - onehot_labels))
-
-        pho_acc = tf.metrics.accuracy(labels=labels, predictions=pho_classes)
-
-        pho_real_acc = tf.metrics.accuracy(labels=labels, predictions=pho_real_classes)
-
-        pho_fake_acc = tf.metrics.accuracy(labels=labels, predictions=pho_fake_classes)
-
-        # f0_acc = tf.metrics.accuracy(labels=f0_target_placeholder, predictions=f0_classes)
-
-        f0_acc_midi = tf.metrics.accuracy(labels=f0_target_placeholder_midi, predictions=f0_classes_midi)
-
-        singer_acc = tf.metrics.accuracy(labels=singer_labels , predictions=singer_classes)
-
-        singer_acc_real = tf.metrics.accuracy(labels=singer_labels , predictions=singer_real_classes)
-
-        singer_acc_false = tf.metrics.accuracy(labels=singer_labels , predictions=singer_fake_classes)
-
-
-        pho_acc_val = tf.metrics.accuracy(labels=labels, predictions=pho_classes)
-
-        # f0_acc_val = tf.metrics.accuracy(labels=f0_target_placeholder, predictions=f0_classes)
-
-        f0_acc_midi_val = tf.metrics.accuracy(labels=f0_target_placeholder_midi, predictions=f0_classes_midi)
-
-        singer_acc_val = tf.metrics.accuracy(labels=singer_labels , predictions=singer_classes)
-
-
+        pho_acc = tf.metrics.accuracy(labels=phoneme_labels, predictions=pho_classes)
 
         pho_summary = tf.summary.scalar('pho_loss', pho_loss)
 
         pho_acc_summary = tf.summary.scalar('pho_accuracy', pho_acc[0])
 
-        pho_acc_summary_val = tf.summary.scalar('pho_accuracy_val', pho_acc_val[0])
 
-        # ap_summary = tf.summary.scalar('ap_loss', ap_loss)
+        # Discriminator Loss
 
-        # f0_summary = tf.summary.scalar('f0_loss', f0_loss)
 
-        gen_summary = tf.summary.scalar('gen_loss', G_loss_GAN)
+        D_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels = tf.ones_like(D_real) , logits=D_real+1e-12))
+        D_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels = tf.zeros_like(D_real) , logits=D_fake+1e-12))
+
+        D_correct_pred = tf.equal(tf.round(tf.sigmoid(D_real)), tf.ones_like(D_real))
+
+        D_accuracy = tf.reduce_mean(tf.cast(D_correct_pred, tf.float32))
+
+        D_loss = D_loss_real+D_loss_fake
 
         dis_summary = tf.summary.scalar('dis_loss', D_loss)
 
-        # reconstruct_phase_summary = tf.summary.scalar('reconstruct_loss_phase', reconstruct_loss_phase)
+        dis_acc_summary = tf.summary.scalar('dis_acc', D_accuracy)
 
-        # f0_acc_summary = tf.summary.scalar('f0_accuracy', f0_acc[0])
+        #Final net loss
 
-        # f0_acc_summary_val = tf.summary.scalar('f0_accuracy_val', f0_acc_val[0])
+        G_loss_GAN = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels= tf.ones_like(D_real), logits=D_fake+1e-12)) 
 
-        f0_summary_midi = tf.summary.scalar('f0_loss_midi', f0_loss_midi)
+        G_correct_pred = tf.equal(tf.round(tf.sigmoid(D_fake)), tf.ones_like(D_real))
 
-        f0_acc_summary_midi = tf.summary.scalar('f0_accuracy_midi', f0_acc_midi[0])
+        G_accuracy = tf.reduce_mean(tf.cast(G_correct_pred, tf.float32))
 
-        f0_acc_summary_midi_val = tf.summary.scalar('f0_accuracy_midi_val', f0_acc_midi_val[0])
+        gen_summary = tf.summary.scalar('gen_loss', G_loss_GAN)
 
-        singer_summary = tf.summary.scalar('singer_loss', singer_loss)
+        gen_acc_summary = tf.summary.scalar('gen_acc', G_accuracy)
 
-        singer_acc_summary = tf.summary.scalar('singer_accuracy', singer_acc[0])
+        reconstruct_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_placeholder, logits=voc_output_decoded)) * config.lamda 
 
-        singer_acc_summary_real = tf.summary.scalar('singer_accuracy_real', singer_acc_real[0])
+   
+        final_loss =  G_loss_GAN +reconstruct_loss
 
-        singer_acc_summary_false = tf.summary.scalar('singer_accuracy_false', singer_acc_false[0])
+        final_summary = tf.summary.scalar('final_loss', final_loss)
 
-        singer_acc_summary_val = tf.summary.scalar('singer_accuracy_val', singer_acc_val[0])
-
-        summary = tf.summary.merge([ dis_summary,gen_summary ])
+        summary = tf.summary.merge_all()
 
         # summary_val = tf.summary.merge([f0_summary_midi, pho_summary, singer_summary, reconstruct_summary, pho_acc_summary_val,  f0_acc_summary_midi_val, singer_acc_summary_val ])
 
@@ -299,78 +157,35 @@ def train(_):
 
         # loss_summary = tf.summary.scalar('total_loss', loss)
 
+
+        #Global steps
+
         global_step = tf.Variable(0, name='global_step', trainable=False)
-
-        global_step_pho = tf.Variable(0, name='global_step_pho', trainable=False)
-
-        global_step_singer = tf.Variable(0, name='global_step_singer', trainable=False)
-
-        # global_step_f0 = tf.Variable(0, name='global_step_f0', trainable=False)
 
         global_step_re = tf.Variable(0, name='global_step_re', trainable=False)
 
         global_step_dis = tf.Variable(0, name='global_step_dis', trainable=False)
 
-        global_step_cgan = tf.Variable(0, name='global_step_cgan', trainable=False)
 
-        # global_step_re_phase = tf.Variable(0, name='global_step_re_phase', trainable=False)
-
-
-
-        f0_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
-
-        f0_optimizer_midi = tf.train.AdamOptimizer(learning_rate = config.init_lr)
+        #Optimizers
 
         pho_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
-
-        singer_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
         re_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
         dis_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
-        cgan_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
-        # re_phase_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
-        # optimizer_f0 = tf.train.AdamOptimizer(learning_rate = config.init_lr)
+        # update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
-        # f0_train_function = f0_optimizer.minimize(f0_loss, global_step= global_step_f0)
+        # Training functions
+        pho_train_function = pho_optimizer.minimize(pho_loss, global_step = global_step, var_list = phone_params)
 
-        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        # with tf.control_dependencies(update_ops):
+        re_train_function = re_optimizer.minimize(final_loss, global_step = global_step_re, var_list=final_params)
 
-        
-
-        f0_train_function_midi = f0_optimizer.minimize(f0_loss_midi, global_step= global_step)
-
-        pho_train_function = pho_optimizer.minimize(pho_loss, global_step = global_step_pho)
-
-        singer_train_function = pho_optimizer.minimize(singer_loss, global_step = global_step_singer)
-
-        # import pdb;pdb.set_trace()
-
-        
-
-        with tf.control_dependencies(update_ops):
-            re_train_function = re_optimizer.minimize(final_loss, global_step = global_step_re, var_list=final_vars)
-
-            dis_train_function = dis_optimizer.minimize(D_loss, global_step = global_step_dis, var_list=d_params)
-
-        # cgan_train_function = re_optimizer.minimize(singer_loss_2, global_step = global_step_cgan, var_list=final_vars)
-
-        # re_phase_train_function = re_optimizer.minimize(reconstruct_loss_phase, global_step = global_step_re_phase)
-
-        # train_f0 = optimizer.minimize(f0_loss, global_step= global_step)
-
-        # train_harm = optimizer.minimize(harm_loss, global_step= global_step)
-
-        # train_ap = optimizer.minimize(ap_loss, global_step= global_step)
-
-        # train_f0 = optimizer.minimize(f0_loss, global_step= global_step)
-
-        # train_vuv = optimizer.minimize(vuv_loss, global_step= global_step)
-
-        # import pdb;pdb.set_trace()
+        dis_train_function = dis_optimizer.minimize(D_loss, global_step = global_step_dis, var_list=d_params)
 
         
 
@@ -396,250 +211,71 @@ def train(_):
         print("Start from: %d" % start_epoch)
         f0_accs = []
         for epoch in xrange(start_epoch, config.num_epochs):
-            val_f0_accs = []
-
-            # if epoch>30:
-            #     sec_mode = 0
-            # else:
-            #     sec_mode = 0
 
 
             data_generator = data_gen(sec_mode = 0)
             start_time = time.time()
 
-
-
-            epoch_loss_f0_midi = 0
-            epoch_acc_f0_midi = 0
-
-            # epoch_loss_f0 = 0
-            # epoch_acc_f0 = 0
-            
-            epoch_loss_pho = 0
-            epoch_acc = 0
-
-            epoch_loss_singer = 0
-            epoch_acc_singer = 0
-
-            epoch_total_loss = 0
-
-            epoch_dis_loss = 0
-
-            # epoch_total_loss_phase = 0
-
-            epoch_loss_f0_midi_val = 0
-            epoch_acc_f0_midi_val = 0
-
-            # epoch_loss_f0_val = 0
-            # epoch_acc_f0_val = 0
-            
-            epoch_loss_pho_val = 0
-            epoch_acc_val = 0
-
-            epoch_loss_singer_val = 0
-            epoch_acc_singer_val = 0
-
-            epoch_total_loss_val = 0
-
-            epoch_pho_real_acc = 0
-            epoch_pho_fake_acc = 0
-
-            epoch_singer_real_acc = 0
-            epoch_singer_fake_acc = 0
-
-            epoch_loss_cg_real = 0
-
-            epoch_loss_re_real = 0
-
-            epoch_loss_re_false = 0
-
-
-            # epoch_total_loss_phase_val = 0
-
-
-            batch_num = 0
-            batch_num_val = 0
-
             val_generator = data_gen(mode='val')
 
-            pho_count = 0
-            pho_count_val = 0
-            flag_count = 0
 
-            # val_generator = get_batches(train_filename=config.h5py_file_val, batches_per_epoch=config.batches_per_epoch_val)
+            
 
             with tf.variable_scope('Training'):
 
-                for inputs, feats_targets, targets_f0_1, targets_f0_2, pho_targs, singer_ids, Flag in data_generator:
+                for feats, f0, phos, singer_ids in data_generator:
 
-                    # import pdb;pdb.set_trace()
+                    pho_one_hot = one_hotize(phos, max_index=42)
 
-                    f0_1_one_hot = one_hotize(targets_f0_1, max_index=256)
+                    f0 = f0.reshape([config.batch_size, config.max_phr_len, 1])
 
-                    f0_2_one_hot = one_hotize(targets_f0_2, max_index=57)
+                    feed_dict = {input_placeholder: feats, output_placeholder: feats[:,:,:-2], f0_input_placeholder: f0,phoneme_labels:phos, singer_labels: singer_ids}
 
-                    if Flag:
-                        pho_one_hot = one_hotize(pho_targs, max_index=42)
+                    _, step_pho_loss, step_pho_acc = sess.run([pho_train_function, pho_loss, pho_acc], feed_dict= feed_dict)
+                    _, step_gen_loss, step_gen_acc = sess.run([re_train_function, final_loss, G_accuracy], feed_dict = feed_dict)
+                    _, step_dis_loss, step_dis_acc = sess.run([dis_train_function, D_loss, D_accuracy], feed_dict = feed_dict)
 
-                    featies = feats_targets
-
-                    input_noisy = np.clip(featies + np.random.rand(config.batch_size, config.max_phr_len,66)*np.clip(np.random.rand(1),0.0,config.noise_threshold), 0.0, 1.0)
-
-                    _, step_loss_f0_midi, step_acc_f0_midi = sess.run([f0_train_function_midi, f0_loss_midi, f0_acc_midi], feed_dict={input_placeholder: input_noisy,f0_target_placeholder_midi: targets_f0_2})
-                    if Flag:
-                        flag_count+=1
-                        _, step_loss_singer, step_acc_singer, s_embed = sess.run([singer_train_function, singer_loss, singer_acc, singer_embedding], feed_dict={input_placeholder: featies,singer_labels: singer_ids, prob:0.75})
-                    else:
-                         s_embed = sess.run(singer_embedding, feed_dict={input_placeholder: input_noisy})
-
-                    # real, fake, = sess.run([D_real, D_fake], 
-                    #     feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets, prob:0.8,singer_embedding_placeholder: s_embed}) 
-                    # import pdb;pdb.set_trace()
-
-
-
-
-
-                    teacher_train = np.random.rand(1)<0.5
-
-                    re_logits = np.clip(np.random.rand(config.batch_size,1), 0.8,1.0)
-
-                    random_inputs = np.random.rand(config.batch_size, config.max_phr_len, 1)
-
-                    re_logits_gen = np.ones((config.batch_size,1))
-
-                    fa_logits = np.clip(np.random.rand(config.batch_size,1), 0.0,0.2)
-
-                    # import pdb;pdb.set_trace()
-
-                    if teacher_train:
-                        # _, step_loss_f0, step_acc_f0 = sess.run([f0_train_function, f0_loss, f0_acc], feed_dict={input_placeholder: input_noisy,singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder:pho_one_hot, f0_target_placeholder: targets_f0_1, prob:1.0})
-                        if Flag:
-                            _, step_loss_pho, step_acc_pho = sess.run([pho_train_function, pho_loss, pho_acc], feed_dict={input_placeholder: input_noisy,labels: pho_targs, prob:0.75})
-                            # _, step_loss_total = sess.run([re_train_function, reconstruct_loss], feed_dict={f0_input_placeholder: f0_1_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8})
-
-                         
-                           # outs_real = 
-
-                            # if epoch > 250:
-                            #     _,_ ,step_loss_total, step_re_loss, step_singer_loss_real, step_singer_acc_real = sess.run([re_train_function, cgan_train_function, final_loss, reconstruct_loss, singer_loss_2,singer_acc_real],
-                            #      feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8,singer_labels_2: singer_ids})
-                            #     _,step_loss_dis = sess.run([dis_train_function, D_loss], 
-                            #         feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8,singer_labels_2: singer_ids})
-                            #     s_embed_2, singer_ids_2 = utils.shuffle_two(s_embed, singer_ids)
-                            #     _,_, step_loss_total_2, step_re_loss_2, step_singer_loss_false, step_singer_acc_false = sess.run([re_train_function, cgan_train_function, final_loss, reconstruct_loss, singer_loss_2,singer_acc_false], feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed_2, prob:0.8,singer_labels_2: singer_ids_2})
-                            # else:
-                            
-                            _,step_loss_total, step_re_loss, step_gen_loss, step_pho_fake_acc, step_singer_fake_acc = sess.run([re_train_function, final_loss, reconstruct_loss, G_loss_GAN, pho_fake_acc,singer_acc_false], feed_dict={rand_placeholder:random_inputs, f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8, real_logs:re_logits_gen, is_train : True, labels: pho_targs,singer_labels: singer_ids})
-                
-
-                            # _= sess.run(dis_train_function, 
-                            #     feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: (input_noisy*2)-1, prob:0.8,singer_embedding_placeholder: s_embed, real_logs:re_logits, fake_logs : fa_logits, is_train : True})
-                            
-                            # _= sess.run(dis_train_function, 
-                            #     feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: (input_noisy*2)-1, prob:0.8,singer_embedding_placeholder: s_embed, real_logs:re_logits, fake_logs : fa_logits, is_train : True})
-                            _,step_loss_dis, step_pho_real_acc, step_singer_real_acc  = sess.run( [dis_train_function, D_loss, pho_real_acc,singer_acc_real], 
-                                feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: (input_noisy*2)-1, prob:0.8,singer_embedding_placeholder: s_embed, real_logs:re_logits, fake_logs : fa_logits, is_train : True, labels: pho_targs,singer_labels: singer_ids})
-                        else:
-                            pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: input_noisy,f0_input_placeholder_midi: f0_2_one_hot} )
-                            _, step_re_loss = sess.run([re_train_function, reconstruct_loss], feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_outs, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:1.0, input_placeholder: featies})
-
-                        # _, step_loss_total_phase = sess.run([re_phase_train_function, reconstruct_loss_phase], feed_dict={input_placeholder:input_noisy, f0_input_placeholder: one_hotize(targets_f0_1, max_index=256), pho_input_placeholder: one_hotize(pho_targs, max_index=41),singer_embedding_placeholder: s_embed, prob:0.5, output_phase_placeholder: phase_targets})
-                    
-                    else:
-
-                        f0_outputs_1 = sess.run(f0_probs_midi, feed_dict = {input_placeholder: input_noisy,singer_embedding_placeholder: s_embed} )
-                        if Flag:
-                            _, step_loss_pho, step_acc_pho = sess.run([pho_train_function, pho_loss, pho_acc], feed_dict={input_placeholder: input_noisy,f0_input_placeholder_midi: f0_outputs_1, labels: pho_targs, prob:1.0})
-                            pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: input_noisy,f0_input_placeholder_midi: f0_2_one_hot} )
-                            # _, step_loss_f0, step_acc_f0 = sess.run([f0_train_function, f0_loss, f0_acc], feed_dict={input_placeholder: input_noisy,singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_outputs_1, f0_target_placeholder: targets_f0_1, pho_input_placeholder: pho_outs, prob:1.0})
-                            # f0_outputs_2 = sess.run(f0_probs, feed_dict={input_placeholder: input_noisy,singer_embedding_placeholder: s_embed, 
-                            #     f0_input_placeholder_midi: f0_outputs_1, pho_input_placeholder: pho_outs} )
-                            # if epoch > 250:
-                            #     _,_,step_loss_total, step_re_loss, step_singer_loss_real, step_singer_acc_real = sess.run([re_train_function, cgan_train_function, final_loss, reconstruct_loss, singer_loss_2,singer_acc_real], feed_dict={f0_input_placeholder_midi: f0_outputs_1, pho_input_placeholder: pho_outs, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:1.0, input_placeholder: featies,singer_labels_2: singer_ids})
-
-                            #     s_embed_2, singer_ids_2 = utils.shuffle_two(s_embed, singer_ids)
-
-                            #     _,_, step_loss_total_2, step_re_loss_2, step_singer_loss_false, step_singer_acc_false = sess.run([re_train_function, cgan_train_function, final_loss, reconstruct_loss, singer_loss_2,singer_acc_false], feed_dict={f0_input_placeholder_midi: f0_outputs_1, pho_input_placeholder: pho_outs, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed_2, prob:1.0, input_placeholder: featies,singer_labels_2: singer_ids_2})
-                            #     _,step_loss_dis = sess.run([dis_train_function, D_loss], 
-                            #         feed_dict={f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:0.8,singer_labels_2: singer_ids})
-                            # else:
-
-                            _,step_loss_total, step_re_loss, step_gen_loss, step_pho_fake_acc, step_singer_fake_acc = sess.run([re_train_function, final_loss, reconstruct_loss, G_loss_GAN, pho_fake_acc,singer_acc_false], feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: f0_outputs_1, pho_input_placeholder: pho_outs, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:1.0, input_placeholder: featies,singer_labels_2: singer_ids, real_logs:re_logits_gen, is_train:True,labels: pho_targs,singer_labels: singer_ids})
-
-                            # _ = sess.run(dis_train_function, 
-                            #     feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: (input_noisy*2)-1,singer_embedding_placeholder: s_embed, prob:0.8, real_logs:re_logits, fake_logs : fa_logits, is_train:True})
-
-                            # _ = sess.run(dis_train_function, 
-                            #     feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: (input_noisy*2)-1,singer_embedding_placeholder: s_embed, prob:0.8, real_logs:re_logits, fake_logs : fa_logits, is_train:True})
-
-                            _,step_loss_dis, step_pho_real_acc, step_singer_real_acc  = sess.run( [dis_train_function, D_loss, pho_real_acc,singer_acc_real], 
-                                feed_dict={rand_placeholder:random_inputs,f0_input_placeholder_midi: f0_2_one_hot, pho_input_placeholder: pho_one_hot, output_placeholder: (input_noisy*2)-1,singer_embedding_placeholder: s_embed, prob:0.8, real_logs:re_logits, fake_logs : fa_logits, is_train:True, labels: pho_targs,singer_labels: singer_ids})
-
-
-                        else:
-                            pho_outs = sess.run(pho_probs, feed_dict = {input_placeholder: input_noisy,f0_input_placeholder_midi: f0_2_one_hot} )
-                            _, step_re_loss = sess.run([re_train_function,  reconstruct_loss], feed_dict={f0_input_placeholder_midi: f0_outputs_1, pho_input_placeholder: pho_outs, output_placeholder: feats_targets,singer_embedding_placeholder: s_embed, prob:1.0, input_placeholder: featies})
-                            # import pdb;pdb.set_trace()
-
-
-
-
-                        # import pdb;pdb.set_trace()
-                        # spec_output = sess.run(voc_output_decoded,feed_dict={f0_input_placeholder: f0_outputs_2, pho_input_placeholder: pho_outs, output_placeholder: inputs,singer_embedding_placeholder: s_embed, prob:0.5} )
-                        # _, step_loss_total_phase = sess.run([re_phase_train_function, reconstruct_loss_phase], feed_dict={input_placeholder:spec_output, f0_input_placeholder: f0_outputs_2, pho_input_placeholder: pho_outs,singer_embedding_placeholder: s_embed, prob:0.5, output_phase_placeholder: phase_targets})
-
-                    #     # import pdb;pdb.set_trace()
-
-                    if Flag:
-                        epoch_loss_pho+=step_loss_pho
-                        epoch_acc+=step_acc_pho[0]
-                        pho_count+=1
+                    # if Flag:
+                    #     epoch_loss_pho+=step_loss_pho
+                    #     epoch_acc+=step_acc_pho[0]
+                    #     pho_count+=1
 
                     
 
-                    # epoch_loss_f0+=step_loss_f0
-                    # epoch_acc_f0+=step_acc_f0[0]
+                    # # epoch_loss_f0+=step_loss_f0
+                    # # epoch_acc_f0+=step_acc_f0[0]
 
-                    epoch_loss_f0_midi+=step_loss_f0_midi
+                    # epoch_loss_f0_midi+=step_loss_f0_midi
 
-                    epoch_dis_loss+=step_loss_dis
+                    # epoch_dis_loss+=step_loss_dis
 
-                    epoch_loss_cg_real += step_gen_loss
+                    # epoch_loss_cg_real += step_gen_loss
 
-                    epoch_acc_f0_midi+=step_acc_f0_midi[0]
+                    # epoch_acc_f0_midi+=step_acc_f0_midi[0]
 
-                    epoch_pho_real_acc += step_pho_real_acc[0]
-                    epoch_pho_fake_acc += step_pho_fake_acc[0]
+                    # epoch_pho_real_acc += step_pho_real_acc[0]
+                    # epoch_pho_fake_acc += step_pho_fake_acc[0]
 
-                    epoch_singer_real_acc += step_singer_real_acc[0]
-                    epoch_singer_fake_acc += step_singer_fake_acc[0]
+                    # epoch_singer_real_acc += step_singer_real_acc[0]
+                    # epoch_singer_fake_acc += step_singer_fake_acc[0]
 
-                    if Flag:
-                        epoch_loss_singer+=step_loss_singer
-                        epoch_acc_singer+=step_acc_singer[0]
-                        epoch_total_loss+=step_loss_total
+                    # if Flag:
+                    #     epoch_loss_singer+=step_loss_singer
+                    #     epoch_acc_singer+=step_acc_singer[0]
+                    #     epoch_total_loss+=step_loss_total
                     
-                    epoch_loss_re_real += step_re_loss
-                    # if epoch>250:
-                    #     epoch_loss_re_false += step_re_loss_2
-                    #     epoch_loss_cg_real += step_singer_loss_real
-                    #     epoch_loss_cg_false += step_singer_loss_false
-                    #     epoch_acc_real += step_singer_acc_real[0] 
-                    #     epoch_acc_false += step_singer_acc_false[0]
-                #     if Flag:
-                #         epoch_total_loss+=(step_loss_total+step_loss_total_2)/2
-                # # else: 
-                        
-                    
-                    # epoch_total_loss_phase=step_loss_total_phase
+                    # epoch_loss_re_real += step_re_loss
 
-
-
-
+                    summary_str = sess.run(summary, feed_dict=feed_dict)
+                # import pdb;pdb.set_trace()
+                    train_summary_writer.add_summary(summary_str, epoch)
+                # # summary_writer.add_summary(summary_str_val, epoch)
+                    train_summary_writer.flush()
 
                     utils.progress(batch_num,config.batches_per_epoch_train, suffix = 'training done')
                     batch_num+=1
+
+                    import pdb;pdb.set_trace()
 
 
                 # epoch_initial_loss = epoch_initial_loss/(config.batches_per_epoch_train *config.batch_size*config.max_phr_len*60)
@@ -678,13 +314,7 @@ def train(_):
                 # epoch_total_loss = epoch_total_loss/(config.batches_per_epoch_train *config.batch_size)
                 # epoch_total_loss_phase = epoch_total_loss_phase/(config.batches_per_epoch_train *config.batch_size)
 
-                summary_str = sess.run(summary, feed_dict={rand_placeholder:random_inputs,input_placeholder: featies,  
-                    labels:pho_targs, singer_labels: singer_ids, singer_embedding_placeholder: s_embed, f0_input_placeholder_midi: f0_2_one_hot, f0_target_placeholder_midi: targets_f0_2, pho_input_placeholder:pho_one_hot, 
-                    output_placeholder: feats_targets, prob:0.5, singer_labels_2: singer_ids,real_logs:re_logits, fake_logs : fa_logits})
-                # import pdb;pdb.set_trace()
-                train_summary_writer.add_summary(summary_str, epoch)
-                # # summary_writer.add_summary(summary_str_val, epoch)
-                train_summary_writer.flush()
+
 
             with tf.variable_scope('Validation'):
 
