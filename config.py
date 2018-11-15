@@ -116,15 +116,15 @@ input_features = 513
 first_embed = 256
 
 
-lamda = 0
+lamda = 0.0001
 
-lstm_size = 128
+lstm_size = 64
 
 output_features = 66
 
 highway_layers = 4
 highway_units = 128
-init_lr = 0.001
+init_lr = 0.0001
 num_conv_layers = 8
 conv_filters = 128
 conv_activation = tf.nn.relu
@@ -138,7 +138,7 @@ noise = 0.05
 
 wavenet_layers = 4
 rec_field = 2**wavenet_layers
-wavenet_filters = 128
+wavenet_filters = 64
 
 print_every = 1
 save_every = 10

@@ -24,15 +24,15 @@ def deconv2d(input_, output_shape,
     
     # try:
     deconv = tf.nn.conv2d_transpose(input_, w, output_shape=output_shape,
-                strides=[1, d_h, d_w, 1], nmae = name)
+                strides=[1, d_h, d_w, 1], name = name)
 
     biases = tf.get_variable('biases', [output_shape[-1]], initializer=tf.constant_initializer(0.0))
     deconv = tf.reshape(tf.nn.bias_add(deconv, biases), deconv.get_shape())
 
-    if with_w:
-      return deconv, w, biases
-    else:
-      return deconv
+    # if with_w:
+    #   return deconv, w, biases
+    # else:
+  return deconv
 
 
 def bi_dynamic_stacked_RNN(x, input_lengths, scope='RNN'):
@@ -194,32 +194,23 @@ def cbhg(inputs, scope='cbhg', training=True):
         
 
 
-def nr_wavenet_block(conditioning, dilation_rate = 2, scope = 'nr_wavenet_block', name = "name"):
+def nr_wavenet_block(inputs, dilation_rate = 2, name = "name"):
 
-    with tf.variable_scope(scope):
-    # inputs = tf.reshape(inputs, [config.batch_size, config.max_phr_len, config.input_features])
+    con_pad_forward = tf.pad(inputs, [[0,0],[dilation_rate,dilation_rate],[0,0]],"CONSTANT")
 
-        con_pad_forward = tf.pad(conditioning, [[0,0],[dilation_rate,0],[0,0]],"CONSTANT")
-        con_pad_backward = tf.pad(conditioning, [[0,0],[0,dilation_rate],[0,0]],"CONSTANT")
-        con_sig_forward = tf.layers.conv1d(con_pad_forward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid', name = name+"1")
-        con_sig_backward = tf.layers.conv1d(con_pad_backward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid', name = name+"2")
-        # con_sig = tf.layers.conv1d(conditioning,config.wavenet_filters,1)
+    con_sig_forward = tf.layers.conv1d(con_pad_forward, config.wavenet_filters, 3, dilation_rate = dilation_rate, padding = 'valid', name = name+"1")
 
-        sig = tf.sigmoid(con_sig_forward+con_sig_backward)
+    sig = tf.sigmoid(con_sig_forward)
 
+    con_tanh_forward = tf.layers.conv1d(con_pad_forward, config.wavenet_filters, 3, dilation_rate = dilation_rate, padding = 'valid', name = name+"3")
 
-        con_tanh_forward = tf.layers.conv1d(con_pad_forward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid', name = name+"3")
-        con_tanh_backward = tf.layers.conv1d(con_pad_backward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid', name = name+"4")    
-        # con_tanh = tf.layers.conv1d(conditioning,config.wavenet_filters,1)
+    tanh = tf.tanh(con_tanh_forward)
 
-        tanh = tf.tanh(con_tanh_forward+con_tanh_backward)
+    outputs = tf.multiply(sig,tanh)
 
+    skip = tf.layers.conv1d(outputs,config.wavenet_filters,1, name = name+"5")
 
-        outputs = tf.multiply(sig,tanh)
-
-        skip = tf.layers.conv1d(outputs,config.wavenet_filters,1, name = name+"5")
-
-        residual = skip + conditioning
+    residual = skip + inputs
 
     return skip, residual
 
@@ -286,74 +277,36 @@ def nr_wavenet(inputs, num_block = config.wavenet_layers):
 
     return harm, ap, f0, vuv
 
-def nr_wavenet_block_2(conditioning,inputs, dilation_rate = 2, scope = 'nr_wavenet_block', name = "name"):
 
-    with tf.variable_scope(scope):
-    # inputs = tf.reshape(inputs, [config.batch_size, config.max_phr_len, config.input_features])
-
-        con_pad_forward = tf.pad(conditioning, [[0,0],[dilation_rate,0],[0,0]],"CONSTANT")
-        con_pad_backward = tf.pad(conditioning, [[0,0],[0,dilation_rate],[0,0]],"CONSTANT")
-
-        in_pad_forward = tf.pad(inputs, [[0,0],[dilation_rate,0],[0,0]],"CONSTANT")
-        in_pad_backward = tf.pad(inputs, [[0,0],[0,dilation_rate],[0,0]],"CONSTANT")
-
-
-        con_sig_forward = tf.layers.conv1d(con_pad_forward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid', name = name+"1")
-        con_sig_backward = tf.layers.conv1d(con_pad_backward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid', name = name+"2")
-
-        in_sig_forward = tf.layers.conv1d(in_pad_forward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid', name = name+"3")
-        in_sig_backward = tf.layers.conv1d(in_pad_backward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid', name = name+"4")
-        # con_sig = tf.layers.conv1d(conditioning,config.wavenet_filters,1)
-
-        sig = tf.sigmoid(con_sig_forward+con_sig_backward+in_sig_backward+in_sig_forward)
-
-
-        con_tanh_forward = tf.layers.conv1d(con_pad_forward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid', name = name+"5")
-        con_tanh_backward = tf.layers.conv1d(con_pad_backward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid', name = name+"6")   
-
-        in_tanh_forward = tf.layers.conv1d(in_pad_forward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid', name = name+"7")
-        in_tanh_backward = tf.layers.conv1d(in_pad_backward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid', name = name+"8")    
-        # con_tanh = tf.layers.conv1d(conditioning,config.wavenet_filters,1)
-
-        tanh = tf.tanh(con_tanh_forward+con_tanh_backward+in_tanh_backward+in_tanh_forward)
-
-
-        outputs = tf.multiply(sig,tanh)
-
-        skip = tf.layers.conv1d(outputs,config.wavenet_filters,1, name = name+"9")
-
-        residual = skip + conditioning
-
-    return skip, residual
 
 
 def final_net(singer_label, f0_notation, phones):
 
-    singer_label = tf.reshape(singer_label, [config.batch_size,1, -1], name = "f_r_1")
+    singer_label = tf.reshape(tf.layers.dense(singer_label, config.wavenet_filters, name = "f_condi"), [config.batch_size,1,-1], name = "f_condi_reshape")
 
-    singer_label = tf.tile(singer_label, [1, config.max_phr_len, 1], name = "f_r_2")
+    inputs = tf.concat([phones, f0_notation], axis = -1)
 
-    conditioning = tf.concat([phones, singer_label, f0_notation], axis = -1)
+    inputs = tf.layers.dense(inputs, config.wavenet_filters, name = "f_f_1")
 
     num_block = config.wavenet_layers
 
     receptive_field = 2**num_block
 
-    first_conv = tf.layers.conv1d(conditioning, config.wavenet_filters, 1, name = "f_c_1")
+    first_conv = tf.layers.conv1d(inputs, config.wavenet_filters, 1, name = "f_c_1")
     skips = []
-    skip, residual = nr_wavenet_block(first_conv,dilation_rate=1, scope = "f_nr_wavenet_block_0", name ="f_nr_wavenet_block_0" )
+    skip, residual = nr_wavenet_block(first_conv,dilation_rate=1, name ="f_nr_wavenet_block_0" )
     output = skip
     for i in range(num_block):
-        skip, residual = nr_wavenet_block(residual, dilation_rate=2**(i+1), scope = "f_nr_wavenet_block_"+str(i+1), name = "f_nr_wavenet_block_"+str(i+1))
+        skip, residual = nr_wavenet_block(residual + singer_label, dilation_rate=2**(i+1), name = "f_nr_wavenet_block_"+str(i+1))
         skips.append(skip)
     for skip in skips:
         output+=skip
     
-    output = output+first_conv
+    output = output+first_conv + singer_label
 
     output = tf.layers.conv1d(output,config.wavenet_filters,1, name = "f_c_2")
 
-    output = tf.layers.dense(output, 64, name = "f_f_1")
+    output = tf.layers.dense(output, 64, name = "f_f_2")
 
     return output
 
@@ -361,8 +314,7 @@ def final_net(singer_label, f0_notation, phones):
 
 def phone_network(inputs):
 
-    prenet_out = tf.layers.dense(inputs, config.lstm_size*2, name = "dense_p_1")
-    prenet_out = tf.layers.dense(prenet_out, config.lstm_size, name = "dense_p_2")
+    prenet_out = tf.layers.dense(inputs, config.wavenet_filters, name = "dense_p_1")
 
     num_block = config.wavenet_layers
 
@@ -370,10 +322,10 @@ def phone_network(inputs):
 
     first_conv = tf.layers.conv1d(prenet_out, config.wavenet_filters, 1, name = "conv_p_1")
     skips = []
-    skip, residual = nr_wavenet_block(first_conv, dilation_rate=1, scope = "p_nr_wavenet_block_0", name = "p_nr_wavenet_block_0")
+    skip, residual = nr_wavenet_block(first_conv, dilation_rate=1,  name = "p_nr_wavenet_block_0")
     output = skip
     for i in range(num_block):
-        skip, residual = nr_wavenet_block(residual, dilation_rate=2**(i+1), scope = "p_nr_wavenet_block_"+str(i+1), name = "p_nr_wavenet_block_"+str(i+1) )
+        skip, residual = nr_wavenet_block(residual, dilation_rate=2**(i+1),  name = "p_nr_wavenet_block_"+str(i+1) )
         skips.append(skip)
     for skip in skips:
         output+=skip
@@ -385,42 +337,76 @@ def phone_network(inputs):
 
     return output
 
+
 def GAN_discriminator(inputs, singer_label):
+    singer_label = tf.reshape(tf.layers.dense(singer_label, config.wavenet_filters, name = "d_condi"), [config.batch_size,1,1,-1], name = "d_condi_reshape")
+
+    inputs = tf.reshape(inputs, [config.batch_size, config.max_phr_len, -1, 1])
+
+    conv1 =  tf.multiply(tf.nn.relu(tf.layers.conv2d(inputs, config.wavenet_filters, 4, strides=2,  padding = 'same', name = "D_1")), tf.nn.tanh(tf.layers.conv2d(inputs, config.wavenet_filters, 4, strides=2,  padding = 'same', name = "D_1_1")))  + singer_label
+
+    conv2 =  tf.multiply(tf.nn.relu(tf.layers.conv2d(conv1, config.wavenet_filters, 4, strides=2,  padding = 'same', name = "D_2")), tf.nn.tanh(tf.layers.conv2d(conv1, config.wavenet_filters, 4, strides=2,  padding = 'same', name = "D_2_1")))  + singer_label
+
+    conv3 =  tf.multiply(tf.nn.relu(tf.layers.conv2d(conv2, config.wavenet_filters, 4, strides=2,  padding = 'same', name = "D_3")), tf.nn.tanh(tf.layers.conv2d(conv2, config.wavenet_filters, 4, strides=2,  padding = 'same', name = "D_3_1")))  + singer_label
+
+    conv4 =  tf.multiply(tf.nn.relu(tf.layers.conv2d(conv3, config.wavenet_filters, 4, strides=2,  padding = 'same', name = "D_4")), tf.nn.tanh(tf.layers.conv2d(conv3, config.wavenet_filters, 4, strides=2,  padding = 'same', name = "D_4_1")))  + singer_label
+
+    conv5 =  tf.layers.conv2d(conv4, config.wavenet_filters, 4, strides=1,  padding = 'same', name = "D_5") + conv4 + singer_label
+
+    conv6 =  tf.layers.conv2d(conv5, config.wavenet_filters, 4, strides=1,  padding = 'same', name = "D_7") + conv5 + singer_label
+
+    conv7 =  tf.layers.conv2d(conv6, config.wavenet_filters, 4, strides=1,  padding = 'same', name = "D_8") + conv6 + singer_label
+
+    conv8 =  tf.layers.conv2d(conv4, config.wavenet_filters, 4, strides=1,  padding = 'same', name = "D_9") + conv7 + singer_label
+
+    ops = tf.reshape(conv8, [config.batch_size, -1])
+
+
+    ops = tf.layers.dense(ops, 32, name = "d_f_1")
+
+    output = tf.layers.dense(ops, 1, name = "d_f_2")
+
+    return output
+
+
+
+
+def GAN_generator(inputs, singer_label):
     # ops = tf.concat([inputs,  f0_input_placeholder_midi, pho_input_placeholder], axis = -1)
     # ops = inputs
-    singer_label = tf.reshape(singer_label, [config.batch_size,1, -1], name = "d_r_1")
+    singer_label = tf.reshape(tf.layers.dense(singer_label, config.wavenet_filters, name = "g_condi"), [config.batch_size,1,1,-1], name = "g_condi_reshape")
 
-    singer_label = tf.tile(singer_label, [1, config.max_phr_len, 1], name = "d_r_2")
+    inputs = tf.reshape(inputs, [config.batch_size, config.max_phr_len, -1, 1])
 
-    inputs = tf.concat([inputs,singer_label], axis = -1)
+    conv1 =  tf.multiply(tf.nn.relu(tf.layers.conv2d(inputs, config.wavenet_filters, 4, strides=2,  padding = 'same', name = "G_1")), tf.nn.tanh(tf.layers.conv2d(inputs, config.wavenet_filters, 4, strides=2,  padding = 'same', name = "G_1_1")))  + singer_label
 
-    num_block = config.wavenet_layers
+    conv2 =  tf.multiply(tf.nn.relu(tf.layers.conv2d(conv1, config.wavenet_filters, 4, strides=2,  padding = 'same', name = "G_2")), tf.nn.tanh(tf.layers.conv2d(conv1, config.wavenet_filters, 4, strides=2,  padding = 'same', name = "G_2_1")))  + singer_label
 
-    receptive_field = 2**num_block
-    num_block = config.wavenet_layers
+    conv3 =  tf.multiply(tf.nn.relu(tf.layers.conv2d(conv2, config.wavenet_filters, 4, strides=2,  padding = 'same', name = "G_3")), tf.nn.tanh(tf.layers.conv2d(conv2, config.wavenet_filters, 4, strides=2,  padding = 'same', name = "G_3_1")))  + singer_label
 
-    first_conv = tf.layers.conv1d(inputs, config.wavenet_filters, 1, name = "d_c_1")
-    skips = []
-    skip, residual = nr_wavenet_block_d(first_conv, 1, scope = "d_nr_wavenet_block_0", name ="d_nr_wavenet_block_0" )
-    output = skip
-    for i in range(num_block):
-        skip, residual = nr_wavenet_block_d(residual, 2**(i+1), scope = "d_nr_wavenet_block_"+str(i+1), name = "d_nr_wavenet_block_"+str(i+1))
+    conv4 =  tf.multiply(tf.nn.relu(tf.layers.conv2d(conv3, config.wavenet_filters, 4, strides=2,  padding = 'same', name = "G_4")), tf.nn.tanh(tf.layers.conv2d(conv3, config.wavenet_filters, 4, strides=2,  padding = 'same', name = "G_4_1")))  + singer_label
 
-    output = skip
+    conv5 =  tf.layers.conv2d(conv4, config.wavenet_filters, 4, strides=1,  padding = 'same', name = "G_5") + conv4 + singer_label
 
-    output = tf.layers.conv1d(output,config.wavenet_filters,1, name = "conv_d_1")
+    conv6 =  tf.layers.conv2d(conv5, config.wavenet_filters, 4, strides=1,  padding = 'same', name = "G_7") + conv5 + singer_label
 
+    conv7 =  tf.layers.conv2d(conv6, config.wavenet_filters, 4, strides=1,  padding = 'same', name = "G_8") + conv6 + singer_label
 
+    conv8 =  tf.layers.conv2d(conv4, config.wavenet_filters, 4, strides=1,  padding = 'same', name = "G_9") + conv7 + singer_label
 
-    # import pdb;pdb.set_trace()
+    deconv1 = deconv2d(conv8, [config.batch_size, 8, 8, config.wavenet_filters], name = "G_dec1")
 
-    # output = tf.layers.conv1d(output,config.wavenet_filters,1, name = "conv_d_2")
+    deconv2 = deconv2d(deconv1, [config.batch_size, 16, 16, config.wavenet_filters], name = "G_dec2")
 
-    output = tf.reshape(output, [config.batch_size, -1], name = "r_d_1")
-    
-    # output = tf.layers.dense(output, 128, name = "s9", activation =tf.nn.relu)
+    deconv3 = deconv2d(deconv2, [config.batch_size, 32, 32, config.wavenet_filters], name = "G_dec3")
 
-    output = tf.layers.dense(output, 1, name = "s10")
+    deconv4 = deconv2d(deconv3, [config.batch_size, 32, 32, config.wavenet_filters], name = "G_dec4")
+
+    deconv5 = deconv2d(deconv4, [config.batch_size, 64, 64, config.wavenet_filters], name = "G_dec5")
+
+    output = tf.layers.conv2d(deconv5, 1, 1, strides=1,  padding = 'same', name = "G_o")
+
+    output = tf.reshape(output, [config.batch_size, config.max_phr_len, -1])
 
     return output
 
@@ -520,30 +506,30 @@ def wavenet(inputs, conditioning, num_block = config.wavenet_layers):
     return output[:,:,:-1],vuv
 
 
-def GAN_generator(inputs, num_block = config.wavenet_layers):
-    # inputs = tf.reshape(inputs, [config.batch_size, config.max_phr_len, config.input_features,1])
-    # inputs = tf.layers.conv2d(inputs, config.wavenet_filters, 5,  padding = 'same', name = "G_1")
-    # # inputs = tf.layers.conv2d(inputs, config.wavenet_filters, 5,  padding = 'same', name = "G_2")
-    # # inputs = tf.layers.conv2d(inputs, config.wavenet_filters, 5,  padding = 'same', name = "G_3")
-    # # inputs = tf.layers.conv2d(inputs, config.wavenet_filters, 5,  padding = 'same', name = "G_4")
-    # # inputs = tf.layers.conv2d(inputs, config.wavenet_filters, 5,  padding = 'same', name = "G_5")
+# def GAN_generator(inputs, num_block = config.wavenet_layers):
+#     # inputs = tf.reshape(inputs, [config.batch_size, config.max_phr_len, config.input_features,1])
+#     # inputs = tf.layers.conv2d(inputs, config.wavenet_filters, 5,  padding = 'same', name = "G_1")
+#     # # inputs = tf.layers.conv2d(inputs, config.wavenet_filters, 5,  padding = 'same', name = "G_2")
+#     # # inputs = tf.layers.conv2d(inputs, config.wavenet_filters, 5,  padding = 'same', name = "G_3")
+#     # # inputs = tf.layers.conv2d(inputs, config.wavenet_filters, 5,  padding = 'same', name = "G_4")
+#     # # inputs = tf.layers.conv2d(inputs, config.wavenet_filters, 5,  padding = 'same', name = "G_5")
 
-    # inputs = tf.layers.conv2d(inputs, 1, 5,  padding = 'same', name = "G_6")
+#     # inputs = tf.layers.conv2d(inputs, 1, 5,  padding = 'same', name = "G_6")
 
-    inputs = tf.layers.dense(inputs, config.lstm_size, name = "G_1")
-    inputs = tf.layers.dense(inputs, 60, name = "G_2")
-    inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 1)
+#     inputs = tf.layers.dense(inputs, config.lstm_size, name = "G_1")
+#     inputs = tf.layers.dense(inputs, 60, name = "G_2")
+#     inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 1)
 
-    inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 2, padding = 'same', name = "G_c1")
-    inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 4, padding = 'same', name = "G_c2")
-    inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 8, padding = 'same', name = "G_c3")
-    inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 16, padding = 'same', name = "G_c4")
-    inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 32, padding = 'same', name = "G_c5")
+#     inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 2, padding = 'same', name = "G_c1")
+#     inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 4, padding = 'same', name = "G_c2")
+#     inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 8, padding = 'same', name = "G_c3")
+#     inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 16, padding = 'same', name = "G_c4")
+#     inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 32, padding = 'same', name = "G_c5")
 
-    harm = tf.nn.tanh(tf.layers.dense(inputs, 60, name = "G_3"))
-    # import pdb;pdb.set_trace()
-    # inputs = tf.reshape(inputs,[config.batch_size, config.max_phr_len, config.input_features] )
-    return harm
+#     harm = tf.nn.tanh(tf.layers.dense(inputs, 60, name = "G_3"))
+#     # import pdb;pdb.set_trace()
+#     # inputs = tf.reshape(inputs,[config.batch_size, config.max_phr_len, config.input_features] )
+#     return harm
     # import pdb;pdb.set_trace()
 
 

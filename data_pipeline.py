@@ -33,7 +33,7 @@ def data_gen(mode = 'Train', sec_mode = 0):
 
     voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and x.startswith('nus')  and not x.startswith('nus_KENN') and not x == 'nus_MCUR_sing_04.hdf5' and not x == 'nus_MCUR_read_04.hdf5']
 
-    voc_list = [x for x in voc_list if x.split('_')[2] == 'sing']
+    # voc_list = [x for x in voc_list if x.split('_')[2] == 'sing']
 
     mix_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('nus_KENN') ]
 
