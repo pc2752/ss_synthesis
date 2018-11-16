@@ -40,7 +40,7 @@ def train(_):
         input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,66),name='input_placeholder')
         tf.summary.histogram('inputs', input_placeholder)
 
-        output_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,64),name='output_placeholder')
+        output_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,66),name='output_placeholder')
 
 
         f0_input_placeholder= tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 1),name='f0_input_placeholder')
@@ -261,7 +261,7 @@ def train(_):
 
                     f0 = f0.reshape([config.batch_size, config.max_phr_len, 1])
 
-                    feed_dict = {input_placeholder: feats, output_placeholder: feats[:,:,:-2], f0_input_placeholder: f0,phoneme_labels:phos, singer_labels: singer_ids}
+                    feed_dict = {input_placeholder: feats, output_placeholder: feats, f0_input_placeholder: f0,phoneme_labels:phos, singer_labels: singer_ids}
 
                     _, step_pho_loss, step_pho_acc = sess.run([pho_train_function, pho_loss, pho_acc], feed_dict= feed_dict)
                     _, _, step_re_loss,step_gen_loss, step_gen_acc = sess.run([re_train_function, gen_train_function, final_loss,G_loss_GAN, G_accuracy], feed_dict = feed_dict)
@@ -307,7 +307,7 @@ def train(_):
 
                     f0 = f0.reshape([config.batch_size, config.max_phr_len, 1])
 
-                    feed_dict = {input_placeholder: feats, output_placeholder: feats[:,:,:-2], f0_input_placeholder: f0,phoneme_labels:phos, singer_labels: singer_ids}
+                    feed_dict = {input_placeholder: feats, output_placeholder: feats, f0_input_placeholder: f0,phoneme_labels:phos, singer_labels: singer_ids}
 
                     step_pho_loss, step_pho_acc = sess.run([pho_loss, pho_acc], feed_dict= feed_dict)
                     step_gen_loss, step_gen_acc = sess.run([final_loss, G_accuracy], feed_dict = feed_dict)
@@ -417,13 +417,13 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
         with tf.variable_scope('Generator') as scope: 
-            voc_output_2 = modules.GAN_generator(voc_output_decoded, singer_onehot_labels)
+            voc_output_2 = modules.GAN_generator(voc_output_decoded, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
 
 
         with tf.variable_scope('Discriminator') as scope: 
-            D_real = modules.GAN_discriminator(output_placeholder, singer_onehot_labels)
+            D_real = modules.GAN_discriminator(output_placeholder, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
             scope.reuse_variables()
-            D_fake = modules.GAN_discriminator(voc_output_2, singer_onehot_labels)
+            D_fake = modules.GAN_discriminator(voc_output_2, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
 
 
         saver = tf.train.Saver(max_to_keep= config.max_models_to_keep)
@@ -535,9 +535,19 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
     
 
-        out_batches_feats = out_batches_feats*(max_feat[:-2]-min_feat[:-2])+min_feat[:-2]
+        out_batches_feats[:,:15] = out_batches_feats[:,:15]*(max(max_feat[:15])-min(min_feat[:15]))+min(min_feat[:15])
 
-        out_batches_feats_1 = out_batches_feats_1*(max_feat[:-2]-min_feat[:-2])+min_feat[:-2]
+        out_batches_feats[:,15:60] = out_batches_feats[:,15:60]*(max(max_feat[15:60])-min(min_feat[15:60]))+min(min_feat[15:60])
+
+        out_batches_feats[:,60:-2] = out_batches_feats[:,60:-2]*(max(max_feat[60:-2])-min(min_feat[60:-2]))+min(min_feat[60:-2])
+
+
+        out_batches_feats_1[:,:15] = out_batches_feats_1[:,:15]*(max(max_feat[:15])-min(min_feat[:15]))+min(min_feat[:15])
+
+        out_batches_feats_1[:,15:60] = out_batches_feats_1[:,15:60]*(max(max_feat[15:60])-min(min_feat[15:60]))+min(min_feat[15:60])
+
+        out_batches_feats_1[:,60:-2] = out_batches_feats_1[:,60:-2]*(max(max_feat[60:-2])-min(min_feat[60:-2]))+min(min_feat[60:-2])
+
 
         feats = feats *(max_feat-min_feat)+min_feat
 

@@ -110,13 +110,13 @@ batches_per_epoch_val = 10
 batches_per_epoch_val_m1 = 300
 batch_size = 30
 samples_per_file = 5
-max_phr_len = 64
+max_phr_len = 1024
 input_features = 513
 
 first_embed = 256
 
 
-lamda = 0.0001
+lamda = 0.001
 
 lstm_size = 64
 
@@ -124,7 +124,7 @@ output_features = 66
 
 highway_layers = 4
 highway_units = 128
-init_lr = 0.0001
+init_lr = 0.001
 num_conv_layers = 8
 conv_filters = 128
 conv_activation = tf.nn.relu

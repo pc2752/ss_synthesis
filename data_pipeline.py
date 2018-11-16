@@ -135,7 +135,21 @@ def data_gen(mode = 'Train', sec_mode = 0):
 
             f0_nor = (f0 - min_feat[-2])/(max_feat[-2]-min_feat[-2])
 
-            feats = (feats-min_feat)/(max_feat-min_feat)
+            feats[:,:15] = (feats[:,:15]-min(min_feat[:15]))/(max(max_feat[:15])-min(min_feat[:15]))
+
+            feats[:,15:60] = (feats[:,15:60]-min(min_feat[15:60]))/(max(max_feat[15:60])-min(min_feat[15:60]))
+
+            feats[:,60:64] = (feats[:,60:64]-min(min_feat[60:64]))/(max(max_feat[60:64])-min(min_feat[60:64]))
+
+            # plt.imshow(feats[:,:60].T, aspect = 'auto', origin = 'lower')
+
+            # plt.show()
+
+            # import pdb;pdb.set_trace()
+
+            
+
+            # feats = (feats-min_feat)/(max_feat-min_feat)
 
             feats[:,-2] = f0_nor
 
@@ -203,7 +217,7 @@ def data_gen(mode = 'Train', sec_mode = 0):
 
 
 def get_stats():
-    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('nus_KENN') ]
+    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and x.startswith('nus')  and not x.startswith('nus_KENN') ]
 
     back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and not x.startswith('._') and not x.startswith('mir') and not x.startswith('med')]
 
