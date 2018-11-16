@@ -79,13 +79,13 @@ def train(_):
 
 
         with tf.variable_scope('Generator') as scope: 
-            voc_output_2 = modules.GAN_generator(voc_output_decoded, singer_onehot_labels)
+            voc_output_2 = modules.GAN_generator(voc_output_decoded, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
 
 
         with tf.variable_scope('Discriminator') as scope: 
-            D_real = modules.GAN_discriminator(output_placeholder, singer_onehot_labels)
+            D_real = modules.GAN_discriminator(output_placeholder, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
             scope.reuse_variables()
-            D_fake = modules.GAN_discriminator(voc_output_2, singer_onehot_labels)
+            D_fake = modules.GAN_discriminator(voc_output_2, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
 
         # import pdb;pdb.set_trace()
 
@@ -405,11 +405,25 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
             voc_output = modules.final_net(singer_onehot_labels, f0_input_placeholder, phone_onehot_labels)
             voc_output_decoded = tf.nn.sigmoid(voc_output)
             
+            scope.reuse_variables()
+            
+            voc_output_gen = modules.final_net(singer_onehot_labels, f0_input_placeholder, pho_probs)
+            voc_output_decoded_gen = tf.nn.sigmoid(voc_output_gen)
+
+        # with tf.variable_scope('singer_Model') as scope:
+        #     singer_embedding, singer_logits = modules.singer_network(input_placeholder, prob)
+        #     singer_classes = tf.argmax(singer_logits, axis=-1)
+        #     singer_probs = tf.nn.softmax(singer_logits)
+
+
+        with tf.variable_scope('Generator') as scope: 
+            voc_output_2 = modules.GAN_generator(voc_output_decoded, singer_onehot_labels)
+
 
         with tf.variable_scope('Discriminator') as scope: 
             D_real = modules.GAN_discriminator(output_placeholder, singer_onehot_labels)
             scope.reuse_variables()
-            D_fake = modules.GAN_discriminator(voc_output, singer_onehot_labels)
+            D_fake = modules.GAN_discriminator(voc_output_2, singer_onehot_labels)
 
 
         saver = tf.train.Saver(max_to_keep= config.max_models_to_keep)
@@ -475,7 +489,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         out_batches_feats = []
 
 
-        out_batches_pho_target = []
+        out_batches_feats_1 = []
 
 
 
@@ -490,7 +504,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
 
-            output_feats = sess.run(voc_output_decoded, feed_dict = {input_placeholder: in_batch_feat,  f0_input_placeholder: in_batch_f0,phoneme_labels:in_batch_pho_target, singer_labels: np.ones(30)*10})
+            output_feats, output_feats_1 = sess.run([voc_output_decoded,voc_output_2], feed_dict = {input_placeholder: in_batch_feat,  f0_input_placeholder: in_batch_f0,phoneme_labels:in_batch_pho_target, singer_labels: np.ones(30)*10})
 
             # output_feats = (output_feats+1)/2.0
 
@@ -500,6 +514,8 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
                 # f0_input_placeholder: one_hotize(in_batch_f0_quant, max_index=256),pho_input_placeholder: one_hotize(in_batch_pho_target, max_index=41), output_placeholder: in_batch_voc_stft,singer_embedding_placeholder: s_embed})
 
             out_batches_feats.append(output_feats)
+
+            out_batches_feats_1.append(output_feats_1)
 
 
 
@@ -513,13 +529,21 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         # import pdb;pdb.set_trace()
         out_batches_feats = utils.overlapadd(out_batches_feats, nchunks_in) 
 
+        out_batches_feats_1 = np.array(out_batches_feats_1)
+        # import pdb;pdb.set_trace()
+        out_batches_feats_1 = utils.overlapadd(out_batches_feats_1, nchunks_in) 
+
     
 
         out_batches_feats = out_batches_feats*(max_feat[:-2]-min_feat[:-2])+min_feat[:-2]
 
+        out_batches_feats_1 = out_batches_feats_1*(max_feat[:-2]-min_feat[:-2])+min_feat[:-2]
+
         feats = feats *(max_feat-min_feat)+min_feat
 
         out_batches_feats= out_batches_feats[:len(feats)]
+
+        out_batches_feats_1= out_batches_feats_1[:len(feats)]
 
         haha = np.concatenate([out_batches_feats,feats[:,-2:]], axis = -1)
 
@@ -550,14 +574,16 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         plt.figure(1)
 
-        plt.subplot(211)
+        plt.subplot(311)
 
         plt.imshow(feats[:,:60].T,aspect='auto',origin='lower')
 
-        plt.subplot(212)
+        plt.subplot(312)
 
         plt.imshow(out_batches_feats[:,:60].T,aspect='auto',origin='lower')
+        plt.subplot(313)
 
+        plt.imshow(out_batches_feats_1[:,:60].T,aspect='auto',origin='lower')
 
         plt.figure(2)
 
