@@ -149,7 +149,7 @@ def data_gen(mode = 'Train', sec_mode = 0):
 
             
 
-            # feats = (feats-min_feat)/(max_feat-min_feat)
+            feats = (feats-min_feat)/(max_feat-min_feat)
 
             feats[:,-2] = f0_nor
 

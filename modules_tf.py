@@ -339,7 +339,7 @@ def final_net(singer_label, f0_notation, phones):
 
     output = tf.layers.conv2d(deconv8 , config.wavenet_filters, 1, strides=1,  padding = 'same', name = "F_o")
 
-    output = tf.layers.conv2d(output, 66, 1, strides=1,  padding = 'same', name = "F_o_2")
+    output = tf.layers.conv2d(output, 64, 1, strides=1,  padding = 'same', name = "F_o_2")
 
     output = tf.reshape(output, [config.batch_size, config.max_phr_len, -1])
 
@@ -484,7 +484,7 @@ def GAN_generator(inputs, singer_label, phones, f0_notation):
 
     output = tf.layers.conv2d(deconv8, config.wavenet_filters, 1, strides=1,  padding = 'same', name = "G_o")
 
-    output = tf.layers.conv2d(output, 66, 1, strides=1,  padding = 'same', name = "G_o_2")
+    output = tf.layers.conv2d(output, 64, 1, strides=1,  padding = 'same', name = "G_o_2")
 
     output = tf.reshape(output, [config.batch_size, config.max_phr_len, -1])
 
