@@ -67,10 +67,6 @@ def train(_):
             voc_output = modules.final_net(singer_onehot_labels, f0_input_placeholder, phone_onehot_labels)
             voc_output_decoded = tf.nn.sigmoid(voc_output)
             
-            scope.reuse_variables()
-            
-            voc_output_gen = modules.final_net(singer_onehot_labels, f0_input_placeholder, pho_probs)
-            voc_output_decoded_gen = tf.nn.sigmoid(voc_output_gen)
 
         # with tf.variable_scope('singer_Model') as scope:
         #     singer_embedding, singer_logits = modules.singer_network(input_placeholder, prob)
@@ -112,9 +108,9 @@ def train(_):
 
         pho_loss = tf.reduce_mean(weighted_losses)
 
-        reconstruct_loss_pho = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels = output_placeholder, logits=voc_output_decoded_gen)) * config.lamda 
+        # reconstruct_loss_pho = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels = output_placeholder, logits=voc_output_decoded_gen)) *0.00001
 
-        pho_loss+=reconstruct_loss_pho
+        # pho_loss+=reconstruct_loss_pho
 
         pho_acc = tf.metrics.accuracy(labels=phoneme_labels, predictions=pho_classes)
 
@@ -151,7 +147,7 @@ def train(_):
 
         gen_acc_summary = tf.summary.scalar('gen_acc', G_accuracy)
 
-        reconstruct_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_placeholder, logits=voc_output_decoded)) * config.lamda 
+        reconstruct_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_placeholder, logits=voc_output_decoded)) 
 
    
         final_loss = reconstruct_loss
@@ -180,13 +176,13 @@ def train(_):
 
         #Optimizers
 
-        pho_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
+        pho_optimizer = tf.train.AdamOptimizer()
 
-        re_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
+        re_optimizer = tf.train.AdamOptimizer()
 
-        dis_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
+        dis_optimizer = tf.train.AdamOptimizer()
 
-        gen_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
+        gen_optimizer = tf.train.AdamOptimizer()
         # GradientDescentOptimizer
 
 
@@ -265,10 +261,10 @@ def train(_):
 
                     _, step_pho_loss, step_pho_acc = sess.run([pho_train_function, pho_loss, pho_acc], feed_dict= feed_dict)
                     _, _, step_re_loss,step_gen_loss, step_gen_acc = sess.run([re_train_function, gen_train_function, final_loss,G_loss_GAN, G_accuracy], feed_dict = feed_dict)
-                    if step_gen_acc>0.3:
-                        _, step_dis_loss, step_dis_acc = sess.run([dis_train_function, D_loss, D_accuracy], feed_dict = feed_dict)
-                    else: 
-                        step_dis_loss, step_dis_acc = sess.run([D_loss, D_accuracy], feed_dict = feed_dict)
+                    # if step_gen_acc>0.3:
+                    _, step_dis_loss, step_dis_acc = sess.run([dis_train_function, D_loss, D_accuracy], feed_dict = feed_dict)
+                    # else: 
+                        # step_dis_loss, step_dis_acc = sess.run([D_loss, D_accuracy], feed_dict = feed_dict)
 
                     epoch_pho_loss+=step_pho_loss
                     epoch_re_loss+=step_re_loss
