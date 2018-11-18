@@ -56,6 +56,12 @@ def train(_):
         singer_labels = tf.placeholder(tf.float32, shape=(config.batch_size),name='singer_placeholder')
         singer_onehot_labels = tf.one_hot(indices=tf.cast(singer_labels, tf.int32), depth=12)
 
+        phoneme_labels_shuffled = tf.placeholder(tf.int32, shape=(config.batch_size,config.max_phr_len),name='phoneme_placeholder_s')
+        phone_onehot_labels_shuffled = tf.one_hot(indices=tf.cast(phoneme_labels_shuffled, tf.int32), depth=42)
+
+        singer_labels_shuffled = tf.placeholder(tf.float32, shape=(config.batch_size),name='singer_placeholder_s')
+        singer_onehot_labels_shuffled = tf.one_hot(indices=tf.cast(singer_labels_shuffled, tf.int32), depth=12)
+
 
         with tf.variable_scope('phone_Model') as scope:
             # regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
@@ -82,7 +88,8 @@ def train(_):
             D_real = modules.GAN_discriminator(output_placeholder, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
             scope.reuse_variables()
             D_fake = modules.GAN_discriminator(voc_output_2, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
-
+            scope.reuse_variables()
+            D_fake_real = modules.GAN_discriminator(output_placeholder, singer_onehot_labels_shuffled, phone_onehot_labels_shuffled, f0_input_placeholder)
         # import pdb;pdb.set_trace()
 
 
@@ -123,13 +130,20 @@ def train(_):
 
 
         D_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels = tf.ones_like(D_real) , logits=D_real+1e-12))
-        D_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels = tf.zeros_like(D_real) , logits=D_fake+1e-12))
+        D_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels = tf.zeros_like(D_fake) , logits=D_fake+1e-12))
+        D_loss_fake_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels = tf.zeros_like(D_fake_real) , logits=D_fake_real+1e-12))
 
         D_correct_pred = tf.equal(tf.round(tf.sigmoid(D_real)), tf.ones_like(D_real))
 
+        D_correct_pred_fake = tf.equal(tf.round(tf.sigmoid(D_fake_real)), tf.ones_like(D_fake_real))
+
         D_accuracy = tf.reduce_mean(tf.cast(D_correct_pred, tf.float32))
 
-        D_loss = D_loss_real+D_loss_fake
+        D_accuracy_fake = tf.reduce_mean(tf.cast(D_correct_pred_fake, tf.float32))
+
+
+
+        D_loss = D_loss_real+D_loss_fake+D_loss_fake_real
 
         dis_summary = tf.summary.scalar('dis_loss', D_loss)
 
@@ -137,7 +151,7 @@ def train(_):
 
         #Final net loss
 
-        G_loss_GAN = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels= tf.ones_like(D_real), logits=D_fake+1e-12)) 
+        G_loss_GAN = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels= tf.ones_like(D_real), logits=D_fake+1e-12)) + tf.reduce_sum(tf.abs(output_placeholder- voc_output_2)*(1-input_placeholder[:,:,-1:])) *0.0001
 
         G_correct_pred = tf.equal(tf.round(tf.sigmoid(D_fake)), tf.ones_like(D_real))
 
@@ -147,7 +161,7 @@ def train(_):
 
         gen_acc_summary = tf.summary.scalar('gen_acc', G_accuracy)
 
-        reconstruct_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_placeholder, logits=voc_output_decoded)) 
+        reconstruct_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_placeholder, logits=voc_output)) 
 
    
         final_loss = reconstruct_loss
@@ -176,13 +190,13 @@ def train(_):
 
         #Optimizers
 
-        pho_optimizer = tf.train.AdamOptimizer()
+        pho_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
-        re_optimizer = tf.train.AdamOptimizer()
+        re_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
-        dis_optimizer = tf.train.AdamOptimizer()
+        dis_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
-        gen_optimizer = tf.train.AdamOptimizer()
+        gen_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
         # GradientDescentOptimizer
 
 
@@ -240,6 +254,7 @@ def train(_):
             epoch_pho_acc = 0
             epoch_gen_acc = 0
             epoch_dis_acc = 0
+            epoch_dis_acc_fake = 0
 
             val_epoch_pho_loss = 0
             val_epoch_gen_loss = 0
@@ -248,21 +263,37 @@ def train(_):
             val_epoch_pho_acc = 0
             val_epoch_gen_acc = 0
             val_epoch_dis_acc = 0
+            val_epoch_dis_acc_fake = 0
 
             with tf.variable_scope('Training'):
 
                 for feats, f0, phos, singer_ids in data_generator:
 
+                    # plt.imshow(feats.reshape(-1,66).T,aspect = 'auto', origin ='lower')
+
+                    # plt.show()
+
+                    # import pdb;pdb.set_trace()
+
                     pho_one_hot = one_hotize(phos, max_index=42)
 
                     f0 = f0.reshape([config.batch_size, config.max_phr_len, 1])
 
-                    feed_dict = {input_placeholder: feats, output_placeholder: feats[:,:,:-2], f0_input_placeholder: f0,phoneme_labels:phos, singer_labels: singer_ids}
+                    sing_id_shu = np.copy(singer_ids)
+
+                    phos_shu = np.copy(phos)
+
+                    np.random.shuffle(sing_id_shu)
+
+                    np.random.shuffle(phos_shu)
+
+                    feed_dict = {input_placeholder: feats, output_placeholder: feats[:,:,:-2], f0_input_placeholder: f0,
+                    phoneme_labels:phos, singer_labels: singer_ids, phoneme_labels_shuffled:phos_shu, singer_labels_shuffled:sing_id_shu}
 
                     _, step_pho_loss, step_pho_acc = sess.run([pho_train_function, pho_loss, pho_acc], feed_dict= feed_dict)
                     _, _, step_re_loss,step_gen_loss, step_gen_acc = sess.run([re_train_function, gen_train_function, final_loss,G_loss_GAN, G_accuracy], feed_dict = feed_dict)
                     # if step_gen_acc>0.3:
-                    _, step_dis_loss, step_dis_acc = sess.run([dis_train_function, D_loss, D_accuracy], feed_dict = feed_dict)
+                    _, step_dis_loss, step_dis_acc, step_dis_acc_fake = sess.run([dis_train_function, D_loss, D_accuracy, D_accuracy_fake], feed_dict = feed_dict)
                     # else: 
                         # step_dis_loss, step_dis_acc = sess.run([D_loss, D_accuracy], feed_dict = feed_dict)
 
@@ -274,12 +305,9 @@ def train(_):
                     epoch_pho_acc+=step_pho_acc[0]
                     epoch_gen_acc+=step_gen_acc
                     epoch_dis_acc+=step_dis_acc
+                    epoch_dis_acc_fake+=step_dis_acc_fake
 
-                    summary_str = sess.run(summary, feed_dict=feed_dict)
-                # import pdb;pdb.set_trace()
-                    train_summary_writer.add_summary(summary_str, epoch)
-                # # summary_writer.add_summary(summary_str_val, epoch)
-                    train_summary_writer.flush()
+
 
                     utils.progress(batch_num,config.batches_per_epoch_train, suffix = 'training done')
                     batch_num+=1
@@ -288,11 +316,16 @@ def train(_):
                 epoch_re_loss = epoch_re_loss/config.batches_per_epoch_train
                 epoch_gen_loss = epoch_gen_loss/config.batches_per_epoch_train
                 epoch_dis_loss = epoch_dis_loss/config.batches_per_epoch_train
+                epoch_dis_acc_fake = epoch_dis_acc_fake/config.batches_per_epoch_train
 
                 epoch_pho_acc = epoch_pho_acc/config.batches_per_epoch_train
                 epoch_gen_acc = epoch_gen_acc/config.batches_per_epoch_train
                 epoch_dis_acc = epoch_dis_acc/config.batches_per_epoch_train
-
+                summary_str = sess.run(summary, feed_dict=feed_dict)
+            # import pdb;pdb.set_trace()
+                train_summary_writer.add_summary(summary_str, epoch)
+            # # summary_writer.add_summary(summary_str_val, epoch)
+                train_summary_writer.flush()
 
 
             with tf.variable_scope('Validation'):
@@ -303,11 +336,20 @@ def train(_):
 
                     f0 = f0.reshape([config.batch_size, config.max_phr_len, 1])
 
-                    feed_dict = {input_placeholder: feats, output_placeholder: feats[:,:,:-2], f0_input_placeholder: f0,phoneme_labels:phos, singer_labels: singer_ids}
+                    sing_id_shu = np.copy(singer_ids)
+
+                    phos_shu = np.copy(phos)
+
+                    np.random.shuffle(sing_id_shu)
+
+                    np.random.shuffle(phos_shu)
+
+                    feed_dict = {input_placeholder: feats, output_placeholder: feats[:,:,:-2], f0_input_placeholder: f0,
+                    phoneme_labels:phos, singer_labels: singer_ids, phoneme_labels_shuffled:phos_shu, singer_labels_shuffled:sing_id_shu}
 
                     step_pho_loss, step_pho_acc = sess.run([pho_loss, pho_acc], feed_dict= feed_dict)
                     step_gen_loss, step_gen_acc = sess.run([final_loss, G_accuracy], feed_dict = feed_dict)
-                    step_dis_loss, step_dis_acc = sess.run([D_loss, D_accuracy], feed_dict = feed_dict)
+                    step_dis_loss, step_dis_acc, step_dis_acc_fake = sess.run([D_loss, D_accuracy, D_accuracy_fake], feed_dict = feed_dict)
 
                     val_epoch_pho_loss+=step_pho_loss
                     val_epoch_gen_loss+=step_gen_loss
@@ -316,12 +358,9 @@ def train(_):
                     val_epoch_pho_acc+=step_pho_acc[0]
                     val_epoch_gen_acc+=step_gen_acc
                     val_epoch_dis_acc+=step_dis_acc
+                    val_epoch_dis_acc_fake+=step_dis_acc_fake
 
-                    summary_str = sess.run(summary, feed_dict=feed_dict)
-                # import pdb;pdb.set_trace()
-                    val_summary_writer.add_summary(summary_str, epoch)
-                # # summary_writer.add_summary(summary_str_val, epoch)
-                    val_summary_writer.flush()
+
 
                     utils.progress(batch_num,config.batches_per_epoch_train, suffix = 'training done')
                     batch_num+=1
@@ -333,7 +372,13 @@ def train(_):
                 val_epoch_pho_acc = val_epoch_pho_acc/config.batches_per_epoch_val
                 val_epoch_gen_acc = val_epoch_gen_acc/config.batches_per_epoch_val
                 val_epoch_dis_acc = val_epoch_dis_acc/config.batches_per_epoch_val
+                val_epoch_dis_acc_fake = val_epoch_dis_acc_fake/config.batches_per_epoch_val
 
+                summary_str = sess.run(summary, feed_dict=feed_dict)
+            # import pdb;pdb.set_trace()
+                val_summary_writer.add_summary(summary_str, epoch)
+            # # summary_writer.add_summary(summary_str_val, epoch)
+                val_summary_writer.flush()
             duration = time.time() - start_time
 
             # np.save('./ikala_eval/accuracies', f0_accs)
@@ -346,11 +391,13 @@ def train(_):
                 print('        : Gen Accuracy = %.10f ' % (epoch_gen_acc))
                 print('        : Dis Loss = %.10f ' % (epoch_dis_loss))
                 print('        : Dis Accuracy = %.10f ' % (epoch_dis_acc))
+                print('        : Dis Accuracy Fake = %.10f ' % (epoch_dis_acc_fake))
                 print('        : Val Phone Accuracy = %.10f ' % (val_epoch_pho_acc))
                 print('        : Val Gen Loss = %.10f ' % (val_epoch_gen_loss))
                 print('        : Val Gen Accuracy = %.10f ' % (val_epoch_gen_acc))
                 print('        : Val Dis Loss = %.10f ' % (val_epoch_dis_loss))
                 print('        : Val Dis Accuracy = %.10f ' % (val_epoch_dis_acc))
+                print('        : Val Dis Accuracy Fake = %.10f ' % (val_epoch_dis_acc_fake))
 
             if (epoch + 1) % config.save_every == 0 or (epoch + 1) == config.num_epochs:
                 # utils.list_to_file(val_f0_accs,'./ikala_eval/accuracies_'+str(epoch+1)+'.txt')
@@ -401,10 +448,10 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
             voc_output = modules.final_net(singer_onehot_labels, f0_input_placeholder, phone_onehot_labels)
             voc_output_decoded = tf.nn.sigmoid(voc_output)
             
-            scope.reuse_variables()
+            # scope.reuse_variables()
             
-            voc_output_gen = modules.final_net(singer_onehot_labels, f0_input_placeholder, pho_probs)
-            voc_output_decoded_gen = tf.nn.sigmoid(voc_output_gen)
+            # voc_output_gen = modules.final_net(singer_onehot_labels, f0_input_placeholder, pho_probs)
+            # voc_output_decoded_gen = tf.nn.sigmoid(voc_output_gen)
 
         # with tf.variable_scope('singer_Model') as scope:
         #     singer_embedding, singer_logits = modules.singer_network(input_placeholder, prob)
@@ -498,6 +545,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
 
+            # input_noisy = np.clip(in_batch_feat + np.random.rand(config.batch_size, config.max_phr_len,66)*np.clip(np.random.rand(1),0.0,config.noise_threshold), 0.0, 1.0)
 
 
             output_feats, output_feats_1 = sess.run([voc_output_decoded,voc_output_2], feed_dict = {input_placeholder: in_batch_feat,  f0_input_placeholder: in_batch_f0,phoneme_labels:in_batch_pho_target, singer_labels: np.ones(30)*10})
@@ -531,31 +579,39 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
     
 
-        out_batches_feats[:,:15] = out_batches_feats[:,:15]*(max(max_feat[:15])-min(min_feat[:15]))+min(min_feat[:15])
+        # out_batches_feats[:,:15] = out_batches_feats[:,:15]*(max(max_feat[:15])-min(min_feat[:15]))+min(min_feat[:15])
 
-        out_batches_feats[:,15:60] = out_batches_feats[:,15:60]*(max(max_feat[15:60])-min(min_feat[15:60]))+min(min_feat[15:60])
+        # out_batches_feats[:,15:60] = out_batches_feats[:,15:60]*(max(max_feat[15:60])-min(min_feat[15:60]))+min(min_feat[15:60])
 
-        out_batches_feats[:,60:] = out_batches_feats[:,60:]*(max(max_feat[60:])-min(min_feat[60:]))+min(min_feat[60:])
+        # out_batches_feats[:,60:] = out_batches_feats[:,60:]*(max(max_feat[60:])-min(min_feat[60:]))+min(min_feat[60:])
 
 
-        out_batches_feats_1[:,:15] = out_batches_feats_1[:,:15]*(max(max_feat[:15])-min(min_feat[:15]))+min(min_feat[:15])
+        # out_batches_feats_1[:,:15] = out_batches_feats_1[:,:15]*(max(max_feat[:15])-min(min_feat[:15]))+min(min_feat[:15])
 
-        out_batches_feats_1[:,15:60] = out_batches_feats_1[:,15:60]*(max(max_feat[15:60])-min(min_feat[15:60]))+min(min_feat[15:60])
+        # out_batches_feats_1[:,15:60] = out_batches_feats_1[:,15:60]*(max(max_feat[15:60])-min(min_feat[15:60]))+min(min_feat[15:60])
 
-        out_batches_feats_1[:,60:] = out_batches_feats_1[:,60:]*(max(max_feat[60:])-min(min_feat[60:]))+min(min_feat[60:])
+        # out_batches_feats_1[:,60:] = out_batches_feats_1[:,60:]*(max(max_feat[60:])-min(min_feat[60:]))+min(min_feat[60:])
 
 
         feats = feats *(max_feat-min_feat)+min_feat
+
+        out_batches_feats = out_batches_feats * (max_feat[:-2]-min_feat[:-2])+min_feat[:-2]
+
+        out_batches_feats_1 = out_batches_feats_1 * (max_feat[:-2]-min_feat[:-2])+min_feat[:-2]
 
         out_batches_feats= out_batches_feats[:len(feats)]
 
         out_batches_feats_1= out_batches_feats_1[:len(feats)]
 
-        haha = np.concatenate([out_batches_feats,feats[:,-2:]], axis = -1)
+        first_op = np.concatenate([out_batches_feats,feats[:,-2:]], axis = -1)
+
+        gan_op = np.concatenate([out_batches_feats_1,feats[:,-2:]], axis = -1)
 
 
         # import pdb;pdb.set_trace()
-        haha = np.ascontiguousarray(haha)
+        gan_op = np.ascontiguousarray(gan_op)
+
+        first_op = np.ascontiguousarray(first_op)
 
         # jaja = np.concatenate((out_batches_feats[:f0.shape[0]], f0_output[:f0.shape[0]].reshape(-1,1)) ,axis=-1)
 
@@ -611,7 +667,9 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         # plt.plot(f0_output)
 
         plt.show()
-        utils.feats_to_audio(haha[:5000,:],'VKOW_20_From_VKOW_20.wav')
+        utils.feats_to_audio(gan_op[:5000,:],'ganop.wav')
+
+        utils.feats_to_audio(first_op[:5000,:],'firstop.wav')
 
         import pdb;pdb.set_trace()
 

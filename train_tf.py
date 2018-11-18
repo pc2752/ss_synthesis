@@ -213,7 +213,10 @@ def train(_):
                     #     step_gen_loss_GAN = 0
 
 
-
+                    summary_str = sess.run(summary, feed_dict={input_placeholder: voc,target_placeholder: feat})
+                    train_summary_writer.add_summary(summary_str, epoch)
+                    # summary_writer.add_summary(summary_str_val, epoch)
+                    train_summary_writer.flush()
 
                     # _, step_loss_harm = sess.run([train_harm, harm_loss], feed_dict={input_placeholder: voc,target_placeholder: feat})
                     # _, step_loss_ap = sess.run([train_ap, ap_loss], feed_dict={input_placeholder: voc,target_placeholder: feat})
@@ -255,10 +258,7 @@ def train(_):
                     epoch_loss_discriminator_fake = epoch_loss_discriminator_fake/(config.batches_per_epoch_train *config.batch_size)
                 
 
-                summary_str = sess.run(summary, feed_dict={input_placeholder: voc,target_placeholder: feat})
-                train_summary_writer.add_summary(summary_str, epoch)
-                # summary_writer.add_summary(summary_str_val, epoch)
-                train_summary_writer.flush()
+
 
             with tf.variable_scope('Validation'):
 

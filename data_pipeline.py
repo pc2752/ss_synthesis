@@ -135,11 +135,11 @@ def data_gen(mode = 'Train', sec_mode = 0):
 
             f0_nor = (f0 - min_feat[-2])/(max_feat[-2]-min_feat[-2])
 
-            feats[:,:15] = (feats[:,:15]-min(min_feat[:15]))/(max(max_feat[:15])-min(min_feat[:15]))
+            # feats[:,:15] = (feats[:,:15]-min(min_feat[:15]))/(max(max_feat[:15])-min(min_feat[:15]))
 
-            feats[:,15:60] = (feats[:,15:60]-min(min_feat[15:60]))/(max(max_feat[15:60])-min(min_feat[15:60]))
+            # feats[:,15:60] = (feats[:,15:60]-min(min_feat[15:60]))/(max(max_feat[15:60])-min(min_feat[15:60]))
 
-            feats[:,60:64] = (feats[:,60:64]-min(min_feat[60:64]))/(max(max_feat[60:64])-min(min_feat[60:64]))
+            # feats[:,60:64] = (feats[:,60:64]-min(min_feat[60:64]))/(max(max_feat[60:64])-min(min_feat[60:64]))
 
             # plt.imshow(feats[:,:60].T, aspect = 'auto', origin = 'lower')
 
