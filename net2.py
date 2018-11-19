@@ -139,7 +139,7 @@ def train(_):
 
 
         D_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels = tf.ones_like(D_real) , logits=D_real+1e-12))
-        D_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels = tf.zeros_like(D_fake) , logits=D_fake+1e-12)) + tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels = tf.zeros_like(D_fake_2) , logits=D_fake_2+1e-12))
+        D_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels = tf.zeros_like(D_fake) , logits=D_fake+1e-12)) + tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels = tf.zeros_like(D_fake_2) , logits=D_fake_2+1e-12)) *0.5
         D_loss_fake_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels = tf.zeros_like(D_fake_real) , logits=D_fake_real+1e-12))
 
         D_correct_pred = tf.equal(tf.round(tf.sigmoid(D_real)), tf.ones_like(D_real))
@@ -670,18 +670,19 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         plt.figure(1)
 
-        plt.subplot(411)
+        ax1 = plt.subplot(411)
 
         plt.imshow(feats[:,:60].T,aspect='auto',origin='lower')
 
-        plt.subplot(412)
+        plt.subplot(412, sharex = ax1, sharey = ax1)
 
         plt.imshow(out_batches_feats[:,:60].T,aspect='auto',origin='lower')
-        plt.subplot(413)
+        
+        plt.subplot(413, sharex = ax1, sharey = ax1)
 
         plt.imshow(out_batches_feats_1[:,:60].T,aspect='auto',origin='lower')
 
-        plt.subplot(414)
+        plt.subplot(414, sharex = ax1, sharey = ax1)
 
         plt.imshow(out_batches_feats_gan[:,:60].T,aspect='auto',origin='lower')
 
