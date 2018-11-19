@@ -76,6 +76,7 @@ def train(_):
             voc_output_decoded = tf.nn.sigmoid(voc_output)
             scope.reuse_variables()
             voc_output_3 = modules.final_net(singer_onehot_labels, f0_input_placeholder, pho_probs)
+            voc_output_3_decoded = tf.nn.sigmoid(voc_output_3)
             
 
         # with tf.variable_scope('singer_Model') as scope:
@@ -86,12 +87,16 @@ def train(_):
 
         with tf.variable_scope('Generator') as scope: 
             voc_output_2 = modules.GAN_generator(voc_output_decoded, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder, rand_input_placeholder)
+            scope.reuse_variables()
+            voc_output_2_2 = modules.GAN_generator(voc_output_3_decoded, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder, rand_input_placeholder)
 
 
         with tf.variable_scope('Discriminator') as scope: 
             D_real = modules.GAN_discriminator((output_placeholder-0.5)*2, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
             scope.reuse_variables()
             D_fake = modules.GAN_discriminator(voc_output_2, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
+            scope.reuse_variables()
+            D_fake_2 = modules.GAN_discriminator(voc_output_2_2, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
             scope.reuse_variables()
             D_fake_real = modules.GAN_discriminator((output_placeholder-0.5)*2, singer_onehot_labels_shuffled, phone_onehot_labels_shuffled, f0_input_placeholder)
         # import pdb;pdb.set_trace()
@@ -134,7 +139,7 @@ def train(_):
 
 
         D_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels = tf.ones_like(D_real) , logits=D_real+1e-12))
-        D_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels = tf.zeros_like(D_fake) , logits=D_fake+1e-12))
+        D_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels = tf.zeros_like(D_fake) , logits=D_fake+1e-12)) + tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels = tf.zeros_like(D_fake_2) , logits=D_fake_2+1e-12))
         D_loss_fake_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels = tf.zeros_like(D_fake_real) , logits=D_fake_real+1e-12))
 
         D_correct_pred = tf.equal(tf.round(tf.sigmoid(D_real)), tf.ones_like(D_real))
@@ -157,12 +162,14 @@ def train(_):
 
         #Final net loss
 
-        G_loss_GAN = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels= tf.ones_like(D_real), logits=D_fake+1e-12)) 
+        G_loss_GAN = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels= tf.ones_like(D_real), logits=D_fake+1e-12)) + tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels= tf.ones_like(D_fake_2), logits=D_fake_2+1e-12))
         # + tf.reduce_sum(tf.abs(output_placeholder- (voc_output_2/2+0.5))*(1-input_placeholder[:,:,-1:])) *0.00001
 
         G_correct_pred = tf.equal(tf.round(tf.sigmoid(D_fake)), tf.ones_like(D_real))
 
-        G_accuracy = tf.reduce_mean(tf.cast(G_correct_pred, tf.float32))
+        G_correct_pred_2 = tf.equal(tf.round(tf.sigmoid(D_fake_2)), tf.ones_like(D_real))
+
+        G_accuracy = (tf.reduce_mean(tf.cast(G_correct_pred, tf.float32)) + tf.reduce_mean(tf.cast(G_correct_pred_2, tf.float32)))/2
 
         gen_summary = tf.summary.scalar('gen_loss', G_loss_GAN)
 
