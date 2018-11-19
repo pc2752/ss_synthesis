@@ -528,15 +528,15 @@ def GAN_generator(inputs, singer_label, phones, f0_notation, rand):
 
     conv12 =  tf.nn.relu(tf.layers.conv2d(tf.concat([conv11, rand], axis = -1), config.wavenet_filters, (3,1), strides=1,  padding = 'same', name = "G_12") + conv11 + singer_label)
 
-    deconv1 = tf.nn.relu(deconv2d(conv12, [config.batch_size, 8, 1, config.wavenet_filters], name = "G_dec1") +  conv7 + singer_label)
+    deconv1 = tf.concat([deconv2d(conv12, [config.batch_size, 8, 1, config.wavenet_filters], name = "G_dec1"),  conv7], axis = -1)
 
-    deconv2 = tf.nn.relu(deconv2d(deconv1, [config.batch_size, 16, 1, config.wavenet_filters], name = "g_dec2") + conv6+ singer_label)
+    deconv2 = tf.concat([deconv2d(deconv1, [config.batch_size, 16, 1, config.wavenet_filters], name = "g_dec2") , conv6] , axis = -1)
 
-    deconv3 = tf.nn.relu(deconv2d(deconv2, [config.batch_size, 32, 1, config.wavenet_filters], name = "G_dec3") + conv5+ singer_label)
+    deconv3 = tf.concat([deconv2d(deconv2, [config.batch_size, 32, 1, config.wavenet_filters], name = "G_dec3"),  conv5] , axis = -1)
 
-    deconv4 = tf.nn.relu(deconv2d(deconv3, [config.batch_size, 64, 1, config.wavenet_filters], name = "G_dec4") + conv1+ singer_label)
+    deconv4 = tf.concat([deconv2d(deconv3, [config.batch_size, 64, 1, config.wavenet_filters], name = "G_dec4"),  conv1], axis  = -1)
 
-    deconv5 = tf.nn.relu(deconv2d(deconv4, [config.batch_size, 128, 1, config.wavenet_filters], name = "G_dec5") +  inputs + singer_label)
+    deconv5 = tf.concat([deconv2d(deconv4, [config.batch_size, 128, 1, config.wavenet_filters], name = "G_dec5"), inputs] , axis = -1)
 
     output = tf.nn.relu(tf.layers.conv2d(deconv5 , config.wavenet_filters, 1, strides=1,  padding = 'same', name = "G_o"))
 
