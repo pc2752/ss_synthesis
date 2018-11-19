@@ -45,6 +45,8 @@ def train(_):
 
         f0_input_placeholder= tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 1),name='f0_input_placeholder')
 
+        rand_input_placeholder= tf.placeholder(tf.float32, shape=(config.batch_size,4, 1, 16),name='rand_input_placeholder')
+
 
         # pho_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 42),name='pho_input_placeholder')
 
@@ -72,6 +74,8 @@ def train(_):
         with tf.variable_scope('Final_Model') as scope:
             voc_output = modules.final_net(singer_onehot_labels, f0_input_placeholder, phone_onehot_labels)
             voc_output_decoded = tf.nn.sigmoid(voc_output)
+            scope.reuse_variables()
+            voc_output_3 = modules.final_net(singer_onehot_labels, f0_input_placeholder, pho_probs)
             
 
         # with tf.variable_scope('singer_Model') as scope:
@@ -81,15 +85,15 @@ def train(_):
 
 
         with tf.variable_scope('Generator') as scope: 
-            voc_output_2 = modules.GAN_generator(voc_output_decoded, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
+            voc_output_2 = modules.GAN_generator(voc_output_decoded, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder, rand_input_placeholder)
 
 
         with tf.variable_scope('Discriminator') as scope: 
-            D_real = modules.GAN_discriminator(output_placeholder, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
+            D_real = modules.GAN_discriminator((output_placeholder-0.5)*2, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
             scope.reuse_variables()
             D_fake = modules.GAN_discriminator(voc_output_2, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
             scope.reuse_variables()
-            D_fake_real = modules.GAN_discriminator(output_placeholder, singer_onehot_labels_shuffled, phone_onehot_labels_shuffled, f0_input_placeholder)
+            D_fake_real = modules.GAN_discriminator((output_placeholder-0.5)*2, singer_onehot_labels_shuffled, phone_onehot_labels_shuffled, f0_input_placeholder)
         # import pdb;pdb.set_trace()
 
 
@@ -149,9 +153,12 @@ def train(_):
 
         dis_acc_summary = tf.summary.scalar('dis_acc', D_accuracy)
 
+        dis_acc_fake_summary = tf.summary.scalar('dis_acc_fake', D_accuracy_fake)
+
         #Final net loss
 
-        G_loss_GAN = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels= tf.ones_like(D_real), logits=D_fake+1e-12)) + tf.reduce_sum(tf.abs(output_placeholder- voc_output_2)*(1-input_placeholder[:,:,-1:])) *0.0001
+        G_loss_GAN = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels= tf.ones_like(D_real), logits=D_fake+1e-12)) 
+        # + tf.reduce_sum(tf.abs(output_placeholder- (voc_output_2/2+0.5))*(1-input_placeholder[:,:,-1:])) *0.00001
 
         G_correct_pred = tf.equal(tf.round(tf.sigmoid(D_fake)), tf.ones_like(D_real))
 
@@ -161,7 +168,7 @@ def train(_):
 
         gen_acc_summary = tf.summary.scalar('gen_acc', G_accuracy)
 
-        reconstruct_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_placeholder, logits=voc_output)) 
+        reconstruct_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_placeholder, logits=voc_output)) +tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_placeholder, logits=voc_output_3))*0.5 
 
    
         final_loss = reconstruct_loss
@@ -287,7 +294,7 @@ def train(_):
 
                     np.random.shuffle(phos_shu)
 
-                    feed_dict = {input_placeholder: feats, output_placeholder: feats[:,:,:-2], f0_input_placeholder: f0,
+                    feed_dict = {input_placeholder: feats, output_placeholder: feats[:,:,:-2], f0_input_placeholder: f0, rand_input_placeholder: np.random.normal(-1., 1., size=[30,4,1,16]),
                     phoneme_labels:phos, singer_labels: singer_ids, phoneme_labels_shuffled:phos_shu, singer_labels_shuffled:sing_id_shu}
 
                     _, step_pho_loss, step_pho_acc = sess.run([pho_train_function, pho_loss, pho_acc], feed_dict= feed_dict)
@@ -344,7 +351,7 @@ def train(_):
 
                     np.random.shuffle(phos_shu)
 
-                    feed_dict = {input_placeholder: feats, output_placeholder: feats[:,:,:-2], f0_input_placeholder: f0,
+                    feed_dict = {input_placeholder: feats, output_placeholder: feats[:,:,:-2], f0_input_placeholder: f0,rand_input_placeholder: np.random.normal(0., 1., size=[30,4,1,16]),
                     phoneme_labels:phos, singer_labels: singer_ids, phoneme_labels_shuffled:phos_shu, singer_labels_shuffled:sing_id_shu}
 
                     step_pho_loss, step_pho_acc = sess.run([pho_loss, pho_acc], feed_dict= feed_dict)
@@ -426,7 +433,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         f0_input_placeholder= tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 1),name='f0_input_placeholder')
 
-
+        rand_input_placeholder= tf.placeholder(tf.float32, shape=(config.batch_size,4, 1, 16),name='rand_input_placeholder')
         # pho_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 42),name='pho_input_placeholder')
 
         prob = tf.placeholder_with_default(1.0, shape=())
@@ -447,6 +454,9 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         with tf.variable_scope('Final_Model') as scope:
             voc_output = modules.final_net(singer_onehot_labels, f0_input_placeholder, phone_onehot_labels)
             voc_output_decoded = tf.nn.sigmoid(voc_output)
+            scope.reuse_variables()
+            voc_output_3 = modules.final_net(singer_onehot_labels, f0_input_placeholder, pho_probs)
+            voc_output_3_decoded = tf.nn.sigmoid(voc_output_3)
             
             # scope.reuse_variables()
             
@@ -460,7 +470,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
         with tf.variable_scope('Generator') as scope: 
-            voc_output_2 = modules.GAN_generator(voc_output_decoded, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
+            voc_output_2 = modules.GAN_generator(voc_output_decoded, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder, rand_input_placeholder)
 
 
         with tf.variable_scope('Discriminator') as scope: 
@@ -534,6 +544,8 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         out_batches_feats_1 = []
 
+        out_batches_feats_gan = []
+
 
 
 
@@ -548,7 +560,8 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
             # input_noisy = np.clip(in_batch_feat + np.random.rand(config.batch_size, config.max_phr_len,66)*np.clip(np.random.rand(1),0.0,config.noise_threshold), 0.0, 1.0)
 
 
-            output_feats, output_feats_1 = sess.run([voc_output_decoded,voc_output_2], feed_dict = {input_placeholder: in_batch_feat,  f0_input_placeholder: in_batch_f0,phoneme_labels:in_batch_pho_target, singer_labels: np.ones(30)*10})
+            output_feats, output_feats_1, output_feats_gan = sess.run([voc_output_decoded,voc_output_3_decoded,voc_output_2], feed_dict = {input_placeholder: in_batch_feat,
+              f0_input_placeholder: in_batch_f0,phoneme_labels:in_batch_pho_target, singer_labels: np.ones(30)*2, rand_input_placeholder: np.random.normal(size=[30,4,1,16])})
 
             # output_feats = (output_feats+1)/2.0
 
@@ -560,6 +573,8 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
             out_batches_feats.append(output_feats)
 
             out_batches_feats_1.append(output_feats_1)
+
+            out_batches_feats_gan.append(output_feats_gan /2 +0.5)
 
 
 
@@ -576,6 +591,10 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         out_batches_feats_1 = np.array(out_batches_feats_1)
         # import pdb;pdb.set_trace()
         out_batches_feats_1 = utils.overlapadd(out_batches_feats_1, nchunks_in) 
+
+        out_batches_feats_gan = np.array(out_batches_feats_gan)
+        # import pdb;pdb.set_trace()
+        out_batches_feats_gan = utils.overlapadd(out_batches_feats_gan, nchunks_in) 
 
     
 
@@ -599,17 +618,25 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         out_batches_feats_1 = out_batches_feats_1 * (max_feat[:-2]-min_feat[:-2])+min_feat[:-2]
 
+        out_batches_feats_gan = out_batches_feats_gan * (max_feat[:-2]-min_feat[:-2])+min_feat[:-2]
+
         out_batches_feats= out_batches_feats[:len(feats)]
 
         out_batches_feats_1= out_batches_feats_1[:len(feats)]
 
+        out_batches_feats_gan= out_batches_feats_gan[:len(feats)]
+
         first_op = np.concatenate([out_batches_feats,feats[:,-2:]], axis = -1)
 
-        gan_op = np.concatenate([out_batches_feats_1,feats[:,-2:]], axis = -1)
+        pho_op = np.concatenate([out_batches_feats_1,feats[:,-2:]], axis = -1)
+
+        gan_op = np.concatenate([out_batches_feats_gan,feats[:,-2:]], axis = -1)
 
 
         # import pdb;pdb.set_trace()
         gan_op = np.ascontiguousarray(gan_op)
+
+        pho_op = np.ascontiguousarray(pho_op)
 
         first_op = np.ascontiguousarray(first_op)
 
@@ -636,16 +663,20 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         plt.figure(1)
 
-        plt.subplot(311)
+        plt.subplot(411)
 
         plt.imshow(feats[:,:60].T,aspect='auto',origin='lower')
 
-        plt.subplot(312)
+        plt.subplot(412)
 
         plt.imshow(out_batches_feats[:,:60].T,aspect='auto',origin='lower')
-        plt.subplot(313)
+        plt.subplot(413)
 
         plt.imshow(out_batches_feats_1[:,:60].T,aspect='auto',origin='lower')
+
+        plt.subplot(414)
+
+        plt.imshow(out_batches_feats_gan[:,:60].T,aspect='auto',origin='lower')
 
         plt.figure(2)
 
@@ -668,6 +699,8 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         plt.show()
         utils.feats_to_audio(gan_op[:5000,:],'ganop.wav')
+
+        utils.feats_to_audio(pho_op[:5000,:],'phoop.wav')
 
         utils.feats_to_audio(first_op[:5000,:],'firstop.wav')
 
