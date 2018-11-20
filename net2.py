@@ -47,7 +47,7 @@ def train(_):
 
         f0_input_placeholder= tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 1),name='f0_input_placeholder')
 
-        rand_input_placeholder= tf.placeholder(tf.float32, shape=(config.batch_size,4, 1, 16),name='rand_input_placeholder')
+        rand_input_placeholder= tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 4),name='rand_input_placeholder')
 
 
         # pho_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 42),name='pho_input_placeholder')
@@ -329,12 +329,12 @@ def train(_):
                     
 
                     for critic_itr in range(n_critic):
-                        feed_dict = {input_placeholder: feats, output_placeholder: feats[:,:,:-2], f0_input_placeholder: f0, rand_input_placeholder: np.random.normal(-1.0, 1.0, size=[30,4,1,16]),
+                        feed_dict = {input_placeholder: feats, output_placeholder: feats[:,:,:-2], f0_input_placeholder: f0, rand_input_placeholder: np.random.normal(-1.0, 1.0, size=[30,config.max_phr_len,4]),
                                 phoneme_labels:phos, singer_labels: singer_ids, phoneme_labels_shuffled:phos_shu, singer_labels_shuffled:sing_id_shu}
                         sess.run(dis_train_function, feed_dict = feed_dict)
                         sess.run(clip_discriminator_var_op, feed_dict = feed_dict)
 
-                    feed_dict = {input_placeholder: feats, output_placeholder: feats[:,:,:-2], f0_input_placeholder: f0, rand_input_placeholder: np.random.normal(-1.0, 1.0, size=[30,4,1,16]),
+                    feed_dict = {input_placeholder: feats, output_placeholder: feats[:,:,:-2], f0_input_placeholder: f0, rand_input_placeholder: np.random.normal(-1.0, 1.0, size=[30,config.max_phr_len,4]),
                     phoneme_labels:phos, singer_labels: singer_ids, phoneme_labels_shuffled:phos_shu, singer_labels_shuffled:sing_id_shu}
 
                     _, _, step_re_loss,step_gen_loss, step_gen_acc = sess.run([re_train_function, gen_train_function, final_loss,G_loss_GAN, G_accuracy], feed_dict = feed_dict)
@@ -391,7 +391,7 @@ def train(_):
 
                     np.random.shuffle(phos_shu)
 
-                    feed_dict = {input_placeholder: feats, output_placeholder: feats[:,:,:-2], f0_input_placeholder: f0,rand_input_placeholder: np.random.normal(-1.0,1.0,size=[30,4,1,16]),
+                    feed_dict = {input_placeholder: feats, output_placeholder: feats[:,:,:-2], f0_input_placeholder: f0,rand_input_placeholder: np.random.normal(-1.0,1.0,size=[30,config.max_phr_len,4]),
                     phoneme_labels:phos, singer_labels: singer_ids, phoneme_labels_shuffled:phos_shu, singer_labels_shuffled:sing_id_shu}
 
                     step_pho_loss, step_pho_acc = sess.run([pho_loss, pho_acc], feed_dict= feed_dict)
@@ -473,7 +473,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
         f0_input_placeholder= tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 1),name='f0_input_placeholder')
 
-        rand_input_placeholder= tf.placeholder(tf.float32, shape=(config.batch_size,4, 1, 16),name='rand_input_placeholder')
+        rand_input_placeholder= tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 4),name='rand_input_placeholder')
         # pho_input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 42),name='pho_input_placeholder')
 
         prob = tf.placeholder_with_default(1.0, shape=())
@@ -601,7 +601,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
             output_feats, output_feats_1, output_feats_gan = sess.run([voc_output_decoded,voc_output_3_decoded,voc_output_2], feed_dict = {input_placeholder: in_batch_feat,
-              f0_input_placeholder: in_batch_f0,phoneme_labels:in_batch_pho_target, singer_labels: np.ones(30)*2, rand_input_placeholder: np.random.normal(-1.0,1.0,size=[30,4,1,16])})
+              f0_input_placeholder: in_batch_f0,phoneme_labels:in_batch_pho_target, singer_labels: np.ones(30)*2, rand_input_placeholder: np.random.normal(-1.0,1.0,size=[30,config.max_phr_len,4])})
 
             # output_feats = (output_feats+1)/2.0
 
@@ -739,11 +739,11 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         # plt.plot(f0_output)
 
         plt.show()
-        utils.feats_to_audio(gan_op[:5000,:],'ganop.wav')
+        # utils.feats_to_audio(gan_op[:5000,:],'ganop.wav')
 
-        utils.feats_to_audio(pho_op[:5000,:],'phoop.wav')
+        # utils.feats_to_audio(pho_op[:5000,:],'phoop.wav')
 
-        utils.feats_to_audio(first_op[:5000,:],'firstop.wav')
+        # utils.feats_to_audio(first_op[:5000,:],'firstop.wav')
 
         import pdb;pdb.set_trace()
 
