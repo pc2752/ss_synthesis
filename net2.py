@@ -603,7 +603,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
             output_feats, output_feats_1, output_feats_gan = sess.run([voc_output_decoded,voc_output_3_decoded,voc_output_2], feed_dict = {input_placeholder: in_batch_feat,
-              f0_input_placeholder: in_batch_f0,phoneme_labels:in_batch_pho_target, singer_labels: np.ones(30)*3, rand_input_placeholder: np.random.normal(-1.0,1.0,size=[30,config.max_phr_len,4])})
+              f0_input_placeholder: in_batch_f0,phoneme_labels:in_batch_pho_target, singer_labels: np.ones(30)*10, rand_input_placeholder: np.random.normal(-1.0,1.0,size=[30,config.max_phr_len,4])})
 
             # output_feats = (output_feats+1)/2.0
 

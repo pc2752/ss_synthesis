@@ -582,7 +582,9 @@ def GAN_generator(inputs, singer_label, phones, f0_notation, rand):
 
     # output = tf.nn.relu(tf.layers.conv2d(deconv5 , config.wavenet_filters, 1, strides=1,  padding = 'same', name = "G_o", kernel_initializer=tf.random_normal_initializer(stddev=0.02)))
 
-    output = tf.layers.conv2d(deconv5, 64, 1, strides=1,  padding = 'same', name = "G_o_2", activation = tf.nn.tanh)
+    output = tf.layers.conv2d(deconv5, 64*128, (128,1), strides=1,  padding = 'valid', name = "G_o_2", activation = tf.nn.tanh)
+
+    # import pdb;pdb.set_trace()
 
     output = tf.reshape(output, [config.batch_size, config.max_phr_len, -1])
 
