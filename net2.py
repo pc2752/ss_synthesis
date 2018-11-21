@@ -275,7 +275,10 @@ def train(_):
         
         for epoch in xrange(start_epoch, config.num_epochs):
 
-            n_critic = 5
+            if epoch<25 or epoch%100 == 0:
+                n_critic = 25
+            else:
+                n_critic = 5
 
             data_generator = data_gen(sec_mode = 0)
             start_time = time.time()
@@ -515,9 +518,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
         with tf.variable_scope('Discriminator') as scope: 
-            D_real = modules.GAN_discriminator(output_placeholder, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
-            scope.reuse_variables()
-            D_fake = modules.GAN_discriminator(voc_output_2, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
+            D_real = modules.GAN_discriminator((output_placeholder-0.5)*2, voc_output_decoded)
 
 
         saver = tf.train.Saver(max_to_keep= config.max_models_to_keep)
