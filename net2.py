@@ -94,9 +94,9 @@ def train(_):
 
 
         with tf.variable_scope('Discriminator') as scope: 
-            D_real = modules.GAN_discriminator((output_placeholder-0.5)*2, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
+            D_real = modules.GAN_discriminator((output_placeholder-0.5)*2, voc_output_decoded)
             scope.reuse_variables()
-            D_fake = modules.GAN_discriminator(voc_output_2, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
+            D_fake = modules.GAN_discriminator(voc_output_2, voc_output_decoded)
             # scope.reuse_variables()
             # epsilon = tf.random_uniform([], 0.0, 1.0)
             # x_hat = (output_placeholder-0.5)*2*epsilon + (1-epsilon)* voc_output_2
@@ -104,7 +104,7 @@ def train(_):
             # scope.reuse_variables()
             # D_fake_2 = modules.GAN_discriminator(voc_output_2_2, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
             scope.reuse_variables()
-            D_fake_real = modules.GAN_discriminator((output_placeholder-0.5)*2, singer_onehot_labels_shuffled, phone_onehot_labels_shuffled, f0_input_placeholder)
+            D_fake_real = modules.GAN_discriminator((voc_output_decoded-0.5)*2, voc_output_decoded)
         # import pdb;pdb.set_trace()
 
 
@@ -128,7 +128,7 @@ def train(_):
 
         weighted_losses = unweighted_losses * pho_weights
 
-        pho_loss = tf.reduce_mean(weighted_losses)
+        pho_loss = tf.reduce_mean(weighted_losses) +tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_placeholder, logits=voc_output_3))*0.001 
 
         # reconstruct_loss_pho = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels = output_placeholder, logits=voc_output_decoded_gen)) *0.00001
 
@@ -170,7 +170,7 @@ def train(_):
 
 
 
-        D_loss = tf.reduce_mean(D_real +1e-12)-tf.reduce_mean(D_fake+1e-12)
+        D_loss = tf.reduce_mean(D_real +1e-12)-tf.reduce_mean(D_fake+1e-12)-tf.reduce_mean(D_fake_real+1e-12)*0.001
 
         dis_summary = tf.summary.scalar('dis_loss', D_loss)
 
@@ -183,7 +183,8 @@ def train(_):
         # G_loss_GAN = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels= tf.ones_like(D_real), logits=D_fake+1e-12)) + tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels= tf.ones_like(D_fake_2), logits=D_fake_2+1e-12))
         # + tf.reduce_sum(tf.abs(output_placeholder- (voc_output_2/2+0.5))*(1-input_placeholder[:,:,-1:])) *0.00001
 
-        G_loss_GAN = tf.reduce_mean(D_fake+1e-12) + tf.reduce_sum(tf.abs(output_placeholder- (voc_output_2/2+0.5))) *0.0001
+        G_loss_GAN = tf.reduce_mean(D_fake+1e-12) 
+        # + tf.reduce_sum(tf.abs(output_placeholder- (voc_output_2/2+0.5))) *0.0001
 
         G_correct_pred = tf.equal(tf.round(tf.sigmoid(D_fake)), tf.ones_like(D_real))
 
@@ -601,7 +602,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
             output_feats, output_feats_1, output_feats_gan = sess.run([voc_output_decoded,voc_output_3_decoded,voc_output_2], feed_dict = {input_placeholder: in_batch_feat,
-              f0_input_placeholder: in_batch_f0,phoneme_labels:in_batch_pho_target, singer_labels: np.ones(30)*2, rand_input_placeholder: np.random.normal(-1.0,1.0,size=[30,config.max_phr_len,4])})
+              f0_input_placeholder: in_batch_f0,phoneme_labels:in_batch_pho_target, singer_labels: np.ones(30)*3, rand_input_placeholder: np.random.normal(-1.0,1.0,size=[30,config.max_phr_len,4])})
 
             # output_feats = (output_feats+1)/2.0
 
@@ -739,11 +740,13 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         # plt.plot(f0_output)
 
         plt.show()
-        # utils.feats_to_audio(gan_op[:5000,:],'ganop.wav')
 
-        # utils.feats_to_audio(pho_op[:5000,:],'phoop.wav')
+        import pdb;pdb.set_trace()
+        utils.feats_to_audio(gan_op[:5000,:],'ganop.wav')
 
-        # utils.feats_to_audio(first_op[:5000,:],'firstop.wav')
+        utils.feats_to_audio(pho_op[:5000,:],'phoop.wav')
+
+        utils.feats_to_audio(first_op[:5000,:],'firstop.wav')
 
         import pdb;pdb.set_trace()
 

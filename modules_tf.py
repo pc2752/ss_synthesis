@@ -484,7 +484,7 @@ def phone_network(inputs):
 #     return output
 
 
-def GAN_discriminator(inputs, singer_label, phones, f0_notation):
+def GAN_discriminator(inputs, conds):
     # singer_label = tf.reshape(tf.layers.dense(singer_label, config.wavenet_filters, name = "d_condi"), [config.batch_size,1,1,-1], name = "d_condi_reshape")
     # singer_label = tf.tile(tf.reshape(singer_label,[config.batch_size,1,-1]),[1,config.max_phr_len,1])
 
@@ -492,7 +492,7 @@ def GAN_discriminator(inputs, singer_label, phones, f0_notation):
 
     # f0_notation = tf.layers.dense(f0_notation, config.wavenet_filters, name = "D_f0", kernel_initializer=tf.random_normal_initializer(stddev=0.02))
 
-    # inputs = tf.concat([inputs, phones, f0_notation, singer_label], axis = -1)
+    inputs = tf.concat([inputs, conds], axis = -1)
 
     # inputs = tf.layers.dense(inputs, config.wavenet_filters, name = "D_in", kernel_initializer=tf.random_normal_initializer(stddev=0.02))
 
