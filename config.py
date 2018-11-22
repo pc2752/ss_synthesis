@@ -15,7 +15,7 @@ voice_dir = './voice/'
 backing_dir = './backing/'
 # log_dir = './log_Wassertien1_noL1_Nearest/'
 # log_dir = './log_Wassertien1_noL1_TBC/'
-log_dir = './log_Wassertien1_noL1_pix2pix/'
+log_dir = './log_GAN_wasserstein_patch_L1/'
 
 # log_dir = './log/'
 log_dir_m1 = './log_m1_old/'
