@@ -498,29 +498,42 @@ def GAN_discriminator(inputs, conds):
 
     # import pdb;pdb.set_trace()
 
-    first_conv = tf.layers.conv1d(inputs, config.wavenet_filters, 1, name = "D_0")
-    skips = []
-    skip, residual = nr_wavenet_block(first_conv, dilation_rate=1, name = "nr_wavenet_block_0")
-    output = skip
-    for i in range(config.wavenet_layers):
-        skip, residual = nr_wavenet_block(residual, dilation_rate=2**(i+1), name = "nr_wavenet_block_"+str(i+1))
-        skips.append(skip)
-    for skip in skips:
-        output+=skip
-    output = output+first_conv
+    inputs = tf.reshape(inputs, [config.batch_size, config.max_phr_len, 1, -1])
 
-    inputs = tf.reshape(output, [config.batch_size, config.max_phr_len, 1, -1])
+    conv1 =  selu(tf.layers.conv2d(inputs, 32, (3,1), strides=(2,1),  padding = 'same', name = "D_1", kernel_initializer=tf.random_normal_initializer(stddev=0.02)))
+    # import pdb;pdb.set_trace()
 
-    conv1 =  selu(tf.layers.conv2d(inputs, 256, (5,1), strides=(3,1),  padding = 'same', name = "D_1", kernel_initializer=tf.random_normal_initializer(stddev=0.02)))
+    # conv2 =  tf.nn.relu(tf.layers.conv2d(conv1, config.wavenet_filters, (4,1), strides=(2,1),  padding = 'same', name = "F_2"))
 
-    conv2 =  selu(tf.layers.conv2d(conv1, 128, (5,1), strides=(2,1),  padding = 'same', name = "D_2", kernel_initializer=tf.random_normal_initializer(stddev=0.02)))
+    # conv3 =  tf.nn.relu(tf.layers.conv2d(conv2, config.wavenet_filters, (4,1), strides=(2,1),  padding = 'same', name = "F_3") )
 
-    conv3 =  selu(tf.layers.conv2d(conv2, 64, (3,1), strides=(2,1),  padding = 'same', name = "D_3", kernel_initializer=tf.random_normal_initializer(stddev=0.02)))
-    conv4 =  selu(tf.layers.conv2d(conv3, 1, (1,1), strides=(1,1),  padding = 'same', name = "D_4", kernel_initializer=tf.random_normal_initializer(stddev=0.02)))
+    # conv4 =  tf.nn.relu(tf.layers.conv2d(conv1, config.wavenet_filters, (4,1), strides=(2,1),  padding = 'same', name = "F_4"))
+
+    conv5 =  selu(tf.layers.conv2d(conv1, 64, (3,1), strides=(2,1),  padding = 'same', name = "D_5", kernel_initializer=tf.random_normal_initializer(stddev=0.02)))
+    # import pdb;pdb.set_trace()
+
+    conv6 =  selu(tf.layers.conv2d(conv5, 128, (3,1), strides=(2,1),  padding = 'same', name = "D_6", kernel_initializer=tf.random_normal_initializer(stddev=0.02)))
+
+    conv7 = selu(tf.layers.conv2d(conv6, 256, (3,1), strides=(2,1),  padding = 'same', name = "D_7", kernel_initializer=tf.random_normal_initializer(stddev=0.02)))
+
+    conv8 = selu(tf.layers.conv2d(conv7, 512, (3,1), strides=(2,1),  padding = 'same', name = "D_8", kernel_initializer=tf.random_normal_initializer(stddev=0.02)))
+
+    # conv9 =  selu(tf.layers.conv2d(conv8, 512, (3,1), strides=1,  padding = 'same', name = "D_9", kernel_initializer=tf.random_normal_initializer(stddev=0.02)) + conv8)
+
+    # conv10 =  selu(tf.layers.conv2d(conv9, 512, (3,1), strides=1,  padding = 'same', name = "D_10", kernel_initializer=tf.random_normal_initializer(stddev=0.02)) + conv9)
+
+    # conv11 =  selu(tf.layers.conv2d(conv10, 512, (3,1), strides=1,  padding = 'same', name = "D_11", kernel_initializer=tf.random_normal_initializer(stddev=0.02)) + conv10)
+
+    # conv12 =  selu(tf.layers.conv2d(conv11, 512, (3,1), strides=1,  padding = 'same', name = "D_12", kernel_initializer=tf.random_normal_initializer(stddev=0.02)) + conv11)
+
+    ops = tf.reshape(conv8, [config.batch_size, -1])
+
+
+    ops = tf.layers.dense(ops, 1, name = "d_f_1", kernel_initializer=tf.random_normal_initializer(stddev=0.02))
 
     # output = tf.layers.dense(ops, 1, name = "d_f_2", kernel_initializer=tf.random_normal_initializer(stddev=0.02))
 
-    return conv4
+    return ops
 
 
 
