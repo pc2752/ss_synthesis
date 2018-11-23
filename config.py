@@ -14,7 +14,7 @@ wav_dir_vctk_lab = '../datasets/VCTK/VCTK_files/VCTK-Corpus/forPritish/'
 voice_dir = './voice/'
 backing_dir = './backing/'
 # log_dir = './log_Wassertien1_noL1_Nearest/'
-log_dir = './log_Wassertien1_noL1_TBC/'
+log_dir = './log_Wassertien1_noL1_longrecfield/'
 # log_dir = './log_Wassertien1_noL1_pix2pix/'
 
 # log_dir = './log/'
