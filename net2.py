@@ -171,7 +171,8 @@ def train(_):
 
 
 
-        D_loss = tf.reduce_mean(D_real +1e-12)-tf.reduce_mean(D_fake+1e-12)-tf.reduce_mean(D_fake_real+1e-12)*0.001
+        D_loss = tf.reduce_mean(D_real +1e-12)-tf.reduce_mean(D_fake+1e-12)
+        # -tf.reduce_mean(D_fake_real+1e-12)*0.001
 
         dis_summary = tf.summary.scalar('dis_loss', D_loss)
 
