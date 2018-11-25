@@ -14,7 +14,7 @@ wav_dir_vctk_lab = '../datasets/VCTK/VCTK_files/VCTK-Corpus/forPritish/'
 voice_dir = './voice/'
 backing_dir = './backing/'
 # log_dir = './log_Wassertien1_noL1_Nearest/'
-log_dir = './log_Wassertien1_noL1_mixfield/'
+log_dir = './log_Wassertien1_noL1_imagegan/'
 # log_dir = './log_Wassertien1_noL1_pix2pix/'
 
 # log_dir = './log/'
@@ -140,7 +140,7 @@ hoptime = 5.80498866
 
 noise = 0.05
 
-wavenet_layers = 6
+wavenet_layers = 7
 rec_field = 2**wavenet_layers
 wavenet_filters = 64
 
