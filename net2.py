@@ -88,15 +88,15 @@ def train(_):
 
 
         with tf.variable_scope('Generator') as scope: 
-            voc_output_2 = modules.GAN_generator(voc_output_decoded, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder, rand_input_placeholder)
+            voc_output_2 = modules.GAN_generator(singer_onehot_labels, phone_onehot_labels, f0_input_placeholder, rand_input_placeholder)
             # scope.reuse_variables()
             # voc_output_2_2 = modules.GAN_generator(voc_output_3_decoded, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder, rand_input_placeholder)
 
 
         with tf.variable_scope('Discriminator') as scope: 
-            D_real = modules.GAN_discriminator((output_placeholder-0.5)*2, voc_output_decoded)
+            D_real = modules.GAN_discriminator((output_placeholder-0.5)*2, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
             scope.reuse_variables()
-            D_fake = modules.GAN_discriminator(voc_output_2, voc_output_decoded)
+            D_fake = modules.GAN_discriminator(voc_output_2,singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
             # scope.reuse_variables()
             # epsilon = tf.random_uniform([], 0.0, 1.0)
             # x_hat = (output_placeholder-0.5)*2*epsilon + (1-epsilon)* voc_output_2
@@ -104,7 +104,7 @@ def train(_):
             # scope.reuse_variables()
             # D_fake_2 = modules.GAN_discriminator(voc_output_2_2, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
             scope.reuse_variables()
-            D_fake_real = modules.GAN_discriminator((voc_output_decoded-0.5)*2, voc_output_decoded)
+            D_fake_real = modules.GAN_discriminator((voc_output_decoded-0.5)*2,singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
         # import pdb;pdb.set_trace()
 
 
@@ -185,7 +185,8 @@ def train(_):
         # G_loss_GAN = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels= tf.ones_like(D_real), logits=D_fake+1e-12)) + tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels= tf.ones_like(D_fake_2), logits=D_fake_2+1e-12))
         # + tf.reduce_sum(tf.abs(output_placeholder- (voc_output_2/2+0.5))*(1-input_placeholder[:,:,-1:])) *0.00001
 
-        G_loss_GAN = tf.reduce_mean(D_fake+1e-12) + tf.reduce_sum(tf.abs(output_placeholder- (voc_output_2/2+0.5))) *0.0001
+        G_loss_GAN = tf.reduce_mean(D_fake+1e-12) 
+        # + tf.reduce_sum(tf.abs(output_placeholder- (voc_output_2/2+0.5))) *0.0001
 
         G_correct_pred = tf.equal(tf.round(tf.sigmoid(D_fake)), tf.ones_like(D_real))
 
@@ -334,12 +335,12 @@ def train(_):
                     
 
                     for critic_itr in range(n_critic):
-                        feed_dict = {input_placeholder: feats, output_placeholder: feats[:,:,:-2], f0_input_placeholder: f0, rand_input_placeholder: np.random.normal(-1.0, 1.0, size=[30,config.max_phr_len,4]),
+                        feed_dict = {input_placeholder: feats, output_placeholder: feats[:,:,:-2], f0_input_placeholder: f0, rand_input_placeholder: np.random.uniform(-1.0, 1.0, size=[30,config.max_phr_len,4]),
                                 phoneme_labels:phos, singer_labels: singer_ids, phoneme_labels_shuffled:phos_shu, singer_labels_shuffled:sing_id_shu}
                         sess.run(dis_train_function, feed_dict = feed_dict)
                         sess.run(clip_discriminator_var_op, feed_dict = feed_dict)
 
-                    feed_dict = {input_placeholder: feats, output_placeholder: feats[:,:,:-2], f0_input_placeholder: f0, rand_input_placeholder: np.random.normal(-1.0, 1.0, size=[30,config.max_phr_len,4]),
+                    feed_dict = {input_placeholder: feats, output_placeholder: feats[:,:,:-2], f0_input_placeholder: f0, rand_input_placeholder: np.random.uniform(-1.0, 1.0, size=[30,config.max_phr_len,4]),
                     phoneme_labels:phos, singer_labels: singer_ids, phoneme_labels_shuffled:phos_shu, singer_labels_shuffled:sing_id_shu}
 
                     _, _, step_re_loss,step_gen_loss, step_gen_acc = sess.run([re_train_function, gen_train_function, final_loss,G_loss_GAN, G_accuracy], feed_dict = feed_dict)
@@ -396,7 +397,7 @@ def train(_):
 
                     np.random.shuffle(phos_shu)
 
-                    feed_dict = {input_placeholder: feats, output_placeholder: feats[:,:,:-2], f0_input_placeholder: f0,rand_input_placeholder: np.random.normal(-1.0,1.0,size=[30,config.max_phr_len,4]),
+                    feed_dict = {input_placeholder: feats, output_placeholder: feats[:,:,:-2], f0_input_placeholder: f0,rand_input_placeholder: np.random.uniform(-1.0,1.0,size=[30,config.max_phr_len,4]),
                     phoneme_labels:phos, singer_labels: singer_ids, phoneme_labels_shuffled:phos_shu, singer_labels_shuffled:sing_id_shu}
 
                     step_pho_loss, step_pho_acc = sess.run([pho_loss, pho_acc], feed_dict= feed_dict)
