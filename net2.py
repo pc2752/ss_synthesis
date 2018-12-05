@@ -185,8 +185,8 @@ def train(_):
         # G_loss_GAN = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels= tf.ones_like(D_real), logits=D_fake+1e-12)) + tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels= tf.ones_like(D_fake_2), logits=D_fake_2+1e-12))
         # + tf.reduce_sum(tf.abs(output_placeholder- (voc_output_2/2+0.5))*(1-input_placeholder[:,:,-1:])) *0.00001
 
-        G_loss_GAN = tf.reduce_mean(D_fake+1e-12) 
-        # + tf.reduce_sum(tf.abs(output_placeholder- (voc_output_2/2+0.5))) *0.0001
+        G_loss_GAN = tf.reduce_mean(D_fake+1e-12) + tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels= output_placeholder, logits=voc_output)) *0.000005
+        # + tf.reduce_sum(tf.abs(output_placeholder- (voc_output_2/2+0.5))) *0.00005
 
         G_correct_pred = tf.equal(tf.round(tf.sigmoid(D_fake)), tf.ones_like(D_real))
 
@@ -487,6 +487,9 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         phoneme_labels = tf.placeholder(tf.int32, shape=(config.batch_size,config.max_phr_len),name='phoneme_placeholder')
         phone_onehot_labels = tf.one_hot(indices=tf.cast(phoneme_labels, tf.int32), depth=42)
 
+        phoneme_labels_2 = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len, 42),name='phoneme_placeholder_1')
+        # phone_onehot_labels = tf.one_hot(indices=tf.cast(phoneme_labels, tf.int32), depth=42)
+
         singer_labels = tf.placeholder(tf.float32, shape=(config.batch_size),name='singer_placeholder')
         singer_onehot_labels = tf.one_hot(indices=tf.cast(singer_labels, tf.int32), depth=12)
 
@@ -498,7 +501,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
             pho_probs = tf.nn.softmax(pho_logits)
 
         with tf.variable_scope('Final_Model') as scope:
-            voc_output = modules.final_net(singer_onehot_labels, f0_input_placeholder, phone_onehot_labels)
+            voc_output = modules.final_net(singer_onehot_labels, f0_input_placeholder, phoneme_labels_2)
             voc_output_decoded = tf.nn.sigmoid(voc_output)
             scope.reuse_variables()
             voc_output_3 = modules.final_net(singer_onehot_labels, f0_input_placeholder, pho_probs)
@@ -516,11 +519,11 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
         with tf.variable_scope('Generator') as scope: 
-            voc_output_2 = modules.GAN_generator(voc_output_decoded, singer_onehot_labels, phone_onehot_labels, f0_input_placeholder, rand_input_placeholder)
+            voc_output_2 = modules.GAN_generator(singer_onehot_labels, phoneme_labels_2, f0_input_placeholder, rand_input_placeholder)
 
 
         with tf.variable_scope('Discriminator') as scope: 
-            D_real = modules.GAN_discriminator((output_placeholder-0.5)*2, voc_output_decoded)
+            D_fake = modules.GAN_discriminator(voc_output_2,singer_onehot_labels, phone_onehot_labels, f0_input_placeholder)
 
 
         saver = tf.train.Saver(max_to_keep= config.max_models_to_keep)
@@ -549,7 +552,8 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         # speaker_file = h5py.File(config.voice_dir+speaker_file, "r")
 
 
-        feats = np.array(voc_file['feats'])
+        # feats = np.array(voc_file['feats'])
+        feats = utils.input_to_feats('./franky.wav', mode = 1)
 
 
 
@@ -599,13 +603,10 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
             in_batch_pho_target = in_batch_pho_target.reshape([config.batch_size, config.max_phr_len])
 
-
-
-            # input_noisy = np.clip(in_batch_feat + np.random.rand(config.batch_size, config.max_phr_len,66)*np.clip(np.random.rand(1),0.0,config.noise_threshold), 0.0, 1.0)
-
+            in_batch_pho_target = sess.run(pho_probs, feed_dict = {input_placeholder: in_batch_feat})
 
             output_feats, output_feats_1, output_feats_gan = sess.run([voc_output_decoded,voc_output_3_decoded,voc_output_2], feed_dict = {input_placeholder: in_batch_feat,
-              f0_input_placeholder: in_batch_f0,phoneme_labels:in_batch_pho_target, singer_labels: np.ones(30)*10, rand_input_placeholder: np.random.normal(-1.0,1.0,size=[30,config.max_phr_len,4])})
+              f0_input_placeholder: in_batch_f0,phoneme_labels_2:in_batch_pho_target, singer_labels: np.ones(30)*10, rand_input_placeholder: np.random.normal(-1.0,1.0,size=[30,config.max_phr_len,4])})
 
             # output_feats = (output_feats+1)/2.0
 
