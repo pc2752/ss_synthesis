@@ -460,7 +460,7 @@ def train(_):
 
 def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
-    file_name = "nus_VKOW_sing_20.hdf5"
+    file_name = "nus_KENN_sing_17.hdf5"
 
 
 
@@ -552,8 +552,8 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
         # speaker_file = h5py.File(config.voice_dir+speaker_file, "r")
 
 
-        # feats = np.array(voc_file['feats'])
-        feats = utils.input_to_feats('./franky.wav', mode = 1)
+        feats = np.array(voc_file['feats'])
+        # feats = utils.input_to_feats('./54228_chorus.wav_ori_vocals.wav', mode = 1)
 
 
 

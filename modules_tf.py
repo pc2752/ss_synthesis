@@ -654,34 +654,34 @@ def GAN_generator(singer_label, phones, f0_notation, rand):
 
     conv8 = tf.nn.relu(tf.layers.conv2d(conv7, 512, (3,1), strides=(2,1),  padding = 'same', name = "G_8", kernel_initializer=tf.random_normal_initializer(stddev=0.02)))
 
-    deconv1 = tf.image.resize_images(conv8, size=(8,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+    deconv1 = tf.image.resize_image_with_pad(conv8, size=(8,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
     deconv1 = tf.nn.relu(tf.layers.conv2d(deconv1, 512, (3,1), strides=(1,1),  padding = 'same', name = "G_dec1", kernel_initializer=tf.random_normal_initializer(stddev=0.02)))
 
     deconv1 = tf.concat([deconv1, conv7], axis = -1)
 
-    deconv2 = tf.image.resize_images(deconv1, size=(16,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+    deconv2 = tf.image.resize_image_with_pad(deconv1, size=(16,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
     deconv2 = tf.nn.relu(tf.layers.conv2d(deconv2, 256, (3,1), strides=(1,1),  padding = 'same', name = "G_dec2", kernel_initializer=tf.random_normal_initializer(stddev=0.02)))
 
     deconv2 = tf.concat([deconv2, conv6], axis = -1)
 
 
-    deconv3 = tf.image.resize_images(deconv2, size=(32,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+    deconv3 = tf.image.resize_image_with_pad(deconv2, size=(32,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
     deconv3 = tf.nn.relu(tf.layers.conv2d(deconv3, 128, (3,1), strides=(1,1),  padding = 'same', name = "G_dec3", kernel_initializer=tf.random_normal_initializer(stddev=0.02)))
 
     deconv3 = tf.concat([deconv3, conv5], axis = -1)
 
 
-    deconv4 = tf.image.resize_images(deconv3, size=(64,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+    deconv4 = tf.image.resize_image_with_pad(deconv3, size=(64,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
     deconv4 = tf.nn.relu(tf.layers.conv2d(deconv4, 64, (3,1), strides=(1,1),  padding = 'same', name = "G_dec4", kernel_initializer=tf.random_normal_initializer(stddev=0.02)))
 
     deconv4 = tf.concat([deconv4, conv1], axis = -1)
 
 
-    deconv5 = tf.image.resize_images(deconv4, size=(128,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+    deconv5 = tf.image.resize_image_with_pad(deconv4, size=(128,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
     deconv5 = tf.nn.relu(tf.layers.conv2d(deconv5, 64, (3,1), strides=(1,1),  padding = 'same', name = "G_dec5", kernel_initializer=tf.random_normal_initializer(stddev=0.02)))
 
