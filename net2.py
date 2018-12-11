@@ -623,6 +623,7 @@ def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
 
 
+
             # out_batches_voc_stft_phase.append(output_voc_stft_phase)
 
 
