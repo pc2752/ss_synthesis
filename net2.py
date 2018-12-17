@@ -460,7 +460,7 @@ def train(_):
 
 def synth_file(file_path=config.wav_dir, show_plots=True, save_file=True):
 
-    file_name = "nus_KENN_sing_17.hdf5"
+    file_name = "nus_VKOW_sing_20.hdf5"
 
 
 
