@@ -368,6 +368,7 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
         mode =2
     else:
         mode = 1
+        file_path = './'
 
     stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
 
@@ -448,6 +449,8 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
         val_outer[:,-1] = np.round(val_outer[:,-1])
         val_outer = val_outer[:targs.shape[0],:]
         val_outer = np.clip(val_outer,0.0,1.0)
+
+        import pdb;pdb.set_trace()
 
         #Test purposes only
         # first_pred = np.array(first_pred)
