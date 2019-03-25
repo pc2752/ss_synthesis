@@ -13,7 +13,7 @@ wav_dir_timit = '../datasets/TIMIT/TIMIT/'
 voice_dir = './voice/'
 backing_dir = './backing/'
 log_dir = './log/'
-log_dir_m1 = './log_m1_publish/'
+log_dir_m1 = './log_m1_publish_full/'
 # log_dir = './log_mfsc_6_best_so_far/'
 data_log = './log/data_log.log'
 
@@ -111,7 +111,7 @@ rec_field = 2**wavenet_layers
 wavenet_filters = 128
 
 print_every = 1
-save_every = 10
+save_every = 500
 
 use_gan = False
 gan_lr = 0.001

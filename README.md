@@ -6,6 +6,8 @@
 <h2>Music Technology Group, Universitat Pompeu Fabra, Barcelona</h2>
 
 This repository contains the source code for the paper with the same title.
+Please note that the model presented here is currently configured just for the iKala dataset, as published in the corresponding paper. 
+We will release a more generalized model soon.
 
 <h3>Installation</h3>
 To install, clone the repository and use <pre><code>pip install requirements.txt </code></pre> to install the packages required.

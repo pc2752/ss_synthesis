@@ -31,7 +31,7 @@ def data_gen(mode = 'Train'):
 
     back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('ikala')]
 
-    mix_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('ikala') ]
+    mix_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('ikala') or x.startswith('med')]
 
     train_list = mix_list[:int(len(mix_list)*config.split)]
 
@@ -49,9 +49,9 @@ def data_gen(mode = 'Train'):
     min_feat = np.array(stat_file["feats_minimus"])
     max_voc = np.array(stat_file["voc_stft_maximus"])
     min_voc = np.array(stat_file["voc_stft_minimus"])
-    max_back = np.array(stat_file["back_stft_maximus"])
-    min_back = np.array(stat_file["back_stft_minimus"])
-    max_mix = np.array(max_voc)+np.array(max_back)
+    max_mix = np.array(stat_file["back_stft_maximus"])
+    min_mix = np.array(stat_file["back_stft_minimus"])
+    # max_mix = np.array(max_voc)+np.array(max_back)
     stat_file.close()
     # min_mix = 
 
@@ -115,9 +115,11 @@ def data_gen(mode = 'Train'):
 
 
 def get_stats():
-    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and not x.startswith('._') and x.startswith('ikala')]
+    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and x.startswith('ikala')]
 
-    back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and not x.startswith('._') and x.startswith('ikala')]
+    # import pdb;pdb.set_trace()
+
+    back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('ikala')]
     
     max_feat = np.zeros(66)
     min_feat = np.ones(66)*1000
@@ -167,7 +169,7 @@ def get_stats():
 
         voc_file = h5py.File(config.backing_dir+voc_to_open, "r")
 
-        voc_stft = voc_file["back_stft"]
+        voc_stft = voc_file["mix_stft"]
 
         maxi_voc_stft = np.array(voc_stft).max(axis=0)
 

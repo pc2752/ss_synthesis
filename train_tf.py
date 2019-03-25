@@ -417,6 +417,8 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
 
         targs = utils.input_to_feats(os.path.join(file_path,file_name), mode = mode)
 
+        import pdb;pdb.set_trace()
+
         # f0_sac = utils.file_to_sac(os.path.join(file_path,file_name))
         # f0_sac = (f0_sac-min_feat[-2])/(max_feat[-2]-min_feat[-2])
 
@@ -470,8 +472,15 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
         # cleaner = (cleaner-min_feat[:60])/(max_feat[:60]-min_feat[:60])
 
 
-        
-
+# ax1 = plt.subplot(311)
+# plt.imshow(targs[:,:60].T, origin='lower', aspect='auto')
+# # ax1.set_title("Harmonic Spectral Envelope", fontsize = 10)
+# ax2 = plt.subplot(312)
+# plt.imshow(targs[:,60:64].T, origin='lower', aspect='auto')
+# # ax2.set_title("Aperiodicity Envelope", fontsize = 10)        
+# ax3 = plt.subplot(313)
+# plt.plot(targs[:,-2])
+# ax3.set_title("Fundamental Frequency Contour", fontsize = 10)     
         if show_plots:
 
             # import pdb;pdb.set_trace()
