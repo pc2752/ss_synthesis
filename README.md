@@ -6,8 +6,7 @@
 <h2>Music Technology Group, Universitat Pompeu Fabra, Barcelona</h2>
 
 This repository contains the source code for the paper with the same title.
-Please note that the model presented here is currently configured just for the iKala dataset, as published in the corresponding paper. 
-We will release a more generalized model soon.
+Please note that the model presented here is currently configured just for the iKala dataset, as published in the corresponding paper, but can also be used for other commerical songs. For examples of the output of the system, please visit: <i>https://pc2752.github.io/singing_voice_sep/</i>
 
 <h3>Installation</h3>
 To install, clone the repository and use <pre><code>pip install requirements.txt </code></pre> to install the packages required.
@@ -21,7 +20,7 @@ Once the *iKala* files have been put in the *wav_dir*, you can run <pre><code>py
 <h3>Training and inference</h3>
 
 
-Once setup, you can run the command <pre><code>python train_tf.py -t</code></pre> to train or <pre><code>python train_tf.py -s &lt;filename&gt; -p (optional, for plots)</code></pre> to synthesize the output.The output will be saved in the *val_dir* specified in the *config.py* file. Note that plots are only supported for *iKala* songs as the ground truth is available for these songs. 
+Once setup, you can run the command <pre><code>python train_tf.py -t</code></pre> to train or <pre><code>python train_tf.py -s &lt;filename&gt; -p (optional, for plots)</code></pre> to synthesize the output. The output will be saved in the *val_dir* specified in the *config.py* file. The plots show the ground truth and output values for the vocoder features as well as the f0 and the accuracy. Note that plots are only supported for *iKala* songs as the ground truth is available for these songs.  
  
 
 <h3>Evaluation</h3> 
