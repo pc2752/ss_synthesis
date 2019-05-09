@@ -77,20 +77,14 @@ noise_threshold = 0.1
 pred_mode = 'all'
 
 # Hyperparameters
-num_epochs = 5000
-batches_per_epoch_train = 100
-batches_per_epoch_val = 100
-batches_per_epoch_val_m1 = 100
-batch_size = 30
+num_epochs = 1000
+batches_per_epoch_train = 1000
+batches_per_epoch_val = 252*6
+batch_size = 30 
 samples_per_file = 5
-max_phr_len = 32
+max_phr_len = 64
 input_features = 513
-
-first_embed = 256
-
-
 lstm_size = 128
-
 output_features = 66
 highway_layers = 4
 highway_units = 128
@@ -108,12 +102,12 @@ noise = 0.05
 
 wavenet_layers = 5
 rec_field = 2**wavenet_layers
-wavenet_filters = 128
+wavenet_filters = 66
 
-print_every = 1
-save_every = 500
+print_every = 5
+save_every = 100
 
 use_gan = False
-gan_lr = 0.001
+gan_lr = 0.0001
 
 dtype = tf.float32
