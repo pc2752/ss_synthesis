@@ -19,7 +19,7 @@ data_log = './log/data_log.log'
 
 
 dir_npy = './data_npy/'
-stat_dir = './stats/'
+stat_dir = './stats_m1/'
 h5py_file_train = './data_h5py/train.hdf5'
 h5py_file_val = './data_h5py/val.hdf5'
 val_dir = './val_dir/'
@@ -33,7 +33,7 @@ feats_ext = '_synth_feats.npy'
 
 f0_weight = 10
 max_models_to_keep = 5
-f0_threshold = 1
+f0_threshold = 10
 
 def get_teacher_prob(epoch):
     if epoch < 500:
