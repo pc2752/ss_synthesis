@@ -19,7 +19,7 @@ data_log = './log/data_log.log'
 
 
 dir_npy = './data_npy/'
-stat_dir = './stats_m1/'
+stat_dir = './stats/'
 h5py_file_train = './data_h5py/train.hdf5'
 h5py_file_val = './data_h5py/val.hdf5'
 val_dir = './val_dir/'

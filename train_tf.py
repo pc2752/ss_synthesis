@@ -417,7 +417,7 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
 
         targs = utils.input_to_feats(os.path.join(file_path,file_name), mode = mode)
 
-        import pdb;pdb.set_trace()
+        # import pdb;pdb.set_trace()
 
         # f0_sac = utils.file_to_sac(os.path.join(file_path,file_name))
         # f0_sac = (f0_sac-min_feat[-2])/(max_feat[-2]-min_feat[-2])
@@ -452,7 +452,7 @@ def synth_file(file_name, file_path=config.wav_dir, show_plots=True, save_file=T
         val_outer = val_outer[:targs.shape[0],:]
         val_outer = np.clip(val_outer,0.0,1.0)
 
-        import pdb;pdb.set_trace()
+        # import pdb;pdb.set_trace()
 
         #Test purposes only
         # first_pred = np.array(first_pred)
