@@ -13,7 +13,7 @@ wav_dir_timit = '../datasets/TIMIT/TIMIT/'
 voice_dir = './voice/'
 backing_dir = './backing/'
 log_dir = './log/'
-log_dir_m1 = './log_m1_publish_full/'
+log_dir_m1 = './log_full/'
 # log_dir = './log_mfsc_6_best_so_far/'
 data_log = './log/data_log.log'
 

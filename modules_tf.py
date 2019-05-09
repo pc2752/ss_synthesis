@@ -174,32 +174,30 @@ def cbhg(inputs, scope='cbhg', training=True):
         
 
 
-def nr_wavenet_block(conditioning, dilation_rate = 2, scope = 'nr_wavenet_block'):
-
-    with tf.variable_scope(scope):
+def nr_wavenet_block(conditioning, dilation_rate = 2):
     # inputs = tf.reshape(inputs, [config.batch_size, config.max_phr_len, config.input_features])
 
-        con_pad_forward = tf.pad(conditioning, [[0,0],[dilation_rate,0],[0,0]],"CONSTANT")
-        con_pad_backward = tf.pad(conditioning, [[0,0],[0,dilation_rate],[0,0]],"CONSTANT")
-        con_sig_forward = tf.layers.conv1d(con_pad_forward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')
-        con_sig_backward = tf.layers.conv1d(con_pad_backward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')
-        # con_sig = tf.layers.conv1d(conditioning,config.wavenet_filters,1)
+    con_pad_forward = tf.pad(conditioning, [[0,0],[dilation_rate,0],[0,0]],"CONSTANT")
+    con_pad_backward = tf.pad(conditioning, [[0,0],[0,dilation_rate],[0,0]],"CONSTANT")
+    con_sig_forward = tf.layers.conv1d(con_pad_forward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')
+    con_sig_backward = tf.layers.conv1d(con_pad_backward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')
+    # con_sig = tf.layers.conv1d(conditioning,config.wavenet_filters,1)
 
-        sig = tf.sigmoid(con_sig_forward+con_sig_backward)
-
-
-        con_tanh_forward = tf.layers.conv1d(con_pad_forward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')
-        con_tanh_backward = tf.layers.conv1d(con_pad_backward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')    
-        # con_tanh = tf.layers.conv1d(conditioning,config.wavenet_filters,1)
-
-        tanh = tf.tanh(con_tanh_forward+con_tanh_backward)
+    sig = tf.sigmoid(con_sig_forward+con_sig_backward)
 
 
-        outputs = tf.multiply(sig,tanh)
+    con_tanh_forward = tf.layers.conv1d(con_pad_forward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')
+    con_tanh_backward = tf.layers.conv1d(con_pad_backward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')    
+    # con_tanh = tf.layers.conv1d(conditioning,config.wavenet_filters,1)
 
-        skip = tf.layers.conv1d(outputs,config.wavenet_filters,1)
+    tanh = tf.tanh(con_tanh_forward+con_tanh_backward)
 
-        residual = skip + conditioning
+
+    outputs = tf.multiply(sig,tanh)
+
+    skip = tf.layers.conv1d(outputs,config.wavenet_filters,1)
+
+    residual = skip + conditioning
 
     return skip, residual
 
@@ -213,10 +211,10 @@ def nr_wavenet(inputs, num_block = config.wavenet_layers):
 
     first_conv = tf.layers.conv1d(prenet_out, config.wavenet_filters, 1)
     skips = []
-    skip, residual = nr_wavenet_block(first_conv, dilation_rate=1, scope = "nr_wavenet_block_0")
+    skip, residual = nr_wavenet_block(first_conv, dilation_rate=1)
     output = skip
     for i in range(num_block):
-        skip, residual = nr_wavenet_block(residual, dilation_rate=2**(i+1), scope = "nr_wavenet_block_"+str(i+1))
+        skip, residual = nr_wavenet_block(residual, dilation_rate=2**(i+1))
         skips.append(skip)
     for skip in skips:
         output+=skip
