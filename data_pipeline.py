@@ -33,7 +33,12 @@ def data_gen(mode = 'Train'):
 
     mix_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('med') ]
 
-    # train_list = mix_list[:int(len(mix_list)*config.split)]
+    ikala_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('ikala') ]
+
+
+    train_list = ikala_list[:int(len(ikala_list)*config.split)]
+
+    mix_list = mix_list+ikala_list
 
     # val_list = mix_list[int(len(mix_list)*config.split):]
 
@@ -316,7 +321,7 @@ def get_stats():
 def main():
     # gen_train_val()
     # get_stats()
-    gen = data_gen(mode ='val')
+    gen = data_gen(mode ='Train')
     while True :
         inputs, targets, nchunks_in, lent, county, max_count = next(gen)
 

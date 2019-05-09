@@ -11,7 +11,7 @@ wav_dir_med = '../datasets/medleydB/'
 
 voice_dir = './voice/'
 backing_dir = './backing/'
-log_dir = './log/'
+log_dir = './log_full/'
 # log_dir = './log_mfsc_6_best_so_far/'
 data_log = './log/data_log.log'
 
@@ -79,7 +79,7 @@ rec_field = 2**wavenet_layers
 wavenet_filters = 66
 
 print_every = 5
-save_every = 30
+save_every = 100
 
 use_gan = False
 gan_lr = 0.0001
