@@ -20,7 +20,7 @@ Once the *iKala* files have been put in the *wav_dir*, you can run <pre><code>py
 <h3>Training and inference</h3>
 
 
-Once setup, you can run the command <pre><code>python main.py -t</code></pre> to train or <pre><code>python train_tf.py -e &lt;filename&gt;</code></pre> to synthesize the output from an hdf5 file or <pre><code>python train_tf.py -v &lt;filename&gt;</code></pre> for a .wav file. The output will be saved in the *val_dir* specified in the *config.py* file. The plots show the ground truth and output values for the vocoder features as well as the f0 and the accuracy. Note that plots are only supported for *iKala* songs as the ground truth is available for these songs.  
+Once setup, you can run the command <pre><code>python main.py -t</code></pre> to train or <pre><code>python main.py -e &lt;filename&gt;</code></pre> to synthesize the output from an hdf5 file or <pre><code>python main.py -v &lt;filename&gt;</code></pre> for a .wav file. The output will be saved in the *val_dir* specified in the *config.py* file. The plots show the ground truth and output values for the vocoder features as well as the f0 and the accuracy. Note that plots are only supported for *iKala* songs as the ground truth is available for these songs.  
  
 
  
