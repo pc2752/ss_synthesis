@@ -6,15 +6,19 @@ wav_dir = '../datasets/iKala/Wavfile/'
 wav_dir_nus = '../datasets/nus-smc-corpus_48/'
 wav_dir_mus = '../datasets/musdb18/train/'
 wav_dir_mir = '../datasets/MIR1k/'
+wav_dir_vctk = '../datasets/VCTK/VCTK-Corpus/wav48/'
+wav_dir_vctk_lab = '../datasets/VCTK/VCTK-Corpus/forPritish/'
 wav_dir_med = '../datasets/medleydB/'
 wav_dir_timit = '../datasets/TIMIT/TIMIT/'
+wav_dir_casas_esp = '../datasets/casas_esp/'
+wav_dir_casas_cat = '../datasets/casas_cat/'
 
 
 voice_dir = './voice/'
 backing_dir = './backing/'
-log_dir = './log/'
+# log_dir = './log/'
+log_dir = './log_full/'
 log_dir_m1 = './log_full/'
-# log_dir = './log_mfsc_6_best_so_far/'
 data_log = './log/data_log.log'
 
 
@@ -43,10 +47,18 @@ def get_teacher_prob(epoch):
     else:
         return 0.55
 
+fmin = 32.70
+bins_per_octave = 60
+# bins_per_octave = 24
+n_octaves = 6
+cqt_bins = bins_per_octave*n_octaves
+harmonics = [0.5, 1, 2, 3, 4, 5]
 
 
 phonemas = ['t', 'y', 'l', 'k', 'aa', 'jh', 'ae', 'ng', 'ah', 'hh', 'z', 'ey', 'f', 'uw', 'iy', 'ay', 'b', 's', 'd', 'sil', 'p', 'n', 'sh', 'ao', 'g', 'ch', 'ih', 'eh', 'aw', 'sp', 'oy', 'th', 'w', 'ow', 'v', 'uh', 'm', 'er', 'zh', 'r', 'dh']
-
+phonemas_esp = ['B', 'U', 'g', 'k', 'm', 'tS', 'J', 'L', 'x', 'n', 'i', 'r', 'a', 'o', 'w', 'j', 's', 'f', 'I', 'rr', 't', 'd', 'e', 'l', 'b', 'Sil', 'u', 'D', 'p', 'G', 'T']
+phonemas_cat = ['B', 'U', 'g', 'S', 'k', 'm', 'O', 'dZ', 'J', 'Z', 'tS', 'ts', 'n', 'r', 'i', 'a', 'z', 'w', 'o', 'ae', 'j', 's', 'f', 'I', 'rr', 't', 'd', 'e', 'l', 'N', 'b', 'Sil', 'u', 'L0', 'E', 'D', 'p', 'dz', 'G']
+phonemas_full = list(set(phonemas_esp+phonemas_cat))
 # phonemas_weights = [1.91694048e-03, 3.13983774e-03, 2.37052131e-03, 3.88045684e-03,
 #        1.41986299e-03, 1.12648565e-02, 3.30023014e-03, 5.00321922e-03,
 #        5.87243483e-04, 4.37742526e-03, 1.97692391e-02, 9.70398460e-04,
@@ -96,7 +108,13 @@ dropout_rate = 0.0
 projection_size = 3
 fs = 44100
 comp_mode = 'mfsc'
-hoptime = 5.80498866
+# hoptime = 5.80498866
+
+fs = 44100.0
+nfft = 1024
+hopsize = 256
+hoptime = hopsize/fs
+window = np.hanning(nfft)
 
 noise = 0.05
 

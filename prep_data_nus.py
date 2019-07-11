@@ -7,6 +7,7 @@ from scipy.stats import norm
 import pyworld as pw
 import matplotlib.pyplot as plt
 import sys
+import librosa
 import h5py
 
 import config
@@ -41,6 +42,8 @@ def main():
                 command = "ffmpeg -y -i "+os.path.join(sing_dir,lf)+" -ar "+str(config.fs)+" "+os.path.join(sing_dir,lf)
                 os.system(command)
             audio,fs = sf.read(os.path.join(sing_dir,lf))
+
+            import pdb;pdb.set_trace()
 
             if len(audio.shape) == 2:
 
