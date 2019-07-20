@@ -204,12 +204,10 @@ def nr_wavenet_block(conditioning, dilation_rate = 2):
 
 def nr_wavenet(inputs, num_block = config.wavenet_layers):
 
-    prenet_out = tf.layers.dense(inputs, config.lstm_size*2)
-    prenet_out = tf.layers.dense(prenet_out, config.lstm_size)
 
     receptive_field = 2**num_block
 
-    first_conv = tf.layers.conv1d(prenet_out, config.wavenet_filters, 1)
+    first_conv = tf.layers.conv1d(inputs, config.wavenet_filters, 1)
     skips = []
     skip, residual = nr_wavenet_block(first_conv, dilation_rate=1)
     output = skip
@@ -222,19 +220,18 @@ def nr_wavenet(inputs, num_block = config.wavenet_layers):
 
     output = tf.nn.relu(output)
 
-    output = tf.layers.conv1d(output,config.wavenet_filters,1)
+    harm = tf.layers.conv1d(output,config.wavenet_filters,1)
 
-    output = tf.nn.relu(output)
+    ap = tf.layers.conv1d(output,config.wavenet_filters,1)
 
-    output = tf.layers.conv1d(output,config.wavenet_filters,1)
+    f0 = tf.layers.conv1d(output,config.wavenet_filters,1)
 
-    output = tf.nn.relu(output)
+    vuv = tf.layers.conv1d(output,config.wavenet_filters,1)
 
-    harm = tf.layers.dense(output, 60, activation=tf.nn.relu)
-    ap = tf.layers.dense(output, 4, activation=tf.nn.relu)
-    f0 = tf.layers.dense(output, 64, activation=tf.nn.relu) 
+    harm = tf.layers.dense(harm, 60, activation=tf.nn.relu)
+    ap = tf.layers.dense(ap, 4, activation=tf.nn.relu)
     f0 = tf.layers.dense(f0, 1, activation=tf.nn.relu)
-    vuv = tf.layers.dense(ap, 1, activation=tf.nn.sigmoid)
+    vuv = tf.layers.dense(vuv, 1, activation=tf.nn.sigmoid)
 
     return harm, ap, f0, vuv
 

@@ -17,6 +17,9 @@ import soundfile as sf
 import matplotlib.pyplot as plt
 from scipy.ndimage import filters
 
+def binary_cross(p,q):
+    return -(p * tf.log(q + 1e-12) + (1 - p) * tf.log( 1 - q + 1e-12))
+
 class Model(object):
 	def __init__(self):
 		self.get_placeholders()
@@ -85,13 +88,13 @@ class SSSynth(Model):
 		Returns the optimizers for the model, based on the loss functions and the mode. 
 		"""
 
-		self.optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
+		self.final_optimizer = tf.train.AdamOptimizer(learning_rate = config.init_lr)
 
 		self.global_step = tf.Variable(0, name='global_step', trainable=False)
 
 		update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 		with tf.control_dependencies(update_ops):
-			self.final_train_function = self.final_optimizer.minimize(self.loss, global_step = self.global_step)
+			self.train_function = self.final_optimizer.minimize(self.loss, global_step = self.global_step)
 
 
 	def loss_function(self):
@@ -99,15 +102,15 @@ class SSSynth(Model):
 		returns the loss function for the model, based on the mode. 
 		"""
 
-		self.harm_loss = tf.reduce_sum(tf.abs(self.harm - self.target_placeholder[:,:,:60])*np.linspace(1.0,0.7,60)*(1-self.target_placeholder[:,:,-1:]))
+		self.harm_loss = tf.reduce_mean(tf.abs(self.harm - self.target_placeholder[:,:,:60])*np.linspace(1.0,0.7,60)*(1-self.target_placeholder[:,:,-1:]))
 
-		self.ap_loss = tf.reduce_sum(tf.abs(self.ap - self.target_placeholder[:,:,60:-2])*(1-self.target_placeholder[:,:,-1:]))
+		self.ap_loss = tf.reduce_mean(tf.abs(self.ap - self.target_placeholder[:,:,60:-2])*(1-self.target_placeholder[:,:,-1:]))
 
-		self.f0_loss = tf.reduce_sum(tf.abs(self.f0 - self.target_placeholder[:,:,-2:-1])*(1-self.target_placeholder[:,:,-1:])) 
+		self.f0_loss = tf.reduce_mean(tf.abs(self.f0 - self.target_placeholder[:,:,-2:-1])*(1-self.target_placeholder[:,:,-1:])) 
 
 		self.vuv_loss = tf.reduce_mean(tf.reduce_sum(binary_cross(self.target_placeholder[:,:,-1:],self.vuv)))
 
-		self.loss = self.harm_loss + self.ap_loss + self.vuv_loss + self.f0_loss * config.f0_weight
+		self.loss = self.harm_loss + self.ap_loss + self.vuv_loss + self.f0_loss
 
 	def get_summary(self, sess, log_dir):
 		"""
@@ -218,22 +221,22 @@ class SSSynth(Model):
 		"""
 		Function to train the model for each epoch
 		"""
-		feed_dict = {self.input_placeholder: voc, self.output_placeholder: feat}
+		feed_dict = {self.input_placeholder: voc, self.target_placeholder: feat}
 
 
-		_, final_loss = sess.run([self.train_function, self.final_loss], feed_dict=feed_dict)
+		_, final_loss = sess.run([self.train_function, self.loss], feed_dict=feed_dict)
 
 		summary_str = sess.run(self.summary, feed_dict=feed_dict)
 
 		return final_loss, summary_str
 
-	def validate_model(self,mix_in, singer_targs, voc_out, f0_out,pho_targs, sess):
+	def validate_model(self, voc, feat, sess):
 		"""
 		Function to train the model for each epoch
 		"""
-		feed_dict = {self.input_placeholder: voc, self.output_placeholder: feat}
+		feed_dict = {self.input_placeholder: voc, self.target_placeholder: feat}
 
-		final_loss = sess.run(self.final_loss, feed_dict=feed_dict)
+		final_loss = sess.run(self.loss, feed_dict=feed_dict)
 
 		summary_str = sess.run(self.summary, feed_dict=feed_dict)
 

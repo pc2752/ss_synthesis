@@ -62,7 +62,7 @@ def data_gen(mode = 'Train'):
         batches = config.batches_per_epoch_train
         file_list = train_list
     else:
-        batches = config.batches_per_epoch_val_m1 
+        batches = config.batches_per_epoch_val
         file_list = val_list
 
     for k in range(batches):
@@ -107,11 +107,11 @@ def data_gen(mode = 'Train'):
 
 
 def get_stats():
-    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and x.startswith('ikala')]
+    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and x.startswith('ikala') ]
 
     # import pdb;pdb.set_trace()
 
-    back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('ikala')]
+    back_list = [x for x in os.listdir(config.backing_dir) if x.endswith('.hdf5') and x.startswith('ikala') or x.startswith('med')]
     
     max_feat = np.zeros(66)
     min_feat = np.ones(66)*1000
