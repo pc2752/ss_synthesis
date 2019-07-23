@@ -17,7 +17,7 @@ wav_dir_casas_ross = '../datasets/casas_rossinyol/'
 voice_dir = './voice/'
 backing_dir = './backing/'
 # log_dir = './log/'
-log_dir = './log/'
+log_dir = './log_encode/'
 log_dir_m1 = './log_full/'
 data_log = './log/data_log.log'
 
@@ -54,6 +54,11 @@ n_octaves = 6
 cqt_bins = bins_per_octave*n_octaves
 harmonics = [0.5, 1, 2, 3, 4, 5]
 
+encoder_layers = 9
+
+filters = 32
+
+filter_len = 5
 
 phonemas = ['t', 'y', 'l', 'k', 'aa', 'jh', 'ae', 'ng', 'ah', 'hh', 'z', 'ey', 'f', 'uw', 'iy', 'ay', 'b', 's', 'd', 'sil', 'p', 'n', 'sh', 'ao', 'g', 'ch', 'ih', 'eh', 'aw', 'sp', 'oy', 'th', 'w', 'ow', 'v', 'uh', 'm', 'er', 'zh', 'r', 'dh']
 phonemas_esp = ['B', 'U', 'g', 'k', 'm', 'tS', 'J', 'L', 'x', 'n', 'i', 'r', 'a', 'o', 'w', 'j', 's', 'f', 'I', 'rr', 't', 'd', 'e', 'l', 'b', 'Sil', 'u', 'D', 'p', 'G', 'T']
@@ -89,12 +94,12 @@ noise_threshold = 0.1
 pred_mode = 'all'
 
 # Hyperparameters
-num_epochs = 1000
+num_epochs = 5000
 batches_per_epoch_train = 100
 batches_per_epoch_val = 25
 batch_size = 30 
 samples_per_file = 5
-max_phr_len = 64
+max_phr_len = 512
 input_features = 513
 lstm_size = 128
 output_features = 66

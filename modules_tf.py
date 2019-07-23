@@ -235,6 +235,83 @@ def nr_wavenet(inputs, num_block = config.wavenet_layers):
 
     return harm, ap, f0, vuv
 
+def encoder_conv_block(inputs, layer_num, is_train, num_filters = config.filters):
+
+    output = tf.layers.batch_normalization(tf.nn.relu(tf.layers.conv2d(inputs, num_filters * 2**int(layer_num/2), (config.filter_len,1)
+        , strides=(2,1),  padding = 'same', name = "G_"+str(layer_num), kernel_initializer=tf.random_normal_initializer(stddev=0.02))), training = is_train, name = "GBN_"+str(layer_num))
+    return output
+
+def decoder_conv_block(inputs, layer, layer_num, is_train, num_filters = config.filters):
+
+    deconv = tf.image.resize_images(inputs, size=(int(config.max_phr_len/2**(config.encoder_layers - 1 - layer_num)),1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+
+    # embedding = tf.tile(embedding,[1,int(config.max_phr_len/2**(config.encoder_layers - 1 - layer_num)),1,1])
+
+    deconv = tf.layers.batch_normalization( tf.nn.relu(tf.layers.conv2d(deconv, layer.shape[-1]
+        , (config.filter_len,1), strides=(1,1),  padding = 'same', name =  "D_"+str(layer_num), kernel_initializer=tf.random_normal_initializer(stddev=0.02))), training = is_train, name =  "DBN_"+str(layer_num))
+
+    # embedding =tf.nn.relu(tf.layers.conv2d(embedding, layer.shape[-1]
+    #     , (config.filter_len,1), strides=(1,1),  padding = 'same', name =  "DEnc_"+str(layer_num)))
+
+    deconv =  tf.concat([deconv, layer], axis = -1)
+
+    return deconv
+
+def encoder_decoder_archi(inputs, is_train):
+    """
+    Input is assumed to be a 4-D Tensor, with [batch_size, phrase_len, 1, features]
+    """
+
+    encoder_layers = []
+
+    encoded = inputs
+
+    encoder_layers.append(encoded)
+
+    for i in range(config.encoder_layers):
+        encoded = encoder_conv_block(encoded, i, is_train)
+        encoder_layers.append(encoded)
+    
+    encoder_layers.reverse()
+
+
+
+    decoded = encoder_layers[0]
+
+    for i in range(config.encoder_layers):
+        decoded = decoder_conv_block(decoded, encoder_layers[i+1], i, is_train)
+
+    return decoded
+
+def sep_network(inputs, is_train):
+
+    inputs = tf.reshape(inputs, [config.batch_size, config.max_phr_len, 1, -1])
+
+    inputs = tf.layers.batch_normalization(tf.layers.dense(inputs, config.wavenet_filters
+        , name = "P_in"), training = is_train)
+ 
+    output = encoder_decoder_archi(inputs, is_train)
+
+
+    output = tf.layers.batch_normalization(tf.layers.dense(output, config.filters, name = "P_F"), training = is_train)
+
+    output = tf.squeeze(output)
+
+    harm = tf.layers.conv1d(output,config.wavenet_filters,1)
+
+    ap = tf.layers.conv1d(output,config.wavenet_filters,1)
+
+    f0 = tf.layers.conv1d(output,config.wavenet_filters,1)
+
+    vuv = tf.layers.conv1d(output,config.wavenet_filters,1)
+
+    harm = tf.layers.dense(harm, 60, activation=tf.nn.relu)
+    ap = tf.layers.dense(ap, 4, activation=tf.nn.relu)
+    f0 = tf.layers.dense(f0, 1, activation=tf.nn.relu)
+    vuv = tf.layers.dense(vuv, 1, activation=tf.nn.sigmoid)
+
+    return harm, ap, f0, vuv
+
 def f0_pho_network(inputs):
     embed_1 = tf.layers.dense(inputs, 256)
 

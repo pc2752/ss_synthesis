@@ -102,15 +102,15 @@ class SSSynth(Model):
 		returns the loss function for the model, based on the mode. 
 		"""
 
-		self.harm_loss = tf.reduce_mean(tf.abs(self.harm - self.target_placeholder[:,:,:60])*np.linspace(1.0,0.7,60)*(1-self.target_placeholder[:,:,-1:]))
+		self.harm_loss = tf.reduce_sum(tf.abs(self.harm - self.target_placeholder[:,:,:60])*np.linspace(1.0,0.7,60)*(1-self.target_placeholder[:,:,-1:]))
 
-		self.ap_loss = tf.reduce_mean(tf.abs(self.ap - self.target_placeholder[:,:,60:-2])*(1-self.target_placeholder[:,:,-1:]))
+		self.ap_loss = tf.reduce_sum(tf.abs(self.ap - self.target_placeholder[:,:,60:-2])*(1-self.target_placeholder[:,:,-1:]))
 
-		self.f0_loss = tf.reduce_mean(tf.abs(self.f0 - self.target_placeholder[:,:,-2:-1])*(1-self.target_placeholder[:,:,-1:])) 
+		self.f0_loss = tf.reduce_sum(tf.abs(self.f0 - self.target_placeholder[:,:,-2:-1])*(1-self.target_placeholder[:,:,-1:])) 
 
-		self.vuv_loss = tf.reduce_mean(tf.reduce_sum(binary_cross(self.target_placeholder[:,:,-1:],self.vuv)))
+		self.vuv_loss = tf.reduce_sum(tf.reduce_sum(binary_cross(self.target_placeholder[:,:,-1:],self.vuv)))
 
-		self.loss = self.harm_loss + self.ap_loss + self.vuv_loss + self.f0_loss
+		self.loss = self.harm_loss + self.ap_loss + self.vuv_loss + self.f0_loss *config.f0_weight
 
 	def get_summary(self, sess, log_dir):
 		"""
@@ -139,6 +139,7 @@ class SSSynth(Model):
 
 		self.input_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.input_features),name='input_placeholder')
 		self.target_placeholder = tf.placeholder(tf.float32, shape=(config.batch_size,config.max_phr_len,config.output_features),name='target_placeholder')
+		self.is_train = tf.placeholder(tf.bool, name="is_train")
 
 	def train(self):
 		"""
@@ -221,7 +222,7 @@ class SSSynth(Model):
 		"""
 		Function to train the model for each epoch
 		"""
-		feed_dict = {self.input_placeholder: voc, self.target_placeholder: feat}
+		feed_dict = {self.input_placeholder: voc, self.target_placeholder: feat, self.is_train: True}
 
 
 		_, final_loss = sess.run([self.train_function, self.loss], feed_dict=feed_dict)
@@ -234,7 +235,7 @@ class SSSynth(Model):
 		"""
 		Function to train the model for each epoch
 		"""
-		feed_dict = {self.input_placeholder: voc, self.target_placeholder: feat}
+		feed_dict = {self.input_placeholder: voc, self.target_placeholder: feat, self.is_train: False}
 
 		final_loss = sess.run(self.loss, feed_dict=feed_dict)
 
@@ -346,7 +347,7 @@ class SSSynth(Model):
 		out_batches_feats = []
 
 		for in_batch_stft in in_batches_stft :
-			feed_dict = {self.input_placeholder: in_batch_stft}
+			feed_dict = {self.input_placeholder: in_batch_stft, self.is_train: False}
 			harm, ap, f0, vuv = sess.run([self.harm, self.ap, self.f0, self.vuv], feed_dict=feed_dict)
 
 			val_feats = np.concatenate((harm, ap, f0, vuv), axis=-1)
@@ -370,7 +371,7 @@ class SSSynth(Model):
 		"""
 
 		with tf.variable_scope('First_Model') as scope:
-			self.harm, self.ap, self.f0, self.vuv = modules.nr_wavenet(self.input_placeholder)
+			self.harm, self.ap, self.f0, self.vuv = modules.sep_network(self.input_placeholder, self.is_train)
 
 
 
