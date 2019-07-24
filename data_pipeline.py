@@ -107,7 +107,7 @@ def data_gen(mode = 'Train'):
 
 
 def get_stats():
-    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and x.startswith('ikala') ]
+    voc_list = [x for x in os.listdir(config.voice_dir) if x.endswith('.hdf5') and x.startswith('ikala') or x.startswith('med')]
 
     # import pdb;pdb.set_trace()
 

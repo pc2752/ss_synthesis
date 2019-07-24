@@ -37,7 +37,7 @@ feats_ext = '_synth_feats.npy'
 
 f0_weight = 10
 max_models_to_keep = 5
-f0_threshold = 10
+f0_threshold = 0.5
 
 def get_teacher_prob(epoch):
     if epoch < 500:
@@ -54,7 +54,7 @@ n_octaves = 6
 cqt_bins = bins_per_octave*n_octaves
 harmonics = [0.5, 1, 2, 3, 4, 5]
 
-encoder_layers = 9
+encoder_layers = 7
 
 filters = 32
 
@@ -99,7 +99,7 @@ batches_per_epoch_train = 100
 batches_per_epoch_val = 25
 batch_size = 30 
 samples_per_file = 5
-max_phr_len = 512
+max_phr_len = 128
 input_features = 513
 lstm_size = 128
 output_features = 66
@@ -125,7 +125,7 @@ noise = 0.05
 
 wavenet_layers = 5
 rec_field = 2**wavenet_layers
-wavenet_filters = 66
+wavenet_filters = 64
 
 print_every = 1
 save_every = 100

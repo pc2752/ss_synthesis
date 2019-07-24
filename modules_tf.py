@@ -283,7 +283,7 @@ def encoder_decoder_archi(inputs, is_train):
 
     return decoded
 
-def sep_network(inputs, is_train):
+def harm_network(inputs, is_train):
 
     inputs = tf.reshape(inputs, [config.batch_size, config.max_phr_len, 1, -1])
 
@@ -299,456 +299,75 @@ def sep_network(inputs, is_train):
 
     harm = tf.layers.conv1d(output,config.wavenet_filters,1)
 
+    harm = tf.layers.dense(harm, 60, activation=tf.nn.relu)
+
+    return harm
+
+def ap_network(inputs, conditioning, is_train):
+
+    inputs = tf.concat([inputs, conditioning], axis = -1)
+
+    inputs = tf.reshape(inputs, [config.batch_size, config.max_phr_len, 1, -1])
+
+    inputs = tf.layers.batch_normalization(tf.layers.dense(inputs, config.wavenet_filters
+        , name = "P_in"), training = is_train)
+ 
+    output = encoder_decoder_archi(inputs, is_train)
+
+
+    output = tf.layers.batch_normalization(tf.layers.dense(output, config.filters, name = "P_F"), training = is_train)
+
+    output = tf.squeeze(output)
+
     ap = tf.layers.conv1d(output,config.wavenet_filters,1)
+
+    ap = tf.layers.dense(ap, 4, activation=tf.nn.relu)
+
+    return ap
+
+def f0_network(inputs, conditioning, is_train):
+
+    inputs = tf.concat([inputs, conditioning], axis = -1)
+
+    inputs = tf.reshape(inputs, [config.batch_size, config.max_phr_len, 1, -1])
+
+    inputs = tf.layers.batch_normalization(tf.layers.dense(inputs, config.wavenet_filters
+        , name = "P_in"), training = is_train)
+ 
+    output = encoder_decoder_archi(inputs, is_train)
+
+
+    output = tf.layers.batch_normalization(tf.layers.dense(output, config.filters, name = "P_F"), training = is_train)
+
+    output = tf.squeeze(output)
 
     f0 = tf.layers.conv1d(output,config.wavenet_filters,1)
 
+    f0 = tf.layers.dense(f0, 1, activation=tf.nn.relu)
+
+    return f0
+
+def vuv_network(inputs, conditioning, is_train):
+
+    inputs = tf.concat([inputs, conditioning], axis = -1)
+
+    inputs = tf.reshape(inputs, [config.batch_size, config.max_phr_len, 1, -1])
+
+    inputs = tf.layers.batch_normalization(tf.layers.dense(inputs, config.wavenet_filters
+        , name = "P_in"), training = is_train)
+ 
+    output = encoder_decoder_archi(inputs, is_train)
+
+
+    output = tf.layers.batch_normalization(tf.layers.dense(output, config.filters, name = "P_F"), training = is_train)
+
+    output = tf.squeeze(output)
+
     vuv = tf.layers.conv1d(output,config.wavenet_filters,1)
 
-    harm = tf.layers.dense(harm, 60, activation=tf.nn.relu)
-    ap = tf.layers.dense(ap, 4, activation=tf.nn.relu)
-    f0 = tf.layers.dense(f0, 1, activation=tf.nn.relu)
     vuv = tf.layers.dense(vuv, 1, activation=tf.nn.sigmoid)
 
-    return harm, ap, f0, vuv
-
-def f0_pho_network(inputs):
-    embed_1 = tf.layers.dense(inputs, 256)
-
-
-
-    conv1 = tf.layers.conv1d(inputs=embed_1, filters=32, kernel_size=2, padding='same', activation=tf.nn.relu)
-
-    maxpool1 = tf.layers.max_pooling1d(conv1, pool_size=2, strides=2, padding='same')
-
-    conv2 = tf.layers.conv1d(inputs=maxpool1, filters=32, kernel_size=4, padding='same', activation=tf.nn.relu)
-
-    maxpool2 = tf.layers.max_pooling1d(conv2, pool_size=2, strides=2, padding='same')
-
-    conv3 = tf.layers.conv1d(inputs=maxpool2, filters=16, kernel_size=4, padding='same', activation=tf.nn.relu)
-
-    encoded = tf.layers.max_pooling1d(conv3, pool_size=2, strides=2, padding='same')
-
-
-    upsample1 = tf.image.resize_images(tf.reshape(encoded, [30,4,1,16]), size=(8,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-
-    conv4 = tf.layers.conv2d(inputs=upsample1, filters=16, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
-    # Now 7x7x16
-    upsample2 = tf.image.resize_images(conv4, size=(16,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    # Now 14x14x16
-    conv5 = tf.layers.conv2d(inputs=upsample2, filters=32, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
-    # Now 14x14x32
-    upsample3 = tf.image.resize_images(conv5, size=(32,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    # Now 28x28x32
-    conv6 = tf.layers.conv2d(inputs=upsample3, filters=64, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
-
-    # upsample4 = tf.image.resize_images(conv6, size=(32,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-
-    # import pdb;pdb.set_trace()
-
-    output_1 = tf.reshape(conv6, [30, 32, 64])
-
-    # import pdb;pdb.set_trace()
-
-
-
-
-
-    # output_1 = bi_static_stacked_RNN(embed_1, scope = 'RNN_1')
-
-    f0_1 = tf.layers.dense(output_1, 128)
-
-
-    upsample2 = tf.image.resize_images(tf.reshape(encoded, [30,4,1,16]), size=(8,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-
-    conv4 = tf.layers.conv2d(inputs=upsample2, filters=16, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
-    # Now 7x7x16
-    upsample2 = tf.image.resize_images(conv4, size=(16,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    # Now 14x14x16
-    conv5 = tf.layers.conv2d(inputs=upsample2, filters=32, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
-    # Now 14x14x32
-    upsample3 = tf.image.resize_images(conv5, size=(32,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    # Now 28x28x32
-    conv6 = tf.layers.conv2d(inputs=upsample3, filters=64, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
-
-    # upsample4 = tf.image.resize_images(conv6, size=(32,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-
-    # import pdb;pdb.set_trace()
-
-    output_2 = tf.reshape(conv6, [30, 32, 64])
-
-    output_2 = tf.concat([output_2, f0_1], axis = -1)
-
-
-
-    phonemes = tf.layers.dense(output_2, 41)
-
-    return f0_1, phonemes
-
-def f0_network(inputs):
-    embed_1 = tf.layers.dense(inputs, 256)
-
-
-
-    # conv1 = tf.layers.conv1d(inputs=embed_1, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu)
-
-    # maxpool1 = tf.layers.max_pooling1d(conv1, pool_size=2, strides=2, padding='same')
-
-    # conv2 = tf.layers.conv1d(inputs=maxpool1, filters=64, kernel_size=4, padding='same', activation=tf.nn.relu)
-
-    # maxpool2 = tf.layers.max_pooling1d(conv2, pool_size=2, strides=2, padding='same')
-
-    # conv3 = tf.layers.conv1d(inputs=maxpool2, filters=32, kernel_size=4, padding='same', activation=tf.nn.relu)
-
-    # encoded = tf.layers.max_pooling1d(conv3, pool_size=2, strides=2, padding='same')
-
-    # upsample1 = tf.image.resize_images(tf.reshape(encoded, [30,4,1,32]), size=(8,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-
-    # conv4 = tf.layers.conv2d(inputs=upsample1, filters=32, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
-    # # Now 7x7x16
-    # upsample2 = tf.image.resize_images(conv4, size=(16,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    # # Now 14x14x16
-    # conv5 = tf.layers.conv2d(inputs=upsample2, filters=64, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
-    # # Now 14x14x32
-    # upsample3 = tf.image.resize_images(conv5, size=(32,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    # # Now 28x28x32
-    # conv6 = tf.layers.conv2d(inputs=upsample3, filters=128, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
-
-    # upsample4 = tf.image.resize_images(conv6, size=(32,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-
-    # import pdb;pdb.set_trace()
-
-    # output_1 = tf.reshape(conv6, [30, 32, 128])
-
-    # import pdb;pdb.set_trace()
-
-
-    output_1 = bi_static_stacked_RNN(embed_1, scope = 'RNN_1')
-
-    f0_1 = tf.layers.dense(output_1, 54)
-
-    return f0_1
-
-def f0_network_2(encoded, f0, phones, prob):
-
-    encoded_embedding = tf.layers.dense(encoded, 32)
-
-
-    
-    embed_1 = tf.layers.dense(f0, 64)
-
-    embed_ph = tf.layers.dense(phones, 64)
-
-    inputs_2 = tf.concat([embed_1, embed_ph], axis = -1)
-
-    conv1 = tf.layers.conv1d(inputs=inputs_2, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu)
-
-    maxpool1 = tf.layers.max_pooling1d(conv1, pool_size=2, strides=2, padding='same')
-
-    conv2 = tf.layers.conv1d(inputs=maxpool1, filters=64, kernel_size=4, padding='same', activation=tf.nn.relu)
-
-    maxpool2 = tf.layers.max_pooling1d(conv2, pool_size=2, strides=2, padding='same')
-
-    conv3 = tf.layers.conv1d(inputs=maxpool2, filters=32, kernel_size=4, padding='same', activation=tf.nn.relu)
-
-    encoded = tf.layers.max_pooling1d(conv3, pool_size=2, strides=2, padding='same')
-
-    encoded = tf.concat([tf.reshape(encoded, [config.batch_size, -1]), encoded_embedding], axis = -1)
-
-    upsample1 = tf.image.resize_images(tf.reshape(encoded, [30,4,1,-1]), size=(8,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-
-    conv4 = tf.layers.conv2d(inputs=upsample1, filters=32, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
-    # Now 7x7x16
-    upsample2 = tf.image.resize_images(conv4, size=(16,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    # Now 14x14x16
-    conv5 = tf.layers.conv2d(inputs=upsample2, filters=64, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
-    # Now 14x14x32
-    upsample3 = tf.image.resize_images(conv5, size=(32,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    # Now 28x28x32
-    conv6 = tf.layers.conv2d(inputs=upsample3, filters=128, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
-
-    # encoded_embedding = tf.reshape(tf.tile(encoded_embedding, [1,config.max_phr_len]), [config.batch_size, config.max_phr_len, 32])
-
-    # encoded_embedding = tf.reshape(tf.image.resize_images(tf.reshape(encoded_embedding, [30,1,1,32]), size=(config.max_phr_len,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR), [config.batch_size, config.max_phr_len, 32])
-# 
-    # import pdb;pdb.set_trace()
-
-    output_2 = tf.reshape(conv6, [30, 32, 128])
-
-    output_1 = bi_static_stacked_RNN(output_2, scope = 'RNN_3')
-
-    output_1 = tf.nn.dropout(tf.layers.dense(output_1, 256), prob)
-
-    f0_1 = tf.layers.dense(output_1, 177)
-
-    return f0_1
-
-
-def final_net(encoded, f0, phones, prob):
-
-    encoded_embedding = tf.layers.dense(encoded, 32)
-
-
-    
-    embed_1 = tf.layers.dense(f0, 64)
-
-    embed_ph = tf.layers.dense(phones, 64)
-
-    inputs_2 = tf.concat([embed_1, embed_ph], axis = -1)
-
-    conv1 = tf.layers.conv1d(inputs=inputs_2, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu)
-
-    maxpool1 = tf.layers.max_pooling1d(conv1, pool_size=2, strides=2, padding='same')
-
-    conv2 = tf.layers.conv1d(inputs=maxpool1, filters=64, kernel_size=4, padding='same', activation=tf.nn.relu)
-
-    maxpool2 = tf.layers.max_pooling1d(conv2, pool_size=2, strides=2, padding='same')
-
-    conv3 = tf.layers.conv1d(inputs=maxpool2, filters=32, kernel_size=4, padding='same', activation=tf.nn.relu)
-
-    encoded = tf.layers.max_pooling1d(conv3, pool_size=2, strides=2, padding='same')
-
-    encoded = tf.concat([tf.reshape(encoded, [config.batch_size, -1]), encoded_embedding], axis = -1)
-
-    upsample1 = tf.image.resize_images(tf.reshape(encoded, [30,4,1,-1]), size=(8,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-
-    conv4 = tf.layers.conv2d(inputs=upsample1, filters=32, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
-    # Now 7x7x16
-    upsample2 = tf.image.resize_images(conv4, size=(16,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    # Now 14x14x16
-    conv5 = tf.layers.conv2d(inputs=upsample2, filters=64, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
-    # Now 14x14x32
-    upsample3 = tf.image.resize_images(conv5, size=(32,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    # Now 28x28x32
-    conv6 = tf.layers.conv2d(inputs=upsample3, filters=128, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
-
-    # encoded_embedding = tf.reshape(tf.tile(encoded_embedding, [1,config.max_phr_len]), [config.batch_size, config.max_phr_len, 32])
-
-    # encoded_embedding = tf.reshape(tf.image.resize_images(tf.reshape(encoded_embedding, [30,1,1,32]), size=(config.max_phr_len,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR), [config.batch_size, config.max_phr_len, 32])
-# 
-    # import pdb;pdb.set_trace()
-
-    output_2 = tf.reshape(conv6, [30, 32, 128])
-
-    output_1 = bi_static_stacked_RNN(output_2, scope = 'RNN_3')
-
-    output_1 = tf.nn.dropout(tf.layers.dense(output_1, 256), prob)
-
-    final_voc = tf.layers.dense(output_1, 64)
-
-    return final_voc
-
-
-def final_net_phase(encoded, f0, phones, spec, prob):
-
-    encoded_embedding = tf.layers.dense(encoded, 32)
-
-
-    
-    embed_1 = tf.layers.dense(f0, 64)
-
-    embed_ph = tf.layers.dense(phones, 64)
-
-    embed_spec = tf.layers.dense(spec, 64)
-
-    inputs_2 = tf.concat([embed_1, embed_ph, embed_spec], axis = -1)
-
-    conv1 = tf.layers.conv1d(inputs=inputs_2, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu)
-
-    maxpool1 = tf.layers.max_pooling1d(conv1, pool_size=2, strides=2, padding='same')
-
-    conv2 = tf.layers.conv1d(inputs=maxpool1, filters=64, kernel_size=4, padding='same', activation=tf.nn.relu)
-
-    maxpool2 = tf.layers.max_pooling1d(conv2, pool_size=2, strides=2, padding='same')
-
-    conv3 = tf.layers.conv1d(inputs=maxpool2, filters=32, kernel_size=4, padding='same', activation=tf.nn.relu)
-
-    encoded = tf.layers.max_pooling1d(conv3, pool_size=2, strides=2, padding='same')
-
-    encoded = tf.concat([tf.reshape(encoded, [config.batch_size, -1]), encoded_embedding], axis = -1)
-
-    upsample1 = tf.image.resize_images(tf.reshape(encoded, [30,4,1,-1]), size=(8,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-
-    conv4 = tf.layers.conv2d(inputs=upsample1, filters=32, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
-    # Now 7x7x16
-    upsample2 = tf.image.resize_images(conv4, size=(16,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    # Now 14x14x16
-    conv5 = tf.layers.conv2d(inputs=upsample2, filters=64, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
-    # Now 14x14x32
-    upsample3 = tf.image.resize_images(conv5, size=(32,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    # Now 28x28x32
-    conv6 = tf.layers.conv2d(inputs=upsample3, filters=128, kernel_size=(2,1), padding='same', activation=tf.nn.relu)
-
-    # encoded_embedding = tf.reshape(tf.tile(encoded_embedding, [1,config.max_phr_len]), [config.batch_size, config.max_phr_len, 32])
-
-    # encoded_embedding = tf.reshape(tf.image.resize_images(tf.reshape(encoded_embedding, [30,1,1,32]), size=(config.max_phr_len,1), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR), [config.batch_size, config.max_phr_len, 32])
-# 
-    # import pdb;pdb.set_trace()
-
-    output_2 = tf.reshape(conv6, [30, 32, 128])
-
-    output_1 = bi_static_stacked_RNN(output_2, scope = 'RNN_3')
-
-    output_1 = tf.nn.dropout(tf.layers.dense(output_1, 256), prob)
-
-    final_voc_phase = tf.layers.dense(output_1, 513)
-
-    return final_voc_phase
-
-def phone_network(inputs, f0):
-
-    embed_f0 = tf.layers.dense(f0, 32)
-
-    inputs_2 = tf.concat([inputs, embed_f0], axis = -1)
-
-    embed_1 = tf.layers.dense(inputs_2, 256)
-
-    output_1 = bi_static_stacked_RNN(embed_1, scope = 'RNN_2')
-
-    phonemes = tf.layers.dense(output_1, 41)
-
-    return phonemes
-
-def singer_network(inputs, prob):
-    embed_1 = tf.layers.dense(inputs, 256)
-
-
-
-    conv1 = tf.layers.conv1d(inputs=embed_1, filters=128, kernel_size=2, padding='same', activation=tf.nn.relu)
-
-    maxpool1 = tf.layers.max_pooling1d(conv1, pool_size=2, strides=2, padding='same')
-
-    conv2 = tf.layers.conv1d(inputs=maxpool1, filters=64, kernel_size=4, padding='same', activation=tf.nn.relu)
-
-    maxpool2 = tf.layers.max_pooling1d(conv2, pool_size=2, strides=2, padding='same')
-
-    conv3 = tf.layers.conv1d(inputs=maxpool2, filters=32, kernel_size=4, padding='same', activation=tf.nn.relu)
-
-    encoded = tf.layers.max_pooling1d(conv3, pool_size=2, strides=2, padding='same')
-
-    encoded = tf.reshape(encoded, [config.batch_size, -1])
-
-    encoded_1= tf.nn.dropout(tf.layers.dense(encoded, 64), prob)
-
-    singer = tf.layers.dense(encoded_1, 12)
-
-    return encoded_1, singer
-
-
-
-    # return x
-
-def wavenet_block(inputs, conditioning, dilation_rate = 2, scope = 'wavenet_block'):
-    # inputs = tf.reshape(inputs, [config.batch_size, config.max_phr_len, config.input_features])
-    in_padded = tf.pad(inputs, [[0,0],[dilation_rate,0],[0,0]],"CONSTANT")
-    con_pad_forward = tf.pad(conditioning, [[0,0],[dilation_rate,0],[0,0]],"CONSTANT")
-    con_pad_backward = tf.pad(conditioning, [[0,0],[0,dilation_rate],[0,0]],"CONSTANT")
-    in_sig = tf.layers.conv1d(in_padded, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')
-    con_sig_forward = tf.layers.conv1d(con_pad_forward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')
-    con_sig_backward = tf.layers.conv1d(con_pad_backward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')
-    # con_sig = tf.layers.conv1d(conditioning,config.wavenet_filters,1)
-
-    sig = tf.sigmoid(in_sig+con_sig_forward+con_sig_backward)
-
-    in_tanh = tf.layers.conv1d(in_padded, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')
-    con_tanh_forward = tf.layers.conv1d(con_pad_forward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')
-    con_tanh_backward = tf.layers.conv1d(con_pad_backward, config.wavenet_filters, 2, dilation_rate = dilation_rate, padding = 'valid')    
-    # con_tanh = tf.layers.conv1d(conditioning,config.wavenet_filters,1)
-
-    tanh = tf.tanh(in_tanh+con_tanh_forward[:,:in_tanh.shape[1],:]+con_tanh_backward[:,:in_tanh.shape[1],:])
-
-
-    outputs = tf.multiply(sig,tanh)
-
-    skip = tf.layers.conv1d(outputs,1,1)
-
-    residual = skip + inputs
-
-    return skip, residual
-
-
-def wavenet(inputs, conditioning, num_block = config.wavenet_layers):
-    receptive_field = 2**num_block
-
-    first_conv = tf.layers.conv1d(inputs, 66, 1)
-    skips = []
-    skip, residual = wavenet_block(first_conv, conditioning, dilation_rate=1)
-    output = skip
-    for i in range(num_block):
-        skip, residual = wavenet_block(residual, conditioning, dilation_rate=2**(i+1))
-        skips.append(skip)
-    for skip in skips:
-        output+=skip
-    output = output+first_conv
-
-    output = tf.nn.relu(output)
-
-    output = tf.layers.conv1d(output,66,1)
-
-    output = tf.nn.relu(output)
-
-    output = tf.layers.conv1d(output,66,1)
-
-    output = tf.nn.relu(output)
-
-    harm_1 = tf.layers.dense(output, 60, activation=tf.nn.relu)
-    ap = tf.layers.dense(output, 4, activation=tf.nn.relu)
-    f0 = tf.layers.dense(output, 64, activation=tf.nn.relu) 
-    f0 = tf.layers.dense(f0, 1, activation=tf.nn.relu)
-    vuv = tf.layers.dense(ap, 1, activation=tf.nn.sigmoid)
-    return output[:,:,:-1],vuv
-
-
-def GAN_generator(inputs, num_block = config.wavenet_layers):
-    # inputs = tf.reshape(inputs, [config.batch_size, config.max_phr_len, config.input_features,1])
-    # inputs = tf.layers.conv2d(inputs, config.wavenet_filters, 5,  padding = 'same', name = "G_1")
-    # # inputs = tf.layers.conv2d(inputs, config.wavenet_filters, 5,  padding = 'same', name = "G_2")
-    # # inputs = tf.layers.conv2d(inputs, config.wavenet_filters, 5,  padding = 'same', name = "G_3")
-    # # inputs = tf.layers.conv2d(inputs, config.wavenet_filters, 5,  padding = 'same', name = "G_4")
-    # # inputs = tf.layers.conv2d(inputs, config.wavenet_filters, 5,  padding = 'same', name = "G_5")
-
-    # inputs = tf.layers.conv2d(inputs, 1, 5,  padding = 'same', name = "G_6")
-
-    inputs = tf.layers.dense(inputs, config.lstm_size, name = "G_1")
-    inputs = tf.layers.dense(inputs, 60, name = "G_2")
-    inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 1)
-
-    inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 2, padding = 'same', name = "G_c1")
-    inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 4, padding = 'same', name = "G_c2")
-    inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 8, padding = 'same', name = "G_c3")
-    inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 16, padding = 'same', name = "G_c4")
-    inputs = tf.layers.conv1d(inputs, config.wavenet_filters, 32, padding = 'same', name = "G_c5")
-
-    harm = tf.nn.tanh(tf.layers.dense(inputs, 60, name = "G_3"))
-    # import pdb;pdb.set_trace()
-    # inputs = tf.reshape(inputs,[config.batch_size, config.max_phr_len, config.input_features] )
-    return harm
-    # import pdb;pdb.set_trace()
-
-
-def GAN_discriminator(inputs, conditioning):
-    ops = tf.concat([inputs, conditioning], 2)
-    ops = tf.layers.dense(ops, config.lstm_size, name = "D_1")
-    # ops = tf.layers.dense(ops, 30, name = "D_2")
-    # ops = tf.layers.dense(ops, 15, name = "D_3")
-
-    ops = tf.layers.conv1d(ops, config.wavenet_filters, 2, padding = 'valid', name = "D_c1")
-    ops = tf.layers.conv1d(ops, config.wavenet_filters, 4, padding = 'valid', name = "D_c2")
-    ops = tf.layers.conv1d(ops, config.wavenet_filters, 8, padding = 'valid', name = "D_c3")
-    ops = tf.layers.conv1d(ops, config.wavenet_filters, 16, padding = 'valid', name = "D_c4")
-    ops = tf.layers.conv1d(ops, config.wavenet_filters, 32, padding = 'valid', name = "D_c5")
-    # ops = tf.layers.conv1d(ops, config.wavenet_filters, 25, padding = 'valid')
-
-    # import pdb;pdb.set_trace()
-
-
-    ops = tf.reshape(ops, [config.batch_size,-1])
-    ops = tf.layers.dense(ops, 30, name = "D_2")
-    ops = tf.layers.dense(ops, 15, name = "D_3")
-    ops = tf.layers.dense(ops, 1, name = "D_4")
-    ops = tf.nn.sigmoid(ops)
-    return ops
-
+    return vuv
 
 
 def main():    
