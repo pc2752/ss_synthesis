@@ -104,10 +104,10 @@ class SSSynth(Model):
 
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         with tf.control_dependencies(update_ops):
-            self.harm_train_function = self.harm_optimizer.minimize(self.harm_loss, global_step = self.global_step, var_list = self.harm_params)
-            self.ap_train_function = self.ap_optimizer.minimize(self.ap_loss, global_step = self.global_step, var_list = self.ap_params)
-            self.f0_train_function = self.harm_optimizer.minimize(self.f0_loss, global_step = self.global_step, var_list = self.f0_params)
-            self.vuv_train_function = self.ap_optimizer.minimize(self.vuv_loss, global_step = self.global_step, var_list = self.vuv_params)
+            self.harm_train_function = self.harm_optimizer.minimize(self.loss, global_step = self.global_step, var_list = self.harm_params)
+            # self.ap_train_function = self.ap_optimizer.minimize(self.ap_loss, global_step = self.global_step_ap, var_list = self.ap_params)
+            # self.f0_train_function = self.harm_optimizer.minimize(self.f0_loss, global_step = self.global_step_f0, var_list = self.f0_params)
+            # self.vuv_train_function = self.ap_optimizer.minimize(self.vuv_loss, global_step = self.global_step_vuv, var_list = self.vuv_params)
 
     def loss_function(self):
         """
@@ -122,7 +122,7 @@ class SSSynth(Model):
 
         self.vuv_loss = tf.reduce_sum(tf.reduce_sum(binary_cross(self.vuv_placeholder, self.vuv)))
 
-        # self.loss = self.harm_loss + self.ap_loss + self.vuv_loss + self.f0_loss *config.f0_weight
+        self.loss = self.harm_loss + self.ap_loss + self.vuv_loss + self.f0_loss *config.f0_weight
 
     def get_summary(self, sess, log_dir):
         """
@@ -253,7 +253,7 @@ class SSSynth(Model):
         """
         Function to train the model for each epoch
         """
-        voc = np.clip(voc + np.random.normal(0,.5,(voc.shape)) * 0.4, 0.0, 1.0)
+        # voc = np.clip(voc + np.random.normal(0,.5,(voc.shape)) * 0.4, 0.0, 1.0)
 
         # teacher_train = np.random.rand(1)<0.5
 
@@ -261,7 +261,7 @@ class SSSynth(Model):
 
         feed_dict = {self.input_placeholder: voc, self.harm_placeholder: feat[:,:,:60], self.ap_placeholder: feat[:,:,60:64], \
         self.f0_placeholder: feat[:,:,-2:-1], self.vuv_placeholder: feat[:,:,-1:], self.is_train: True}
-        _,_,_,_, harm_loss, ap_loss, f0_loss, vuv_loss = sess.run([self.harm_train_function, self.ap_train_function, self.f0_train_function,self.vuv_train_function,
+        _, harm_loss, ap_loss, f0_loss, vuv_loss = sess.run([self.harm_train_function,
             self.harm_loss, self.ap_loss, self.f0_loss, self.vuv_loss ], feed_dict=feed_dict)
 
 
@@ -372,8 +372,8 @@ class SSSynth(Model):
 
         stat_file = h5py.File(config.stat_dir+'stats.hdf5', mode='r')
 
-        max_voc = np.array(stat_file["voc_stft_maximus"])
-        min_voc = np.array(stat_file["voc_stft_minimus"])
+        max_mix = np.array(stat_file["back_stft_maximus"])
+        min_mix = np.array(stat_file["back_stft_minimus"])
 
         max_feat = np.array(stat_file["feats_maximus"])
         min_feat = np.array(stat_file["feats_minimus"])
@@ -381,19 +381,19 @@ class SSSynth(Model):
 
         in_batches_stft, nchunks_in = utils.generate_overlapadd(mix_stft)
 
-        in_batches_stft = in_batches_stft/max_voc 
+        in_batches_stft = in_batches_stft/max_mix
 
         out_batches_feats = []
 
         for in_batch_stft in in_batches_stft :
             feed_dict = {self.input_placeholder: in_batch_stft, self.is_train: False}
-            harm = sess.run(self.harm, feed_dict=feed_dict)
-            feed_dict = {self.input_placeholder: in_batch_stft,self.harm_placeholder:harm, self.is_train: False}
-            ap = sess.run(self.ap, feed_dict=feed_dict)
-            feed_dict = {self.input_placeholder: in_batch_stft,self.harm_placeholder:harm,self.ap_placeholder:ap, self.is_train: False}
-            f0 = sess.run(self.f0, feed_dict=feed_dict)
-            feed_dict = {self.input_placeholder: in_batch_stft,self.harm_placeholder:harm,self.ap_placeholder:ap,self.f0_placeholder:f0, self.is_train: False}
-            vuv = sess.run(self.vuv, feed_dict=feed_dict)
+            harm, ap, f0, vuv = sess.run([self.harm, self.ap, self.f0, self.vuv], feed_dict=feed_dict)
+            # feed_dict = {self.input_placeholder: in_batch_stft,self.harm_placeholder:harm, self.is_train: False}
+            # ap = sess.run(self.ap, feed_dict=feed_dict)
+            # feed_dict = {self.input_placeholder: in_batch_stft,self.harm_placeholder:harm,self.ap_placeholder:ap, self.is_train: False}
+            # f0 = sess.run(self.f0, feed_dict=feed_dict)
+            # feed_dict = {self.input_placeholder: in_batch_stft,self.harm_placeholder:harm,self.ap_placeholder:ap,self.f0_placeholder:f0, self.is_train: False}
+            # vuv = sess.run(self.vuv, feed_dict=feed_dict)
             val_feats = np.concatenate((harm, ap, f0, vuv), axis=-1)
             out_batches_feats.append(val_feats)
 
@@ -413,15 +413,16 @@ class SSSynth(Model):
         Defined in modules.
 
         """
-
         with tf.variable_scope('Harm_Model') as scope:
-            self.harm = modules.harm_network(self.input_placeholder, self.is_train)
-        with tf.variable_scope('Ap_Model') as scope:
-            self.ap = modules.ap_network(self.input_placeholder, self.harm_placeholder, self.is_train)
-        with tf.variable_scope('F0_Model') as scope:
-            self.f0 = modules.f0_network(self.input_placeholder, tf.concat([self.harm_placeholder, self.ap_placeholder], axis = -1), self.is_train)
-        with tf.variable_scope('Vuv_Model') as scope:
-            self.vuv = modules.vuv_network(self.input_placeholder, tf.concat([self.harm_placeholder, self.ap_placeholder, self.f0_placeholder], axis = -1), self.is_train)
+            self.harm, self.ap, self.f0, self.vuv = modules.nr_wavenet(self.input_placeholder)
+        # with tf.variable_scope('Harm_Model') as scope:
+        #     self.harm = modules.harm_network(self.input_placeholder, self.is_train)
+        # with tf.variable_scope('Ap_Model') as scope:
+        #     self.ap = modules.ap_network(self.input_placeholder, self.harm_placeholder, self.is_train)
+        # with tf.variable_scope('F0_Model') as scope:
+        #     self.f0 = modules.f0_network(self.input_placeholder, tf.concat([self.harm_placeholder, self.ap_placeholder], axis = -1), self.is_train)
+        # with tf.variable_scope('Vuv_Model') as scope:
+        #     self.vuv = modules.vuv_network(self.input_placeholder, tf.concat([self.harm_placeholder, self.ap_placeholder, self.f0_placeholder], axis = -1), self.is_train)
 
 
 

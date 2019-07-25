@@ -7,7 +7,7 @@ wav_dir_nus = '../datasets/nus-smc-corpus_48/'
 wav_dir_mus = '../datasets/musdb18/train/'
 wav_dir_mir = '../datasets/MIR1k/'
 wav_dir_vctk = '../datasets/VCTK/VCTK-Corpus/wav48/'
-wav_dir_vctk_lab = '../datasets/VCTK/VCTK-Corpus/forPritish/'
+wav_dir_vctk_lab = '../datasets/VCTK/forPritish/'
 wav_dir_med = '../datasets/medleydB/'
 wav_dir_timit = '../datasets/TIMIT/TIMIT/'
 wav_dir_casas_esp = '../datasets/casas_esp/'
@@ -18,7 +18,7 @@ voice_dir = './voice/'
 backing_dir = './backing/'
 # log_dir = './log/'
 log_dir = './log_encode/'
-log_dir_m1 = './log_full/'
+log_dir_m1 = './log_encode/'
 data_log = './log/data_log.log'
 
 
@@ -54,13 +54,13 @@ n_octaves = 6
 cqt_bins = bins_per_octave*n_octaves
 harmonics = [0.5, 1, 2, 3, 4, 5]
 
-encoder_layers = 7
+encoder_layers = 5
 
-filters = 32
+filters = 128
 
 filter_len = 5
 
-phonemas = ['t', 'y', 'l', 'k', 'aa', 'jh', 'ae', 'ng', 'ah', 'hh', 'z', 'ey', 'f', 'uw', 'iy', 'ay', 'b', 's', 'd', 'sil', 'p', 'n', 'sh', 'ao', 'g', 'ch', 'ih', 'eh', 'aw', 'sp', 'oy', 'th', 'w', 'ow', 'v', 'uh', 'm', 'er', 'zh', 'r', 'dh']
+phonemas = ['t', 'y', 'l', 'k', 'aa', 'jh', 'ae', 'ng', 'ah', 'hh', 'z', 'ey', 'f', 'uw', 'iy', 'ay', 'b', 's', 'd', 'Sil', 'p', 'n', 'sh', 'ao', 'g', 'ch', 'ih', 'eh', 'aw', 'sp', 'oy', 'th', 'w', 'ow', 'v', 'uh', 'm', 'er', 'zh', 'r', 'dh', 'ax']
 phonemas_esp = ['B', 'U', 'g', 'k', 'm', 'tS', 'J', 'L', 'x', 'n', 'i', 'r', 'a', 'o', 'w', 'j', 's', 'f', 'I', 'rr', 't', 'd', 'e', 'l', 'b', 'Sil', 'u', 'D', 'p', 'G', 'T']
 phonemas_cat = ['B', 'U', 'g', 'S', 'k', 'm', 'O', 'dZ', 'J', 'Z', 'tS', 'ts', 'n', 'r', 'i', 'a', 'z', 'w', 'o', 'ae', 'j', 's', 'f', 'I', 'rr', 't', 'd', 'e', 'l', 'N', 'b', 'Sil', 'u', 'L0', 'E', 'D', 'p', 'dz', 'G']
 phonemas_full = ['dz', 'U', 'n', 'E', 'J', 'a', 'g', 'p', 'e', 'z', 'd', 'i', 'S', 'k', 'f', 'u', 'D', 'r', 'ts', 'T', 'j', 'G', 'l', 'b', 'N', 's', 'w', 'Z', 'm', 'L', 'x', 't', 'Sil', 'ae', 'I', 'O', 'o', 'dZ', 'tS', 'rr', 'B', 'L0']
@@ -99,7 +99,7 @@ batches_per_epoch_train = 100
 batches_per_epoch_val = 25
 batch_size = 30 
 samples_per_file = 5
-max_phr_len = 128
+max_phr_len = 32
 input_features = 513
 lstm_size = 128
 output_features = 66
@@ -125,7 +125,7 @@ noise = 0.05
 
 wavenet_layers = 5
 rec_field = 2**wavenet_layers
-wavenet_filters = 64
+wavenet_filters = 256
 
 print_every = 1
 save_every = 100
