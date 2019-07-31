@@ -10,6 +10,7 @@ wav_dir_vctk = '../datasets/VCTK/VCTK-Corpus/wav48/'
 wav_dir_vctk_lab = '../datasets/VCTK/forPritish/'
 wav_dir_med = '../datasets/medleydB/'
 wav_dir_timit = '../datasets/TIMIT/TIMIT/'
+wav_dir_ya = '../datasets/TIMIT/TIMIT/'
 wav_dir_casas_esp = '../datasets/casas_esp/'
 wav_dir_casas_ross = '../datasets/casas_rossinyol/'
 
@@ -94,7 +95,7 @@ noise_threshold = 0.1
 pred_mode = 'all'
 
 # Hyperparameters
-num_epochs = 5000
+num_epochs = 500
 batches_per_epoch_train = 100
 batches_per_epoch_val = 25
 batch_size = 30 

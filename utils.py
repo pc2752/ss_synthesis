@@ -9,6 +9,7 @@ import pyworld as pw
 import matplotlib.pyplot as plt
 from reduce import sp_to_mfsc, mfsc_to_sp, ap_to_wbap,wbap_to_ap, get_warped_freqs, sp_to_mgc, mgc_to_sp, mgc_to_mfsc, mfsc_to_mgc
 from vocoder import extract_sp_world, extract_ap_world, gen_wave_world
+
 # from acoufe import pitch
 import librosa
 from tqdm import tqdm
@@ -204,9 +205,13 @@ def nan_helper(y):
     return np.isinf(y), lambda z: z.nonzero()[0]
 
 def file_to_stft(input_file, mode =0):
-    audio,fs=sf.read(input_file)
+    audio,fs = librosa.load(input_file, sr = config.fs)
     if mode == 0 :
-        mixture = (audio[:,0]+audio[:,1])*0.7
+        if len(audio.shape)==1:
+            mixture = audio
+        else:
+            mixture = (audio[:,0]+audio[:,1])*0.5
+        
         mix_stft=abs(stft(mixture))
     
         return mix_stft
@@ -236,13 +241,16 @@ def file_to_stft(input_file, mode =0):
 
 
 def input_to_feats(input_file, mode=0):
-    audio,fs=sf.read(input_file)
+    audio,fs = librosa.load(input_file, sr = config.fs)
     if mode == 0 or mode ==2:
-        vocals=np.array(audio[:,1])
+        if len(audio.shape)==1:
+            vocals = audio
+        else:
+            vocals = (audio[:,0]+audio[:,1])*0.5
     elif mode ==1:
         vocals = audio
 
-    feats = stft_to_feats(vocals,fs)
+    feats = stft_to_feats(np.float64(vocals),fs)
 
 
     # harm_in=mgc_to_sp(harmy, 1025, 0.45)
@@ -368,8 +376,8 @@ def feats_to_audio(in_feats,filename, fs=config.fs,  mode=config.comp_mode):
     ap = 10**(ap/20)
 
 
-    y=pw.synthesize(f0.astype('double'),harm.astype('double'),ap.astype('double'),fs,config.hoptime)
-    sf.write(config.val_dir+filename+'.wav',y,fs)
+    y=pw.synthesize(f0.astype('double'),harm.astype('double'),ap.astype('double'),fs,config.hoptime*1000)
+    sf.write(config.val_dir+filename+'.wav',y,int(fs))
 
 def feats_to_audio_test(in_feats,filename, fs=config.fs,  mode=config.comp_mode):
     harm = in_feats[:,:60]
@@ -502,6 +510,40 @@ def denormalize(inputs, feat, mode=config.norm_mode_in):
         stds = np.load(config.stat_dir+feat+'_stds.npy')
         outputs = (inputs*stds)+means
     return outputs
+
+def query_yes_no(question, default="yes"):
+    """
+    Copied from https://stackoverflow.com/questions/3041986/apt-command-line-interface-like-yes-no-input
+    Ask a yes/no question via raw_input() and return their answer.
+
+    "question" is a string that is presented to the user.
+    "default" is the presumed answer if the user just hits <Enter>.
+        It must be "yes" (the default), "no" or None (meaning
+        an answer is required of the user).
+
+    The "answer" return value is True for "yes" or False for "no".
+    """
+    valid = {"yes": True, "y": True, "ye": True,
+             "no": False, "n": False}
+    if default is None:
+        prompt = " [y/n] "
+    elif default == "yes":
+        prompt = " [Y/n] "
+    elif default == "no":
+        prompt = " [y/N] "
+    else:
+        raise ValueError("invalid default answer: '%s'" % default)
+
+    while True:
+        sys.stdout.write(question + prompt)
+        choice = input().lower()
+        if default is not None and choice == '':
+            return valid[default]
+        elif choice in valid:
+            return valid[choice]
+        else:
+            sys.stdout.write("Please respond with 'yes' or 'no' "
+                             "(or 'y' or 'n').\n")
 
 def main():
     out_feats = input_to_feats(config.wav_dir+'10161_chorus.wav')

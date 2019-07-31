@@ -26,25 +26,6 @@ class Model(object):
         self.model()
 
 
-    def test_file_all(self, file_name, sess):
-        """
-        Function to extract multi pitch from file. Currently supports only HDF5 files.
-        """
-        scores = self.extract_f0_file(file_name, sess)
-        return scores
-
-    def validate_file(self, file_name, sess):
-        """
-        Function to extract multi pitch from file, for validation. Currently supports only HDF5 files.
-        """
-        scores = self.extract_f0_file(file_name, sess)
-        pre = scores['Precision']
-        acc = scores['Accuracy']
-        rec = scores['Recall']
-        return pre, acc, rec
-
-
-
 
     def load_model(self, sess, log_dir):
         """
@@ -122,7 +103,7 @@ class SSSynth(Model):
 
         self.vuv_loss = tf.reduce_sum(tf.reduce_sum(binary_cross(self.vuv_placeholder, self.vuv)))
 
-        self.loss = self.harm_loss + self.ap_loss + self.vuv_loss + self.f0_loss *config.f0_weight
+        self.loss = self.harm_loss + self.ap_loss + self.vuv_loss + self.f0_loss
 
     def get_summary(self, sess, log_dir):
         """
@@ -332,6 +313,24 @@ class SSSynth(Model):
         mix_stft = utils.file_to_stft(file_name)
         out_feats = self.process_file(mix_stft, sess)
 
+    def test_model_yam(self):
+        """
+        Function to extract vocals from wav file.
+        """
+        sess = tf.Session()
+        self.load_model(sess, log_dir = config.log_dir)
+        voc_stft = utils.file_to_stft('./Bria_000_VoU67.wav')
+        back_stft = utils.file_to_stft('./Bria_000_Back.wav')
+
+        mix_stft = np.clip((voc_stft[:len(back_stft)] + back_stft[:len(voc_stft)])/2, 0.0, 1.0)
+        feats = utils.input_to_feats('./Bria_000_VoU67.wav')
+        out_feats = self.process_file(mix_stft, sess)
+        self.plot_features(feats, out_feats)
+        out_featss = np.concatenate((out_feats[:feats.shape[0], :-2], feats[:out_feats.shape[0],-2:]), axis = -1)
+
+        utils.feats_to_audio(out_featss[:3000],'Bree_output') 
+
+
     def plot_features(self, feats, out_feats):
         """
         Function to plot output and ground truth features
@@ -381,7 +380,7 @@ class SSSynth(Model):
 
         in_batches_stft, nchunks_in = utils.generate_overlapadd(mix_stft)
 
-        in_batches_stft = in_batches_stft/max_mix
+        # in_batches_stft = in_batches_stft/max_mix
 
         out_batches_feats = []
 

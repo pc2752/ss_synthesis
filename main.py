@@ -14,6 +14,9 @@ def train(_):
 def eval_hdf5_file(file_name):
     model = models.SSSynth()
     model.test_file_hdf5(file_name)
+def test(_):
+    model = models.SSSynth()
+    model.test_model_yam()
 
 if __name__ == '__main__':
     if len(sys.argv)<2 or sys.argv[1] == '-help' or sys.argv[1] == '--help' or sys.argv[1] == '--h' or sys.argv[1] == '-h':
@@ -39,3 +42,5 @@ if __name__ == '__main__':
                     print([x for x in os.listdir(config.voice_dir) if x.startswith('nus' )or x.startswith('casas') or x.startswith('med')])
                 else:
                     eval_hdf5_file(file_name)
+
+
